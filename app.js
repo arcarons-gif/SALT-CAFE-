@@ -742,7 +742,13 @@ function arranqueAuthContinuar() {
       if (typeof PERMISOS === 'object') { Object.keys(PERMISOS).forEach(function (k) { permisos[k] = true; }); }
       var demoUser = { id: 'demo', username: 'demo', nombre: 'Demo', rol: 'admin', cambiarPasswordObligatorio: false, permisos: permisos };
       setSession(demoUser);
-      entrarApp(demoUser);
+      var ls = document.getElementById('loginScreen');
+      var ns = document.getElementById('normativasScreen');
+      var app = document.getElementById('appContent');
+      if (ls) ls.style.display = 'none';
+      if (ns) ns.style.display = 'flex';
+      if (app) app.style.display = 'none';
+      if (typeof initNormativasPantalla === 'function') initNormativasPantalla('demo', true);
     });
   }
   var btnCrearUsuario = document.getElementById('loginCrearUsuario');
