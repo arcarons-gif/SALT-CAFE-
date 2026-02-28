@@ -497,14 +497,17 @@ function renderUltimasReparaciones() {
 
 async function manejarLogin(e) {
   e.preventDefault();
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value;
+  const userInp = document.getElementById('loginUsername');
+  const passInp = document.getElementById('loginPassword');
+  if (!userInp || !passInp) return;
+  const username = (userInp.value || '').trim();
+  const password = passInp.value || '';
   const recordar = document.getElementById('loginRecordar')?.checked;
   const errEl = document.getElementById('loginError');
-  errEl.textContent = '';
+  if (errEl) errEl.textContent = '';
   const user = await login(username, password);
   if (!user) {
-    errEl.textContent = 'Usuario o contraseña incorrectos.';
+    if (errEl) errEl.textContent = 'Usuario o contraseña incorrectos.';
     return;
   }
   if (recordar) {
@@ -524,17 +527,23 @@ async function manejarLogin(e) {
     localStorage.setItem(LOGIN_USUARIOS_STORAGE, JSON.stringify(list));
   } catch (err) {}
   if (user.cambiarPasswordObligatorio) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('cambioPasswordScreen').style.display = 'flex';
-    document.getElementById('cambioPasswordForm').addEventListener('submit', manejarCambioPassword);
+    var ls = document.getElementById('loginScreen');
+    var cs = document.getElementById('cambioPasswordScreen');
+    var cf = document.getElementById('cambioPasswordForm');
+    if (ls) ls.style.display = 'none';
+    if (cs) cs.style.display = 'flex';
+    if (cf) cf.addEventListener('submit', manejarCambioPassword);
     return;
   }
   if (!hasLeidoTodasNormativas(user.id)) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('normativasScreen').style.display = 'flex';
-    document.getElementById('appContent').style.display = 'none';
+    var ls2 = document.getElementById('loginScreen');
+    var ns = document.getElementById('normativasScreen');
+    var app = document.getElementById('appContent');
+    if (ls2) ls2.style.display = 'none';
+    if (ns) ns.style.display = 'flex';
+    if (app) app.style.display = 'none';
     setSession(user);
-    initNormativasPantalla(user.id, true);
+    if (typeof initNormativasPantalla === 'function') initNormativasPantalla(user.id, true);
     return;
   }
   entrarApp(user);
@@ -542,30 +551,34 @@ async function manejarLogin(e) {
 
 async function manejarCambioPassword(e) {
   e.preventDefault();
-  const nueva = document.getElementById('nuevaPassword').value;
-  const repetir = document.getElementById('repetirPassword').value;
+  const nuevaInp = document.getElementById('nuevaPassword');
+  const repetirInp = document.getElementById('repetirPassword');
+  if (!nuevaInp || !repetirInp) return;
+  const nueva = (nuevaInp.value || '').trim();
+  const repetir = (repetirInp.value || '').trim();
   const errEl = document.getElementById('cambioPasswordError');
-  errEl.textContent = '';
+  if (errEl) errEl.textContent = '';
   if (nueva.length < 4) {
-    errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+    if (errEl) errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.';
     return;
   }
   if (nueva !== repetir) {
-    errEl.textContent = 'Las contraseñas no coinciden.';
+    if (errEl) errEl.textContent = 'Las contraseñas no coinciden.';
     return;
   }
   const session = getSession();
   const res = await cambiarPassword(session.id, nueva);
   if (res.error) {
-    errEl.textContent = res.error;
+    if (errEl) errEl.textContent = res.error;
     return;
   }
   const users = getUsers();
   const userActualizado = users.find(u => u.id === session.id);
   if (userActualizado) setSession(userActualizado);
-  document.getElementById('cambioPasswordScreen').style.display = 'none';
-  document.getElementById('cambioPasswordForm').reset();
-  document.getElementById('cambioPasswordForm').removeEventListener('submit', manejarCambioPassword);
+  const cambioScreen = document.getElementById('cambioPasswordScreen');
+  const cambioForm = document.getElementById('cambioPasswordForm');
+  if (cambioScreen) cambioScreen.style.display = 'none';
+  if (cambioForm) { cambioForm.reset(); cambioForm.removeEventListener('submit', manejarCambioPassword); }
   const currentSession = getSession();
   if (!hasLeidoTodasNormativas(currentSession.id)) {
     document.getElementById('normativasScreen').style.display = 'flex';
@@ -578,12 +591,15 @@ async function manejarCambioPassword(e) {
 
 function entrarApp(user) {
   const u = user || getSession();
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('cambioPasswordScreen').style.display = 'none';
-  document.getElementById('appContent').style.display = 'block';
+  var ls = document.getElementById('loginScreen');
+  var cs = document.getElementById('cambioPasswordScreen');
+  var app = document.getElementById('appContent');
+  if (ls) ls.style.display = 'none';
+  if (cs) cs.style.display = 'none';
+  if (app) app.style.display = 'block';
   const centerName = document.getElementById('headerUserNameText');
-  if (centerName) centerName.textContent = u.nombre || u.username;
-  aplicarPermisos(u);
+  if (centerName) centerName.textContent = (u && (u.nombre || u.username)) || '';
+  if (u) aplicarPermisos(u);
   el.mecanico.value = u.nombre || u.username;
   init();
   vincularAdmin();
@@ -689,15 +705,19 @@ function arranqueAuthContinuar() {
   const session = getSession();
   aplicarVisibilidadHintLogin();
   if (session) {
+    var loginScreen = document.getElementById('loginScreen');
+    var cambioScreen = document.getElementById('cambioPasswordScreen');
+    var cambioForm = document.getElementById('cambioPasswordForm');
+    var appContent = document.getElementById('appContent');
     if (session.cambiarPasswordObligatorio) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('cambioPasswordScreen').style.display = 'flex';
-      document.getElementById('cambioPasswordForm').addEventListener('submit', manejarCambioPassword);
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (cambioScreen) cambioScreen.style.display = 'flex';
+      if (cambioForm) cambioForm.addEventListener('submit', manejarCambioPassword);
       return;
     }
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('cambioPasswordScreen').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (cambioScreen) cambioScreen.style.display = 'none';
+    if (appContent) appContent.style.display = 'block';
     const centerName = document.getElementById('headerUserNameText');
     if (centerName) centerName.textContent = session.nombre || session.username;
     aplicarPermisos(session);
@@ -707,17 +727,78 @@ function arranqueAuthContinuar() {
     vincularFichajes();
     actualizarLedFichaje();
   } else {
-    document.getElementById('loginScreen').style.display = 'flex';
+    var loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) loginScreen.style.display = 'flex';
     rellenarLoginUsuariosRecientes();
     cargarCredencialesGuardadas();
-    document.getElementById('loginForm').addEventListener('submit', manejarLogin);
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.addEventListener('submit', manejarLogin);
   }
   vincularLoginUsuariosRecientes();
-  var btnVerCredenciales = document.getElementById('loginVerCredencialesDefecto');
-  var credencialesHelp = document.getElementById('loginCredencialesHelp');
-  if (btnVerCredenciales && credencialesHelp) {
-    btnVerCredenciales.addEventListener('click', function () {
-      credencialesHelp.style.display = credencialesHelp.style.display === 'none' ? 'block' : 'none';
+  var btnDemo = document.getElementById('loginDemo');
+  if (btnDemo) {
+    btnDemo.addEventListener('click', function () {
+      var permisos = {};
+      if (typeof PERMISOS === 'object') { Object.keys(PERMISOS).forEach(function (k) { permisos[k] = true; }); }
+      var demoUser = { id: 'demo', username: 'demo', nombre: 'Demo', rol: 'admin', cambiarPasswordObligatorio: false, permisos: permisos };
+      setSession(demoUser);
+      entrarApp(demoUser);
+    });
+  }
+  var btnCrearUsuario = document.getElementById('loginCrearUsuario');
+  var modalCrearUsuario = document.getElementById('modalCrearUsuario');
+  var modalCrearUsuarioClose = document.getElementById('modalCrearUsuarioClose');
+  var modalCrearUsuarioBackdrop = document.getElementById('modalCrearUsuarioBackdrop');
+  if (btnCrearUsuario && modalCrearUsuario) {
+    btnCrearUsuario.addEventListener('click', function () {
+      modalCrearUsuario.classList.add('active');
+      var formCrear = document.getElementById('formCrearUsuario');
+      if (formCrear) formCrear.reset();
+      var errCrear = document.getElementById('crearUsuarioError');
+      if (errCrear) errCrear.style.display = 'none';
+      var confirmErrCrear = document.getElementById('crearUsuarioPasswordConfirmError');
+      if (confirmErrCrear) confirmErrCrear.style.display = 'none';
+    });
+  }
+  if (modalCrearUsuarioClose) modalCrearUsuarioClose.addEventListener('click', function () { modalCrearUsuario.classList.remove('active'); });
+  if (modalCrearUsuarioBackdrop) modalCrearUsuarioBackdrop.addEventListener('click', function () { modalCrearUsuario.classList.remove('active'); });
+  var formCrearUsuario = document.getElementById('formCrearUsuario');
+  if (formCrearUsuario) {
+    formCrearUsuario.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var username = (document.getElementById('crearUsuarioUsername').value || '').trim();
+      var nombre = (document.getElementById('crearUsuarioNombre').value || '').trim();
+      var password = (document.getElementById('crearUsuarioPassword').value || '').trim();
+      var passwordConfirm = (document.getElementById('crearUsuarioPasswordConfirm').value || '').trim();
+      var errEl = document.getElementById('crearUsuarioError');
+      var confirmErrEl = document.getElementById('crearUsuarioPasswordConfirmError');
+      if (errEl) errEl.style.display = 'none';
+      if (confirmErrEl) confirmErrEl.style.display = 'none';
+      if (password.length < 4) {
+        if (errEl) { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (password !== passwordConfirm) {
+        if (confirmErrEl) { confirmErrEl.textContent = 'La contraseña y la confirmación no coinciden.'; confirmErrEl.style.display = 'block'; }
+        if (errEl) { errEl.textContent = 'La contraseña y la confirmación no coinciden.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (!username) {
+        if (errEl) { errEl.textContent = 'El usuario es obligatorio.'; errEl.style.display = 'block'; }
+        return;
+      }
+      var data = { username: username, nombre: nombre || username, password: password, rol: 'mecanico', permisos: {}, fechaAlta: new Date().toISOString().slice(0, 10) };
+      if (typeof createUser !== 'function') {
+        if (errEl) { errEl.textContent = 'No se puede crear usuario en este momento.'; errEl.style.display = 'block'; }
+        return;
+      }
+      var res = await createUser(data, 'self');
+      if (res && res.error) {
+        if (errEl) { errEl.textContent = res.error; errEl.style.display = 'block'; }
+        return;
+      }
+      if (modalCrearUsuario) modalCrearUsuario.classList.remove('active');
+      alert('Usuario creado correctamente. Ya puedes iniciar sesión.');
     });
   }
   var btnOlvidaste = document.getElementById('loginOlvidasteCredenciales');
@@ -739,7 +820,8 @@ function arranqueAuthContinuar() {
       window.open(DISCORD_CREDENCIALES_URL, '_blank', 'noopener,noreferrer');
     });
   }
-  document.getElementById('btnLogout').addEventListener('click', () => {
+  var btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) btnLogout.addEventListener('click', () => {
     manejarLogout();
     aplicarVisibilidadHintLogin();
   });
@@ -2978,6 +3060,25 @@ function vincularRegistroClientes() {
     const id = document.getElementById('usuarioId').value;
     const rol = document.getElementById('usuarioRol').value;
     var passwordVal = (document.getElementById('usuarioPassword') && document.getElementById('usuarioPassword').value) ? String(document.getElementById('usuarioPassword').value).trim() : '';
+    var confirmVal = (document.getElementById('usuarioPasswordConfirm') && document.getElementById('usuarioPasswordConfirm').value) ? String(document.getElementById('usuarioPasswordConfirm').value).trim() : '';
+    if (!id) {
+      if (!passwordVal) {
+        alert('La contraseña es obligatoria para nuevos usuarios.');
+        return;
+      }
+      if (passwordVal.length < 4) {
+        alert('La contraseña debe tener al menos 4 caracteres.');
+        return;
+      }
+      if (passwordVal !== confirmVal) {
+        var errEl = document.getElementById('usuarioPasswordConfirmError');
+        if (errEl) { errEl.textContent = 'La contraseña y la confirmación no coinciden.'; errEl.style.display = 'block'; }
+        alert('La contraseña y la confirmación no coinciden.');
+        return;
+      }
+      var errElClear = document.getElementById('usuarioPasswordConfirmError');
+      if (errElClear) { errElClear.style.display = 'none'; errElClear.textContent = ''; }
+    }
     const data = {
       username: document.getElementById('usuarioUsername').value.trim(),
       nombre: document.getElementById('usuarioNombre').value.trim(),
@@ -3022,14 +3123,14 @@ function vincularRegistroClientes() {
     if (id) {
       res = await updateUser(id, data, session.username);
     } else {
-      data.password = data.password || '1234';
+      data.password = passwordVal || '1234';
       res = await createUser(data, session.username);
     }
     if (res.error) {
       alert(res.error);
       return;
     }
-    modalUsuario.classList.remove('active');
+    if (modalUsuario) modalUsuario.classList.remove('active');
     renderListaUsuarios();
     renderAprobacionesPendientes();
     if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama')?.style.display === 'flex') {
@@ -3487,6 +3588,7 @@ function renderAprobacionesPendientes() {
 
 function renderListaUsuarios() {
   const lista = document.getElementById('listaUsuarios');
+  if (!lista) return;
   const session = getSession();
   let users = getUsers();
   if (hasPermission(session, 'gestionarEquipo') && !hasPermission(session, 'gestionarUsuarios')) {
@@ -3547,6 +3649,7 @@ function abrirFormUsuario(userId) {
   const fieldPasswordActual = document.getElementById('fieldPasswordActual');
   const fieldActivo = document.getElementById('fieldActivo');
   const permisosDiv = document.getElementById('permisosCheckboxes');
+  if (!modal || !titulo || !form || !fieldPassword || !permisosDiv) return;
 
   if (userId) {
     const users = getUsers();
@@ -3564,6 +3667,10 @@ function abrirFormUsuario(userId) {
       document.getElementById('usuarioPasswordActual').value = '••••••••';
       document.getElementById('usuarioPasswordActual').placeholder = 'Almacenada de forma segura. Escribe la nueva abajo para cambiarla.';
     }
+    var fieldPasswordConfirmEdit = document.getElementById('fieldPasswordConfirm');
+    if (fieldPasswordConfirmEdit) fieldPasswordConfirmEdit.style.display = 'none';
+    var confirmInputEdit = document.getElementById('usuarioPasswordConfirm');
+    if (confirmInputEdit) confirmInputEdit.required = false;
     const rolVal = (u.rol || 'mecanico');
     document.getElementById('usuarioRol').value = ['peon', 'enPracticas', 'mecanico', 'responsableMecanicos', 'admin'].includes(rolVal) ? rolVal : 'mecanico';
     document.getElementById('usuarioActivo').checked = u.activo;
@@ -3577,7 +3684,8 @@ function abrirFormUsuario(userId) {
       fieldEquipo.style.display = hasPermission(getSession(), 'gestionarUsuarios') ? '' : 'none';
       usuarioEquipo.value = (u.equipo && u.equipo.length) ? u.equipo.join(', ') : '';
     }
-    fieldPassword.querySelector('label').textContent = 'Nueva contraseña (opcional)';
+    var labelEdit = fieldPassword.querySelector('label');
+    if (labelEdit) labelEdit.textContent = 'Nueva contraseña (opcional)';
     var session = getSession();
     var esAdmin = session && hasPermission(session, 'gestionarUsuarios');
     var hintAdmin = document.getElementById('hintPasswordAdmin');
@@ -3595,11 +3703,22 @@ function abrirFormUsuario(userId) {
     document.getElementById('usuarioId').value = '';
     document.getElementById('usuarioUsername').readOnly = false;
     document.getElementById('usuarioFechaAlta').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('usuarioPassword').required = false;
-    document.getElementById('usuarioPassword').type = 'text';
-    document.getElementById('usuarioPassword').placeholder = 'Vacío = 1234 (cambio obligatorio en 1º login)';
+    document.getElementById('usuarioPassword').required = true;
+    document.getElementById('usuarioPassword').type = 'password';
+    document.getElementById('usuarioPassword').placeholder = 'Mínimo 4 caracteres';
+    var toggleBtnNew = fieldPassword ? fieldPassword.querySelector('.btn-password-toggle') : null;
+    if (toggleBtnNew) toggleBtnNew.style.display = '';
+    var fieldPasswordConfirm = document.getElementById('fieldPasswordConfirm');
+    if (fieldPasswordConfirm) {
+      fieldPasswordConfirm.style.display = 'block';
+      var confirmInput = document.getElementById('usuarioPasswordConfirm');
+      if (confirmInput) { confirmInput.value = ''; confirmInput.required = true; }
+      var confirmErr = document.getElementById('usuarioPasswordConfirmError');
+      if (confirmErr) { confirmErr.style.display = 'none'; confirmErr.textContent = ''; }
+    }
     if (fieldPasswordActual) fieldPasswordActual.style.display = 'none';
-    fieldPassword.querySelector('label').textContent = 'Contraseña (opcional, por defecto 1234)';
+    var labelNew = fieldPassword.querySelector('label');
+    if (labelNew) labelNew.textContent = 'Contraseña';
     var hintAdminNew = document.getElementById('hintPasswordAdmin');
     if (hintAdminNew) hintAdminNew.style.display = (getSession() && hasPermission(getSession(), 'gestionarUsuarios')) ? 'block' : 'none';
     const fieldEquipoNew = document.getElementById('fieldEquipo');
@@ -3894,7 +4013,8 @@ function vincularFichaTrabajador() {
   if (btnHome) btnHome.addEventListener('click', () => cerrarTodasPantallasSecundarias());
 
   const fotoInput = document.getElementById('fichaFotoInput');
-  document.getElementById('btnFichaSubirFoto').addEventListener('click', () => fotoInput && fotoInput.click());
+  const btnFichaSubirFoto = document.getElementById('btnFichaSubirFoto');
+  if (btnFichaSubirFoto) btnFichaSubirFoto.addEventListener('click', () => fotoInput && fotoInput.click());
   if (fotoInput) {
     fotoInput.addEventListener('change', function() {
       const file = this.files && this.files[0];
@@ -3953,7 +4073,8 @@ function vincularMiHistorial() {
     renderLista();
     modal.classList.add('active');
   });
-  document.getElementById('modalMiHistorialClose').addEventListener('click', () => modal.classList.remove('active'));
+  var modalMiHistorialClose = document.getElementById('modalMiHistorialClose');
+  if (modalMiHistorialClose) modalMiHistorialClose.addEventListener('click', () => modal.classList.remove('active'));
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
   [buscar, tipo, desde, hasta].forEach(el => { if (el) el.addEventListener('input', renderLista); if (el) el.addEventListener('change', renderLista); });
 }

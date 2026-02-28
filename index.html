@@ -49,14 +49,44 @@
           <p class="login-ticket-nota">Se abrirá el canal de Discord. Escribe este número en tu mensaje para solicitar ayuda con las credenciales.</p>
         </div>
         <p class="login-recovery-wrap">
-          <button type="button" class="btn-link login-recovery-link login-recovery-toggle" id="loginVerCredencialesDefecto">Ver credenciales por defecto</button>
+          <button type="button" class="btn-link login-recovery-link" id="loginCrearUsuario">Crear usuario</button>
         </p>
-        <div id="loginCredencialesHelp" class="login-credenciales-help" style="display:none">
-          <p><strong>Administrador por defecto</strong></p>
-          <p>Usuario: <strong>admin</strong><br>Contraseña: <strong>1234</strong></p>
-          <p class="login-credenciales-nota">Si ya la cambiaste, otro administrador puede restablecerla desde Gestión → Usuarios.</p>
-        </div>
+        <p class="login-demo-wrap">
+          <button type="button" class="btn btn-demo" id="loginDemo">Demo</button>
+        </p>
         <p class="login-saltlab">SALTLAB CAFE · FLAVOR MEETS THE SEA</p>
+      </div>
+    </div>
+
+    <!-- Modal Crear usuario (desde pantalla de login) -->
+    <div id="modalCrearUsuario" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="modalCrearUsuarioBackdrop"></div>
+      <div class="modal-content modal-crear-usuario">
+        <div class="modal-header">
+          <h3>Crear usuario</h3>
+          <button type="button" class="modal-close" id="modalCrearUsuarioClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formCrearUsuario" class="modal-body">
+          <div class="field">
+            <label>Usuario (login)</label>
+            <input type="text" id="crearUsuarioUsername" required autocomplete="username" placeholder="Nombre para iniciar sesión">
+          </div>
+          <div class="field">
+            <label>Nombre completo</label>
+            <input type="text" id="crearUsuarioNombre" placeholder="Ej: Juan García">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input type="password" id="crearUsuarioPassword" required minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="crearUsuarioPasswordConfirm" required minlength="4" placeholder="Repite la contraseña" autocomplete="new-password">
+            <span class="field-hint field-error" id="crearUsuarioPasswordConfirmError" style="display:none;"></span>
+          </div>
+          <p id="crearUsuarioError" class="login-error" style="display:none;"></p>
+          <button type="submit" class="btn btn-login">Crear usuario</button>
+        </form>
       </div>
     </div>
 
@@ -1181,6 +1211,13 @@
                 <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
               </button>
             </div>
+          </div>
+          <div class="field field-password-wrap" id="fieldPasswordConfirm" style="display:none">
+            <label>Confirmar contraseña</label>
+            <div class="input-password-group">
+              <input type="password" id="usuarioPasswordConfirm" placeholder="Repite la contraseña" autocomplete="off">
+            </div>
+            <span class="field-hint" id="usuarioPasswordConfirmError" style="display:none; color: var(--danger, #c00);"></span>
           </div>
           <div class="field">
             <label>Rol</label>
