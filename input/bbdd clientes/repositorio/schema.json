@@ -1,0 +1,5 @@
+{
+  "cabecera": ["Nº", "Matricula", "Placa policial", "Código vehiculo", "Nombre vehiculo", "Categoria", "Convenio"],
+  "columnas_excluidas": ["Fecha primera interacción", "Fecha ultima actualización", "Interacciones", "Total invertido"],
+  "descripcion": "Cabecera única (primera captura). Columnas excluidas: datos del taller anterior."
+}

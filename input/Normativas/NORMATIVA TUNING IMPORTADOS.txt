@@ -1,0 +1,44 @@
+NORMATIVA TUNING IMPORTADOS
+
+🔧 **1. SELECCIÓN DEL VEHÍCULO**
+- Es obligatorio **marcar correctamente el modelo del vehículo importado** en la calculadora.
+- Las fórmulas están preparadas específicamente para **controlar precios en importados**.
+- Un modelo mal seleccionado supondrá **error grave en la facturación**.
+
+---
+
+🛠️ **2. FULL TUNING (MANO DE OBRA)**
+- Se debe **marcar el check de “Full Tuning”**.
+- Este check añade automáticamente **5.000$**, correspondientes a la **mano de obra**.
+- Este coste es fijo y obligatorio en cualquier tuning de importados.
+
+---
+
+⚙️ **3. MODIFICACIONES DE PERFORMANCE**
+- Las siguientes piezas se consideran **PERFORMANCE**:
+  - Motor
+  - Transmisión
+  - Frenos
+  - Turbo
+  - Suspensión
+- Se debe indicar la **cantidad de piezas modificadas** en la sección **PERFORMANCE**.
+- Cada pieza de performance incrementa el precio en **200$**.
+
+---
+
+✨ **4. MODIFICACIONES COSMÉTICAS**
+- Se consideran modificaciones **COSMETIC**:
+  - Pintura (de cualquier tipo)
+  - Luces
+  - Chasis
+  - Interior
+  - Cualquier modificación estética adicional
+- Todas estas modificaciones deben marcarse en la sección **COSMETIC**.
+- Cada pieza cosmetic incrementa el precio en **50$**.
+
+---
+
+💰 **5. DESCUENTOS**
+- ❌ **NO se puede aplicar ningún tipo de descuento** en el tuning de importados.
+- La calculadora **no contempla ni permite descuentos** para este tipo de servicio.
+- Cualquier intento de aplicar descuentos será considerado **incumplimiento de normativa**.

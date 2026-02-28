@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salt Lab Cafe - Calculadora Taller</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <!-- Pantalla de login -->
+    <div id="loginScreen" class="login-screen">
+      <div class="login-box">
+        <div class="login-brand">
+          <img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" class="login-saltlab-logo" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden');">
+          <span class="login-saltlab-text hidden">SALTLAB CAFE</span>
+        </div>
+        <p class="login-subtitle">Calculadora Taller · SALTLAB CAFE</p>
+        <div class="field login-usuarios-wrap">
+          <label>Usuarios con sesión reciente</label>
+          <select id="loginUsuariosRecientes" class="login-input">
+            <option value="">— Elegir usuario —</option>
+          </select>
+        </div>
+        <form id="loginForm" class="login-form">
+          <div class="field">
+            <label>Usuario</label>
+            <input type="text" id="loginUsername" required autocomplete="username" class="login-input">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password" class="login-input">
+          </div>
+          <div class="field checkbox-field login-remember">
+            <label><input type="checkbox" id="loginRecordar"> Recordar credenciales</label>
+          </div>
+          <p id="loginError" class="login-error"></p>
+          <button type="submit" class="btn btn-login">Entrar</button>
+        </form>
+        <p class="login-recovery-wrap">
+          <button type="button" class="btn-link login-recovery-link" id="loginOlvidasteCredenciales">¿Olvidaste las credenciales?</button>
+        </p>
+        <div id="loginTicketWrap" class="login-ticket-wrap" style="display:none">
+          <p class="login-ticket-label">Tu número de ticket (indícalo en Discord):</p>
+          <p id="loginTicketNumero" class="login-ticket-numero"></p>
+          <p class="login-ticket-nota">Se abrirá el canal de Discord. Escribe este número en tu mensaje para solicitar ayuda con las credenciales.</p>
+        </div>
+        <p class="login-recovery-wrap">
+          <button type="button" class="btn-link login-recovery-link login-recovery-toggle" id="loginVerCredencialesDefecto">Ver credenciales por defecto</button>
+        </p>
+        <div id="loginCredencialesHelp" class="login-credenciales-help" style="display:none">
+          <p><strong>Administrador por defecto</strong></p>
+          <p>Usuario: <strong>admin</strong><br>Contraseña: <strong>1234</strong></p>
+          <p class="login-credenciales-nota">Si ya la cambiaste, otro administrador puede restablecerla desde Gestión → Usuarios.</p>
+        </div>
+        <p class="login-saltlab">SALTLAB CAFE · FLAVOR MEETS THE SEA</p>
+      </div>
+    </div>
+
+    <!-- Pantalla lectura obligatoria de normativas (nuevos usuarios) -->
+    <div id="normativasScreen" class="normativas-screen" style="display:none" aria-label="Normativas del taller">
+      <div class="normativas-screen-inner">
+        <div class="normativas-header">
+          <div class="normativas-header-row">
+            <h1 class="normativas-title">Normativas del taller</h1>
+            <button type="button" class="btn btn-outline btn-sm normativas-btn-cerrar" id="normativasBtnCerrar" style="display:none" title="Cerrar">Cerrar</button>
+          </div>
+          <p id="normativasSubtitle" class="normativas-subtitle">Es obligatorio leer todas las páginas de cada documento antes de acceder al taller.</p>
+          <div id="normativasProgressWrap" class="normativas-progress-wrap" style="display:none">
+            <span id="normativasProgressText" class="normativas-progress-text"></span>
+          </div>
+        </div>
+        <div id="normativasListWrap" class="normativas-list-wrap">
+          <p class="normativas-list-desc">Selecciona un documento para leerlo.</p>
+          <ul id="normativasList" class="normativas-list"></ul>
+        </div>
+        <div id="normativasReaderWrap" class="normativas-reader-wrap" style="display:none">
+          <div class="normativas-reader-header">
+            <button type="button" class="btn btn-outline btn-sm" id="normativasReaderBack">← Volver al listado</button>
+            <h2 id="normativasReaderTitle" class="normativas-reader-title"></h2>
+            <span id="normativasReaderPage" class="normativas-reader-page"></span>
+          </div>
+          <div id="normativasReaderContent" class="normativas-reader-content"></div>
+          <div class="normativas-reader-actions">
+            <button type="button" class="btn btn-outline" id="normativasReaderPrev">Anterior</button>
+            <button type="button" class="btn btn-register" id="normativasReaderNext">Siguiente</button>
+          </div>
+        </div>
+        <div id="normativasFooter" class="normativas-footer" style="display:none">
+          <button type="button" class="btn btn-login btn-normativas-continuar" id="normativasBtnContinuar">He leído todas las normativas. Continuar al taller</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla cambio de contraseña obligatorio (primera vez) -->
+    <div id="cambioPasswordScreen" class="login-screen" style="display:none">
+      <div class="login-box">
+        <div class="login-brand"><img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" class="login-saltlab-logo login-saltlab-logo-sm"></div>
+        <h1>Cambio de contraseña obligatorio</h1>
+        <p class="login-subtitle">Debes cambiar la contraseña predeterminada (1234) para continuar.</p>
+        <form id="cambioPasswordForm" class="login-form">
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input type="password" id="nuevaPassword" required minlength="4" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="login-input">
+          </div>
+          <div class="field">
+            <label>Repetir contraseña</label>
+            <input type="password" id="repetirPassword" required minlength="4" autocomplete="new-password" placeholder="Repite la contraseña" class="login-input">
+          </div>
+          <p id="cambioPasswordError" class="login-error"></p>
+          <button type="submit" class="btn btn-login">Cambiar y continuar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Contenido principal (visible tras login) -->
+    <div id="appContent" class="app-content scrollbar-on-scroll" style="display:none">
+    <div id="watermarkContainer" class="watermark-container" aria-hidden="true"></div>
+    <header class="header" id="mainHeader">
+      <div class="header-inner">
+        <div class="header-brand">
+          <img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" class="header-saltlab-logo" onerror="this.style.display='none'">
+          <div class="header-titles">
+            <h1 class="header-title">Calculadora</h1>
+            <span class="header-tagline">SALTLAB CAFE · FLAVOR MEETS THE SEA</span>
+          </div>
+        </div>
+        <div id="headerUserNameCenter" class="header-user-name-center" style="display:none">
+          <span id="headerUserNameText" class="header-user-name-text"></span>
+        </div>
+        <div id="headerCalcMinimal" class="header-calc-minimal" style="display:none">
+          <button type="button" class="btn btn-home btn-header-back" id="btnHeaderVolver" aria-label="Ir a inicio">HOME</button>
+        </div>
+        <div id="headerExtra" class="header-extra">
+        <div id="ledFichajeWrap" class="led-fichaje-wrap" aria-label="Estado de fichaje" title="Estado de fichaje">
+          <span id="ledFichajeBulb" class="led-fichaje-bulb led-off"></span>
+          <span id="ledFichajeText" class="led-fichaje-text">No fichado</span>
+        </div>
+        <div id="headerCalendarWrap" class="header-calendar-row header-calendar-simple" style="display:none" aria-label="Fecha y hora">
+          <span id="calendarDateLabel" class="calendar-date-label">—</span>
+          <span id="calendarToday" class="calendar-apple-time">—</span>
+        </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body scrollbar-on-scroll" id="appBody">
+    <div id="pantallaPrincipal" class="pantalla-principal scrollbar-on-scroll">
+    <div class="pantalla-principal-layout" id="pantallaPrincipalLayout">
+    <main class="calculator" id="calculatorMain">
+      <!-- Paso 0: Elegir tipo de trabajo -->
+      <div id="pasoInicio" class="paso paso-inicio">
+        <h2 class="paso-titulo">¿Qué vas a realizar?</h2>
+        <div class="paso-botones-tipo paso-botones-apple">
+          <button type="button" class="btn btn-paso-apple" id="btnTipoReparacion">
+            <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+            <span class="btn-paso-apple-label">Reparación</span>
+          </button>
+          <button type="button" class="btn btn-paso-apple" id="btnTipoTuneo">
+            <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+            <span class="btn-paso-apple-label">Tuneo</span>
+          </button>
+          <button type="button" class="btn btn-paso-apple" id="btnTipoTuneoReparacion">
+            <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span class="btn-paso-apple-label">Tuneo + Reparación</span>
+          </button>
+        </div>
+        <div class="paso-inicio-inferior">
+          <div class="ultimas-reparaciones-wrap" id="ultimasReparacionesWrap">
+            <h3 class="ultimas-reparaciones-titulo">Últimas reparaciones</h3>
+            <ul id="ultimasReparacionesList" class="ultimas-reparaciones-list"></ul>
+          </div>
+          <div id="mainDashboardWrap" class="main-dashboard-wrap main-dashboard-left">
+            <div id="mainDashboardBar" class="economia-dashboard-bar main-dashboard-bar">
+              <div class="economia-kpi economia-kpi-clickable" id="mainKpiTotalMateriales" title="Clic para ver detalle por tipo de material"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span><span class="economia-kpi-label">TOTAL MATERIALES</span><span id="mainKpiMaterialesValor" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span><span class="economia-kpi-label">COMPRAS PENDIENTES</span><span id="mainKpiCompras" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span class="economia-kpi-label">EMPLEADOS</span><span id="mainKpiEmpleados" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><span class="economia-kpi-label">GASTOS MES</span><span id="mainKpiGastos" class="economia-kpi-value">0 €</span></div>
+            </div>
+            <div id="mainDashboardChart" class="economia-dashboard-chart main-dashboard-chart economia-dashboard-chart-unified">
+              <div class="economia-dashboard-chart-title">ESTADÍSTICAS</div>
+              <div class="economia-dashboard-chart-subtitle">Gastos por mes (últimos 12 meses)</div>
+              <div id="mainEconomiaChartContainer" class="economia-chart-container"></div>
+              <div id="mainDashboardStatsLines" class="dashboard-stats-lines dashboard-stats-lines-inside-chart" aria-label="Indicadores del taller">
+                <div id="mainDashboardStatsLinesInner" class="dashboard-stats-lines-inner"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 1: Matrícula (y alta de vehículo si no existe) -->
+      <div id="pasoMatricula" class="paso paso-matricula" style="display:none">
+        <div class="paso-matricula-conjunto">
+          <h2 class="paso-titulo">Introduce la matrícula del vehículo</h2>
+          <div class="matricula-plate-wrap matricula-plate-yankton" aria-label="Matrícula estilo placa GTA V">
+            <div class="matricula-plate-banner">
+              <span class="matricula-plate-banner-left">LSCM</span>
+              <span class="matricula-plate-banner-center">LOS SANTOS</span>
+            </div>
+            <div class="matricula-plate-body">
+              <div class="matricula-plate-input-wrap">
+                <input type="text" id="matricula" list="matriculaList" class="matricula-plate-input" placeholder="HRUA9940" autocomplete="off" maxlength="12">
+                <datalist id="matriculaList"></datalist>
+              </div>
+              <div class="matricula-plate-logo-wrap">
+                <img src="assets/lscm-logo.png" alt="LSCM" class="matricula-plate-logo" onerror="this.style.display='none';this.nextElementSibling?.classList.add('visible');">
+                <span class="matricula-plate-logo-fallback" aria-hidden="true">LSCM</span>
+              </div>
+            </div>
+          </div>
+          <div class="paso-matricula-actions">
+            <button type="button" class="btn btn-back" id="btnVolverPasoInicio" aria-label="Volver al paso anterior">← Volver</button>
+            <button type="button" class="btn btn-register" id="btnContinuarMatricula">Continuar</button>
+          </div>
+        </div>
+        <div id="nuevoVehiculoWrap" class="nuevo-vehiculo-wrap" style="display:none">
+          <p class="nuevo-vehiculo-msg">Vehículo no registrado. Rellena los datos para darlo de alta:</p>
+          <div class="nuevo-vehiculo-form">
+            <div class="field">
+              <label>Modelo (catálogo)</label>
+              <select id="nuevoVehiculoModelo"></select>
+            </div>
+            <div class="field">
+              <label>Nombre IC del vehículo</label>
+              <input type="text" id="nuevoVehiculoNombreIC" list="nombreICList" placeholder="Nombre in-game" autocomplete="off">
+              <datalist id="nombreICList"></datalist>
+            </div>
+            <div class="field">
+              <label>Convenio</label>
+              <select id="nuevoVehiculoConvenio"></select>
+            </div>
+            <div class="field">
+              <label>Placa de servicio (policía/EMS)</label>
+              <input type="text" id="nuevoVehiculoPlacaServicio" placeholder="Opcional">
+            </div>
+            <button type="button" class="btn btn-register" id="btnGuardarNuevoVehiculo">Guardar y continuar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Calculadora (campos según tipo) -->
+      <div id="pasoCalculadora" class="paso paso-calculadora" style="display:none">
+        <div class="paso-calculadora-header">
+          <div class="paso-calculadora-header-left">
+            <button type="button" class="btn btn-home" id="btnVolverMatricula" aria-label="Ir a pantalla principal">HOME</button>
+            <span id="pasoCalculadoraTitulo" class="paso-calc-titulo"></span>
+            <span class="paso-calc-matricula-label">Matrícula: <strong id="pasoCalcMatricula"></strong></span>
+          </div>
+          <div class="paso-calculadora-descuento-wrap" id="wrapDescuentoSuperior" data-permiso="verPresupuesto">
+            <span class="descuento-superior-label">Descuento</span>
+            <span class="descuento-superior-valor" id="descuentoSuperiorTexto">0% · N/A</span>
+            <div class="descuento-superior-editable" id="descuentoSuperiorEditable" style="display:none">
+              <input type="number" id="descuentoPorcentaje" min="0" max="100" value="0" class="input-inline">
+              <select id="negocios"></select>
+            </div>
+          </div>
+        </div>
+        <div class="calculator-grid">
+          <section class="panel left-panel">
+            <div id="wrapTuneoReparacionTitulo" class="tuneo-reparacion-titulo" style="display:none">
+              <h3>Tuneo + Reparación</h3>
+              <p class="tuneo-reparacion-hint">Rellena las opciones de tuneo y las de reparación.</p>
+            </div>
+            <div id="wrapVehicleSection" class="section vehicle-section vehicle-section-destacado">
+              <h3 class="section-destacado-titulo">Vehículo y tipo de tuneo</h3>
+              <p class="section-destacado-hint">Marca el tipo de modificaciones y el número de piezas de cada uno.</p>
+              <div class="field">
+                <label>MODELO</label>
+                <select id="modelo" name="modelo"></select>
+              </div>
+              <div class="field">
+                <label>CATEGORÍA</label>
+                <input type="text" id="categoria" readonly>
+              </div>
+              <div class="field">
+                <label><span id="nombreModelo"></span> &larr; NOMBRE IC</label>
+                <input type="text" id="nombreIC" list="nombreICList" placeholder="Nombre in-game del vehículo" autocomplete="off">
+              </div>
+              <div class="field checkbox-field">
+                <label><input type="checkbox" id="fullTuning"> FULL TUNING</label>
+                <span id="fullTuningPrecio" class="precio-extra">$0</span>
+              </div>
+              <div class="field checkbox-field">
+                <label><input type="checkbox" id="tuneMotor"> SWAP DE MOTOR</label>
+              </div>
+              <div class="tuning-sections">
+                <span class="tuning-sections-label">Piezas (0–30):</span>
+                <div class="tuning-row">
+                  <label>PERFORMANCE</label>
+                  <select id="piezasPerformance" class="input-piezas-select" aria-label="Piezas performance">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
+                  </select>
+                </div>
+                <div class="tuning-row">
+                  <label>CUSTOM</label>
+                  <select id="piezasCustom" class="input-piezas-select" aria-label="Piezas custom">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
+                  </select>
+                </div>
+                <div class="tuning-row">
+                  <label>COSMETIC</label>
+                  <select id="piezasCosmetic" class="input-piezas-select" aria-label="Piezas cosmetic">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div id="wrapRepairSection" class="section repair-section repair-section-destacado">
+              <h3 class="section-destacado-titulo">REPARACIÓN — Indica cantidades</h3>
+              <p class="section-destacado-hint">Selecciona el número de piezas aplicadas en esta reparación. El precio se calcula en función de estas cantidades.</p>
+              <div class="field checkbox-field" style="margin-bottom:0.5rem">
+                <label><input type="checkbox" id="reparacion" checked> Incluir reparación en presupuesto</label>
+              </div>
+              <div class="repair-parts" id="wrapRepairParts">
+                <div class="field">
+                  <label>Partes del chasis <span class="field-hint">(0–10)</span></label>
+                  <select id="partesChasis" class="input-piezas-select input-cantidad" aria-label="Partes del chasis">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Partes esenciales <span class="field-hint">(0–6)</span></label>
+                  <select id="partesEsenciales" class="input-piezas-select input-cantidad" aria-label="Partes esenciales">
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field total-repair">
+                <label>PRECIO TOTAL</label>
+                <span id="precioReparacion" class="precio-total">$0</span>
+              </div>
+            </div>
+            <div class="section mechanic-section">
+              <h3>Mecánico</h3>
+              <div class="field">
+                <label>NOMBRE DEL MECÁNICO</label>
+                <input type="text" id="mecanico" readonly placeholder="—" title="Usuario que registra el servicio">
+              </div>
+              <div class="field field-matricula-plantilla">
+                <label>Matrícula · Modelo</label>
+                <div class="matricula-plate-wrap matricula-plate-yankton matricula-plate-calc" aria-label="Matrícula">
+                  <div class="matricula-plate-banner">
+                    <span class="matricula-plate-banner-left">LSCM</span>
+                    <span class="matricula-plate-banner-center">LOS SANTOS</span>
+                  </div>
+                  <div class="matricula-plate-body matricula-plate-body-readonly">
+                    <span id="matriculaCalcDisplay" class="matricula-plate-display">—</span>
+                    <span id="matriculaCalcModelo" class="matricula-plate-modelo"></span>
+                  </div>
+                </div>
+                <input type="hidden" id="matriculaCalc" readonly>
+              </div>
+              <div class="field" id="wrapPlacaServicio" style="display:none">
+                <label>Placa de servicio (policía/EMS)</label>
+                <input type="text" id="placaServicio" readonly placeholder="Nº placa">
+              </div>
+            </div>
+          </section>
+          <section class="panel center-panel">
+            <div class="section vehicle-image-section">
+              <h3>Vehículo</h3>
+              <div id="vehiculoImagen" class="vehiculo-imagen">
+                <img id="imgVehiculo" src="" alt="Vehículo">
+                <div id="vehiculoImagenPlaceholder" class="vehiculo-imagen-placeholder">
+                  <span>Selecciona un modelo</span>
+                </div>
+              </div>
+            </div>
+            <div class="section budget-section" data-permiso="verPresupuesto">
+              <h3>PRESUPUESTO</h3>
+              <div id="wrapPresupuestoTuneo" class="presupuesto-tuneo-lines">
+                <div class="budget-line"><span>MOTOR</span><span id="presupuestoMotor">$0</span></div>
+                <div class="budget-line"><span>PERFORMANCE</span><span id="presupuestoPerformance">$0</span></div>
+                <div class="budget-line"><span>CUSTOM</span><span id="presupuestoCustom">$0</span></div>
+                <div class="budget-line"><span>COSMETIC</span><span id="presupuestoCosmetic">$0</span></div>
+              </div>
+              <div id="wrapPresupuestoReparacion" class="presupuesto-reparacion-lines" style="display:none">
+                <div class="budget-line"><span>PARTES DEL CHASIS</span><span id="presupuestoChasis">$0</span></div>
+                <div class="budget-line"><span>PARTES ESENCIALES</span><span id="presupuestoEsenciales">$0</span></div>
+                <div class="budget-line budget-line-kit" id="wrapPresupuestoKit" style="display:none"><span>KIT REPARACIÓN</span><span id="presupuestoKit">$0</span></div>
+              </div>
+              <div class="budget-line budget-line-subtotal" id="wrapPresupuestoSubtotal" style="display:none"><span>SUBTOTAL</span><span id="presupuestoSubtotal">$0</span></div>
+              <div class="budget-line budget-line-descuento"><span>DESCUENTO</span><span id="presupuestoDescuento">0% · N/A</span></div>
+              <div class="budget-line total"><span>PRECIO TOTAL</span><span id="precioTotal">$0</span></div>
+            </div>
+          </section>
+          <section class="panel right-panel">
+            <div class="section template-section template-actions-wrap">
+              <button type="button" class="btn btn-copy-register" id="btnCopiarRegistro" title="Copiar el registro al portapapeles">📋 Copiar registro</button>
+            </div>
+            <div id="wrapPlantillaTuneo" class="section template-section">
+              <h3>PLANTILLA TUNEOS</h3>
+              <div id="plantillaTuneos" class="template-box">
+                <p>Matrícula: <span id="tplMatricula">-</span></p>
+                <p>Modelo: <span id="tplModelo">-</span></p>
+                <p>Modificación: <span id="tplModTuneo">-</span></p>
+                <p>Importe: <span id="tplImporteTuneo">$-</span></p>
+                <p>Empleado: <span id="tplEmpleado">-</span></p>
+                <p>Convenio: <span id="tplConvenio">N/A (0%)</span></p>
+              </div>
+              <button type="button" class="btn btn-register" id="btnRegistrarTuneo" data-permiso="registrarTuneo">✔ REGISTRAR TUNEO</button>
+            </div>
+            <div id="wrapPlantillaReparacion" class="section template-section">
+              <h3>PLANTILLA REPARACIONES</h3>
+              <div id="plantillaReparaciones" class="template-box">
+                <p>Matrícula: <span id="tplMatriculaRep">-</span></p>
+                <p>Modelo: <span id="tplModeloRep">-</span></p>
+                <p>Modificación: <span id="tplModRep">Reparación</span></p>
+                <p>Importe: <span id="tplImporteRep">$-</span></p>
+                <p>Empleado: <span id="tplEmpleadoRep">-</span></p>
+                <p>Convenio: <span id="tplConvenioRep">N/A (0%)</span></p>
+              </div>
+              <button type="button" class="btn btn-register" id="btnRegistrarReparacion" data-permiso="registrarReparacion">✔ REGISTRAR REPARACION</button>
+            </div>
+            <div class="field checkbox-field" id="wrapUsarKit" style="display:none" title="Solo para clientes policía/EMS (650€)">
+              <label><input type="checkbox" id="usarKitReparacion"> USAR KIT REPARACIÓN (650€)</label>
+            </div>
+            <button type="button" class="btn btn-reset" id="btnReset">O RESET</button>
+          </section>
+        </div>
+      </div>
+    </main>
+    <aside class="content-loop-wrap" id="contentLoopWrap" style="display:none" aria-label="Panel derecho: video e indicadores">
+      <div class="aside-layout">
+        <div class="content-loop-inner" id="contentLoopInner">
+          <video id="contentLoopVideo" class="content-loop-video" loop muted autoplay playsinline webkit-playsinline preload="auto">
+            <source src="" type="video/mp4">
+          </video>
+          <div id="contentLoopPlayOverlay" class="content-loop-play-overlay" style="display:none" role="button" tabindex="0" title="Clic para reproducir (el navegador puede bloquear la reproducción automática)">
+            <span class="content-loop-play-overlay-icon" aria-hidden="true">▶</span>
+            <span class="content-loop-play-overlay-text">Reproducir</span>
+          </div>
+          <div id="contentLoopFallback" class="content-loop-fallback" style="display:none">
+            <span class="content-loop-fallback-text">Vídeo no disponible. Añade <strong>video.mp4</strong> en la carpeta <strong>input/CONTENT</strong>.</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+    </div>
+    </div><!-- /pantallaPrincipal -->
+
+    <!-- Menú lateral: Fichajes, Organigrama, Gestión, etc. -->
+    <aside class="nav-sidebar" id="navSidebar" aria-label="Menú de navegación">
+      <nav class="nav-sidebar-inner" id="headerNavFull">
+        <button type="button" class="btn btn-nav-ios" id="btnFichajes" title="Fichajes">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+          <span class="btn-nav-ios-label">Fichajes</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnFichaTrabajador" style="display:none" title="Mi ficha">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span class="btn-nav-ios-label">Mi ficha</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnMiHistorial" style="display:none" title="Mi historial">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+          <span class="btn-nav-ios-label">Mi historial</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnSubirVideo" style="display:none" title="Subir video para el taller">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>
+          <span class="btn-nav-ios-label">Subir video</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnNormativas" style="display:none" title="Normativas del taller">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+          <span class="btn-nav-ios-label">Normativas</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios btn-nav-admin" id="btnAdminPanel" style="display:none" title="Gestión">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+          <span class="btn-nav-ios-label">Gestión</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios btn-nav-admin" id="btnRegistroClientes" style="display:none" title="Registro clientes">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span class="btn-nav-ios-label">Clientes</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnResultadosCalculadora" title="Resultados">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></span>
+          <span class="btn-nav-ios-label">Resultados</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios btn-nav-logout" id="btnLogout" title="Cerrar sesión">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+          <span class="btn-nav-ios-label">Salir</span>
+        </button>
+      </nav>
+    </aside>
+    </div><!-- /app-body -->
+
+    <!-- Pantalla RESULTADOS CALCULADORA -->
+    <div id="pantallaResultadosCalculadora" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnResultadosHome" aria-label="Ir a inicio">HOME</button>
+        <h2 class="pantalla-secundaria-titulo">RESULTADOS CALCULADORA</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <div id="listaResultadosCalculadora" class="lista-resultados-calculadora"></div>
+      </div>
+    </div>
+
+    <!-- Pantalla completa Fichajes (cambio de vista, no modal) -->
+    <div id="pantallaFichajes" class="pantalla-fichajes" style="display:none">
+      <div class="pantalla-fichajes-header">
+        <button type="button" class="btn btn-home" id="btnFichajesHome" aria-label="Volver al paso anterior">
+          <svg class="btn-home-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          ← Volver
+        </button>
+        <h2 class="pantalla-fichajes-titulo">Registro de fichajes</h2>
+      </div>
+      <div class="fichajes-tabs">
+        <button type="button" class="fichajes-tab active" data-fichajes-tab="mi-fichaje">Mi fichaje</button>
+        <button type="button" class="fichajes-tab" data-fichajes-tab="todos" id="tabFichajesTodos" style="display:none">Todos los trabajadores</button>
+        <button type="button" class="fichajes-tab" data-fichajes-tab="rendimiento" id="tabRendimiento" style="display:none">Rendimiento equipo</button>
+      </div>
+      <div class="pantalla-fichajes-body scrollbar-on-scroll">
+        <div id="panelMiFichaje" class="fichajes-panel">
+          <section class="fichajes-registro">
+            <h4>Fichar</h4>
+            <p class="fichajes-hint">Marca cuándo empiezas y cuándo terminas tu turno. Al pulsar Entrada o Salida se guarda la fecha y hora actual.</p>
+            <div class="fichaje-buttons">
+              <button type="button" class="btn btn-fichaje-entrada" id="btnFicharEntrada">Entrada</button>
+              <button type="button" class="btn btn-fichaje-salida" id="btnFicharSalida">Salida</button>
+            </div>
+            <div class="fichaje-manual" id="fichajeManualWrap">
+              <label>O registrar manualmente:</label>
+              <div class="field-row">
+                <div class="field">
+                  <label>Entrada</label>
+                  <input type="datetime-local" id="fichajeEntrada">
+                </div>
+                <div class="field">
+                  <label>Salida</label>
+                  <input type="datetime-local" id="fichajeSalida">
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline" id="btnFichajeManual">Registrar fichaje</button>
+            </div>
+            <div class="fichajes-registro-wrap">
+              <div class="fichajes-registro-banner">REGISTRO DE EMPLEADOS</div>
+              <div id="listaFichajesReciente" class="lista-fichajes-reciente"></div>
+            </div>
+          </section>
+          <section class="fichajes-dashboard">
+            <h4>Tu semana y reparaciones</h4>
+            <div class="fichajes-stats">
+              <div class="stat-card stat-horas">
+                <span class="stat-label">Horas esta semana</span>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar" id="barHorasSemana" style="width:0%"></div>
+                  <span class="stat-value" id="textHorasSemana">0h / 5h mín.</span>
+                </div>
+              </div>
+              <div class="stat-card stat-tiempo">
+                <span class="stat-label">Hasta cambio de semana</span>
+                <span class="stat-value" id="textHastaSemana">—</span>
+              </div>
+              <div class="stat-card stat-reparaciones">
+                <span class="stat-label">Reparaciones / Tuneos</span>
+                <div class="stat-counters">
+                  <span>Hoy: <strong id="repHoy">0</strong></span>
+                  <span>Semana: <strong id="repSemana">0</strong></span>
+                  <span>Total: <strong id="repTotal">0</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="ranking-section">
+              <h4>Ranking por reparaciones (esta semana)</h4>
+              <div id="rankingList" class="ranking-list"></div>
+            </div>
+          </section>
+        </div>
+        <div id="panelFichajesTodos" class="fichajes-panel" style="display:none">
+          <h4>Registro de fichajes por trabajador</h4>
+          <div class="field">
+            <label>Trabajador</label>
+            <select id="selectFichajesEmpleado"></select>
+          </div>
+          <div class="fichajes-registro-wrap">
+            <div class="fichajes-registro-banner">REGISTRO DE EMPLEADOS</div>
+            <div id="listaFichajesEmpleado" class="lista-fichajes-reciente"></div>
+          </div>
+          <div class="fichajes-stats" id="statsFichajesEmpleado"></div>
+        </div>
+        <div id="panelRendimiento" class="fichajes-panel" style="display:none">
+          <h4>Rendimiento del equipo — indicadores para decisiones</h4>
+          <p class="fichajes-hint">Horas, servicios y facturación por trabajador. Alertas: pocas horas, pocas reparaciones, posible error en cobro.</p>
+          <div id="tablaRendimiento" class="tabla-rendimiento"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla Ficha de trabajador (no admin) -->
+    <div id="pantallaFichaTrabajador" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnFichaTrabajadorHome" aria-label="Volver">← Volver</button>
+        <h2 class="pantalla-secundaria-titulo">Mi ficha de trabajador</h2>
+      </div>
+      <div class="pantalla-secundaria-body ficha-trabajador-body scrollbar-on-scroll">
+        <div class="ficha-trabajador-grid">
+          <div class="ficha-trabajador-foto-wrap">
+            <div class="ficha-foto-preview" id="fichaFotoPreview">
+              <img id="fichaFotoImg" src="" alt="Foto de perfil" style="display:none">
+              <span id="fichaFotoPlaceholder">Sin foto</span>
+            </div>
+            <input type="file" id="fichaFotoInput" accept="image/*" class="hidden">
+            <button type="button" class="btn btn-outline btn-sm" id="btnFichaSubirFoto">Añadir / cambiar foto</button>
+          </div>
+          <div class="ficha-trabajador-datos">
+            <div class="ficha-row"><span class="ficha-label">Nombre</span><span id="fichaNombre">—</span></div>
+            <div class="ficha-row"><span class="ficha-label">Fecha de alta</span><span id="fichaFechaAlta">—</span></div>
+            <div class="ficha-row"><span class="ficha-label">Responsable</span><span id="fichaResponsable">—</span></div>
+            <div class="ficha-row"><span class="ficha-label">Puesto</span><span id="fichaPuesto">—</span></div>
+            <div class="ficha-row"><span class="ficha-label">Salario (puesto)</span><span id="fichaSalario">—</span></div>
+          </div>
+        </div>
+        <section class="ficha-seccion">
+          <h3>Registro horario</h3>
+          <div class="ficha-horario-grid">
+            <div class="ficha-horario-item"><span class="ficha-horario-label">Hoy</span><span id="fichaHorasHoy">0 h</span></div>
+            <div class="ficha-horario-item"><span class="ficha-horario-label">Esta semana</span><span id="fichaHorasSemana">0 h</span></div>
+            <div class="ficha-horario-item"><span class="ficha-horario-label">Este mes</span><span id="fichaHorasMes">0 h</span></div>
+            <div class="ficha-horario-item"><span class="ficha-horario-label">Total</span><span id="fichaHorasTotal">0 h</span></div>
+          </div>
+        </section>
+        <section class="ficha-seccion">
+          <h3>Total cobrado desde que trabajas en el taller</h3>
+          <p class="ficha-total-cobrado" id="fichaTotalCobrado">$0</p>
+        </section>
+        <section class="ficha-seccion ficha-seccion-material">
+          <h3>Material que me han entregado</h3>
+          <p class="ficha-hint">Registro de material entregado por tu responsable. Solo consulta.</p>
+          <div id="fichaTrabajadorMaterialEntregado" class="ficha-material-entregado-lista"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Modal Mi historial de reparaciones (con filtros y búsqueda) -->
+    <div id="modalMiHistorial" class="modal modal-mi-historial">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Mi historial de reparaciones y tuneos</h3>
+          <button type="button" class="modal-close" id="modalMiHistorialClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="mi-historial-filtros">
+            <input type="text" id="miHistorialBuscar" placeholder="Buscar por matrícula, modelo, convenio..." class="input-buscar">
+            <select id="miHistorialTipo">
+              <option value="">Todos</option>
+              <option value="REPARACIÓN">Solo reparaciones</option>
+              <option value="TUNEO">Solo tuneos</option>
+            </select>
+            <input type="date" id="miHistorialDesde" title="Desde">
+            <input type="date" id="miHistorialHasta" title="Hasta">
+          </div>
+          <div id="listaMiHistorial" class="lista-mi-historial"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla completa Gestión (Usuarios, Convenios, Organigrama) -->
+    <div id="pantallaGestion" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnGestionHome" aria-label="Volver al paso anterior">
+          <svg class="btn-home-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          ← Volver
+        </button>
+        <h2 class="pantalla-secundaria-titulo">Gestión</h2>
+      </div>
+      <div id="gestionMenu" class="gestion-menu">
+        <button type="button" class="gestion-card gestion-card-usuarios gestion-card-shape-circle" data-tab="usuarios" title="Empleados">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="gestion-card-label">Empleados</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-convenios gestion-card-shape-doc" data-tab="convenios" title="Convenios">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </span>
+          <span class="gestion-card-label">Convenios</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-economia gestion-card-shape-circle" data-tab="economia" title="Economía">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </span>
+          <span class="gestion-card-label">Economía</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-solicitudes gestion-card-shape-frame" data-tab="solicitudes-graficas" title="Solicitudes">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </span>
+          <span class="gestion-card-label">Solicitudes</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-organigrama gestion-card-shape-grid" data-tab="organigrama" id="gestionCardOrganigrama" title="Organigrama">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="16" width="7" height="5" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+          </span>
+          <span class="gestion-card-label">Organigrama</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-reset gestion-card-shape-circle" data-tab="reset" id="gestionCardReset" title="Reset / Limpiar datos (solo admin)">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </span>
+          <span class="gestion-card-label">Reset datos</span>
+        </button>
+      </div>
+      <div id="gestionContenido" class="gestion-contenido" style="display:none">
+        <div class="gestion-contenido-bar">
+          <button type="button" class="btn btn-gestion-volver" id="btnGestionVolverMenu" aria-label="Volver al menú">← Menú</button>
+          <h3 id="gestionContenidoTitulo" class="gestion-contenido-titulo">Empleados</h3>
+        </div>
+        <div class="pantalla-secundaria-body scrollbar-on-scroll gestion-contenido-body">
+        <div id="panelUsuarios" class="admin-panel">
+          <div id="aprobacionesPendientesWrap" class="aprobaciones-pendientes-wrap" style="display:none">
+            <h4>Aprobaciones pendientes (cambios solicitados por responsables)</h4>
+            <div id="aprobacionesPendientesLista"></div>
+          </div>
+          <button type="button" class="btn btn-register" id="btnNuevoUsuario">+ Nuevo usuario</button>
+          <div id="listaUsuarios" class="lista-usuarios"></div>
+        </div>
+        <div id="panelConvenios" class="admin-panel" style="display:none">
+          <button type="button" class="btn btn-register" id="btnNuevoConvenio">+ Nuevo convenio</button>
+          <div class="convenios-table-wrap">
+            <table class="convenios-table">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Convenio (%)</th>
+                  <th>Privado</th>
+                  <th>Fecha acordado</th>
+                  <th>Acordado por (taller)</th>
+                  <th>Acordado por (empresa)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="listaConvenios"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="panelEconomia" class="admin-panel economia-panel" style="display:none">
+          <p class="economia-permisos-nota">Control de existencias: Varios (comida, bebida), Carrocería, Componentes esenciales, Tuning, Maquinaria. Solo administradores o empleados con permiso <strong>Compras y existencias</strong> pueden gestionar compras e inventario (el permiso se otorga en la ficha del empleado).</p>
+          <div class="economia-tabs">
+            <button type="button" class="economia-tab active" data-economia-tab="resumen">Resumen</button>
+            <button type="button" class="economia-tab" data-economia-tab="compras">Compras pendientes</button>
+            <button type="button" class="economia-tab" data-economia-tab="inventario">Inventario</button>
+            <button type="button" class="economia-tab" data-economia-tab="limites">Límites de stock</button>
+            <button type="button" class="economia-tab" data-economia-tab="gastos">Gastos</button>
+            <button type="button" class="economia-tab" data-economia-tab="previsiones">Previsiones</button>
+            <button type="button" class="economia-tab" data-economia-tab="historial">Historial de pedidos</button>
+            <button type="button" class="economia-tab" data-economia-tab="entregas">Entregas a trabajadores</button>
+            <button type="button" class="economia-tab" data-economia-tab="almacen">Almacén materiales</button>
+            <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="piezas">Precios piezas</button>
+            <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="financiera">Gestión financiera</button>
+          </div>
+          <div id="economiaResumen" class="economia-subpanel">
+            <div id="economiaDashboardBar" class="economia-dashboard-bar">
+              <div class="economia-kpi" id="economiaKpiTotalMateriales" title="Ver detalle por tipo de material"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span><span class="economia-kpi-label">TOTAL MATERIALES</span><span id="economiaKpiMaterialesValor" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span><span class="economia-kpi-label">COMPRAS PENDIENTES</span><span id="economiaKpiCompras" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span class="economia-kpi-label">EMPLEADOS</span><span id="economiaKpiEmpleados" class="economia-kpi-value">0</span></div>
+              <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><span class="economia-kpi-label">GASTOS MES</span><span id="economiaKpiGastos" class="economia-kpi-value">0 €</span></div>
+            </div>
+            <div id="economiaDashboardChart" class="economia-dashboard-chart">
+              <div class="economia-dashboard-chart-title">ESTADÍSTICAS</div>
+              <div class="economia-dashboard-chart-subtitle">Gastos por mes (últimos 12 meses)</div>
+              <div id="economiaChartContainer" class="economia-chart-container"></div>
+            </div>
+            <div id="economiaResumenCards" class="economia-resumen-cards"></div>
+            <div id="economiaResumenAlertas" class="economia-resumen-alertas"></div>
+          </div>
+          <div id="economiaCompras" class="economia-subpanel" style="display:none">
+            <div id="economiaNecesidadesWrap" class="economia-necesidades-wrap">
+              <h4 class="economia-necesidades-titulo">Necesidades por stock (por debajo del mínimo)</h4>
+              <p class="economia-necesidades-desc">Productos con stock actual por debajo del mínimo definido en Límites de stock. Son los que cuentan en Compras pendientes.</p>
+              <ul id="listaNecesidadesReposicion" class="economia-necesidades-list"></ul>
+            </div>
+            <div class="economia-panel-toolbar">
+              <button type="button" class="btn btn-register" id="btnNuevaCompra">+ Nueva compra</button>
+              <div class="economia-filtro-wrap">
+                <input type="text" id="filtroEconomiaCompras" class="input-buscar-registro" placeholder="Buscar por concepto, categoría, estado…" autocomplete="off">
+              </div>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Cant.</th><th>Importe est.</th><th>Estado</th><th></th></tr></thead><tbody id="listaComprasPendientes"></tbody></table></div>
+          </div>
+          <div id="economiaHistorial" class="economia-subpanel" style="display:none">
+            <h3 class="economia-historial-titulo">Historial de pedidos</h3>
+            <p class="economia-historial-desc">Consulta todos los pedidos de compra. Entra en uno con <strong>Ver</strong> y usa <strong>Repetir compra</strong> para registrar un pedido nuevo exactamente igual.</p>
+            <div class="economia-panel-toolbar economia-historial-filtros">
+              <div class="economia-filtro-wrap">
+                <label for="filtroHistorialTipo" class="economia-filtro-label">Estado:</label>
+                <select id="filtroHistorialTipo" class="input-buscar-registro economia-select-tipo">
+                  <option value="">Todos</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="encargado">Encargado</option>
+                  <option value="recibido">Recibido</option>
+                </select>
+              </div>
+              <div class="economia-filtro-wrap">
+                <label for="filtroHistorialCategoria" class="economia-filtro-label">Tipo de pedido (categoría):</label>
+                <select id="filtroHistorialCategoria" class="input-buscar-registro economia-select-tipo">
+                  <option value="">Todos</option>
+                  <option value="VARIOS">Varios (comida, bebida)</option>
+                  <option value="CARROCERÍA">Carrocería</option>
+                  <option value="COMPONENTES ESENCIALES">Componentes esenciales</option>
+                  <option value="TUNING">Tuning</option>
+                  <option value="MAQUINARIA">Maquinaria</option>
+                </select>
+              </div>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Cant.</th><th>Importe est.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="listaHistorialPedidos"></tbody></table></div>
+          </div>
+          <div id="economiaEntregas" class="economia-subpanel" style="display:none">
+            <p class="economia-historial-desc">Registro de material entregado a cada trabajador: qué se entregó, a quién, fecha, cantidades y quién lo entregó.</p>
+            <div class="economia-panel-toolbar">
+              <button type="button" class="btn btn-register" id="btnNuevaEntregaMaterial">+ Registrar entrega</button>
+              <div class="economia-filtro-wrap">
+                <input type="text" id="filtroEntregasMaterial" class="input-buscar-registro" placeholder="Buscar por trabajador, material, quien entregó…" autocomplete="off">
+              </div>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Trabajador</th><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Entregado por</th><th></th></tr></thead><tbody id="listaEntregasMaterial"></tbody></table></div>
+          </div>
+          <div id="economiaAlmacen" class="economia-subpanel" style="display:none">
+            <h3 class="economia-almacen-titulo">Materiales en almacén</h3>
+            <p class="economia-historial-desc">Materiales recuperados en reparaciones (ACERO, ALUMINIO, COBRE, LATÓN, CHATARRA ELECTRÓNICA, GOMA, PLÁSTICO, ACEITE SINTÉTICO, FIBRA DE CARBONO, ÁCIDO). Los datos se entran manualmente. Haz clic en <strong>TOTAL MATERIALES</strong> del resumen o del inicio para ver el detalle por tipo.</p>
+            <div class="economia-panel-toolbar">
+              <button type="button" class="btn btn-register" id="btnRegistrarMaterialesRecuperados">+ Registrar materiales recuperados</button>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Material</th><th>Unidad</th><th>Cantidad en almacén</th></tr></thead><tbody id="listaAlmacenMateriales"></tbody></table></div>
+            <h4 class="economia-almacen-movimientos-titulo">Registro de materiales recuperados</h4>
+            <p class="economia-almacen-registro-desc">Cada línea es una entrada manual: fecha, materiales añadidos y quien registró.</p>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Materiales añadidos</th><th>Registrado por</th></tr></thead><tbody id="listaAlmacenMovimientos"></tbody></table></div>
+          </div>
+          <div id="economiaPiezas" class="economia-subpanel" style="display:none">
+            <h3 class="economia-piezas-titulo">Coste, precio de venta y margen por artículo</h3>
+            <p class="economia-historial-desc">Control del coste, precio de venta y margen por artículo. Chasis: 30 €/ud. Esenciales: 65 €/ud. Swap motor: 25% valor veh. Performance y cosmetic: 5% valor veh. (por pieza). Full tuning: 40% valor veh. Solo administradores.</p>
+            <div class="economia-table-wrap">
+              <table class="economia-table economia-table-piezas">
+                <thead><tr><th>Artículo</th><th>Coste (€)</th><th>Precio venta</th><th>Margen (€)</th><th>Margen %</th><th></th></tr></thead>
+                <tbody id="listaPreciosPiezas"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="economiaInventario" class="economia-subpanel" style="display:none">
+            <div class="economia-panel-toolbar">
+              <button type="button" class="btn btn-register" id="btnNuevoInventario">+ Nuevo pedido</button>
+              <div class="economia-filtro-wrap">
+                <input type="text" id="filtroEconomiaInventario" class="input-buscar-registro" placeholder="Buscar por solicitante, concepto…" autocomplete="off">
+              </div>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Solicitante</th><th>Concepto</th><th>Cant. a pedir</th><th>Cantidad</th><th>Mín.</th><th>Máx.</th><th>Últ. actualización</th><th></th></tr></thead><tbody id="listaInventario"></tbody></table></div>
+          </div>
+          <div id="economiaLimites" class="economia-subpanel" style="display:none">
+            <p class="economia-limites-desc">Define el stock mínimo y máximo para cada tipo de producto. Cuando el stock actual esté por debajo del mínimo, aparecerá en Compras pendientes.</p>
+            <div class="economia-table-wrap"><table class="economia-table economia-table-limites"><thead><tr><th>Tipo de producto</th><th>Stock actual</th><th>Mínimo</th><th>Máximo</th><th></th></tr></thead><tbody id="listaLimitesStock"></tbody></table></div>
+          </div>
+          <div id="economiaGastos" class="economia-subpanel" style="display:none">
+            <div class="economia-panel-toolbar">
+              <button type="button" class="btn btn-register" id="btnNuevoGasto">+ Registrar gasto</button>
+              <div class="economia-filtro-wrap">
+                <input type="text" id="filtroEconomiaGastos" class="input-buscar-registro" placeholder="Buscar por concepto, categoría, registrado por…" autocomplete="off">
+              </div>
+            </div>
+            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Importe</th><th>Registrado por</th><th></th></tr></thead><tbody id="listaGastos"></tbody></table></div>
+          </div>
+          <div id="economiaPrevisiones" class="economia-subpanel" style="display:none">
+            <div class="economia-previsiones-header">
+              <label>Mes:</label>
+              <input type="month" id="economiaPrevisionMes" class="economia-input-mes">
+            </div>
+            <div id="economiaPrevisionesContenido" class="economia-previsiones-contenido"></div>
+          </div>
+          <div id="economiaFinanciera" class="economia-subpanel" style="display:none">
+            <p class="economia-permisos-nota">Solo visible para administradores. Resultado del negocio y reparto de beneficios.</p>
+            <section class="economia-financiera-section">
+              <h3 class="economia-financiera-titulo">Resultado del negocio (EBITA taller)</h3>
+              <p class="economia-financiera-formula">Ingresos − Costes − Gastos = EBITA</p>
+              <div id="economiaFinancieraResumen" class="economia-financiera-resumen"></div>
+            </section>
+            <section class="economia-financiera-section">
+              <h3 class="economia-financiera-titulo">Reparto de beneficios</h3>
+              <p class="economia-financiera-desc">Indica cómo se reparten los beneficios del taller (criterios, porcentajes, destinatarios, etc.). Solo los administradores pueden ver y editar este apartado.</p>
+              <textarea id="economiaRepartoBeneficios" class="economia-reparto-textarea" rows="8" placeholder="Ej.: 60% reinversión taller, 40% reparto entre socios según participación…"></textarea>
+              <button type="button" class="btn btn-register" id="btnGuardarRepartoBeneficios">Guardar reparto de beneficios</button>
+            </section>
+          </div>
+        </div>
+        <div id="panelSolicitudesGraficas" class="admin-panel solicitudes-graficas-panel" style="display:none">
+          <h4 class="solicitudes-graficas-titulo">Bandeja de entrada — Solicitudes de vídeo</h4>
+          <p class="solicitudes-graficas-desc">Los empleados envían vídeos aquí. Revisa y aprueba los que quieras que aparezcan en la pantalla del taller.</p>
+          <div id="solicitudesGraficasLista" class="solicitudes-graficas-lista"></div>
+          <div id="solicitudesGraficasVacio" class="solicitudes-graficas-vacio" style="display:none">No hay solicitudes pendientes.</div>
+        </div>
+        <div id="panelReset" class="admin-panel panel-reset-datos" style="display:none">
+          <p class="panel-reset-desc">Elimina datos de prueba por sección. Solo administradores. Los cambios son inmediatos.</p>
+          <div class="panel-reset-buttons">
+            <button type="button" class="btn btn-outline btn-reset-section" id="btnResetFichajes" data-reset="fichajes">Reset Fichajes</button>
+            <button type="button" class="btn btn-outline btn-reset-section" id="btnResetReparaciones" data-reset="reparaciones">Reset Reparaciones / Servicios</button>
+            <button type="button" class="btn btn-outline btn-reset-section" id="btnResetEconomia" data-reset="economia">Reset Economía</button>
+            <button type="button" class="btn btn-outline btn-reset-section" id="btnResetClientes" data-reset="clientes">Reset Clientes (BBDD + pendientes + fotos)</button>
+            <button type="button" class="btn btn-outline btn-reset-section" id="btnResetMedia" data-reset="media">Reset Media (vídeos pendientes y aprobados)</button>
+            <button type="button" class="btn btn-danger btn-reset-section" id="btnResetTodo" data-reset="todo">Reset todo (excepto usuarios y convenios)</button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla completa Organigrama -->
+    <div id="pantallaOrganigrama" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnOrganigramaHome" aria-label="Volver al paso anterior">
+          <svg class="btn-home-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          ← Volver
+        </button>
+        <h2 class="pantalla-secundaria-titulo">Organigrama</h2>
+        <div class="pantalla-secundaria-actions organigrama-header-actions">
+          <button type="button" class="btn btn-icon-org-toggle" id="btnOrganigramaToggleVerEditar" title="Ver / Editar" aria-label="Alternar ver o editar organigrama" style="display:none">
+            <svg class="org-toggle-icon org-icon-view" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="org-toggle-icon org-icon-edit" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span class="org-toggle-label" id="organigramaToggleLabel">Ver</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnAddNivelOrganigrama" style="display:none">+ Añadir nivel raíz</button>
+        </div>
+      </div>
+      <div class="org-toolbar-seleccion" id="orgToolbarSeleccion" style="display:none">
+        <span class="org-toolbar-label">Nodo: <strong id="orgToolbarNombre"></strong></span>
+        <button type="button" class="btn btn-sm btn-org-toolbar" id="orgToolbarEditar" title="Editar">Editar</button>
+        <button type="button" class="btn btn-sm btn-org-toolbar" id="orgToolbarAddChild" title="Añadir subordinado">+ Subordinado</button>
+        <button type="button" class="btn btn-sm btn-org-toolbar btn-org-del" id="orgToolbarEliminar" title="Eliminar">Eliminar</button>
+      </div>
+      <div class="pantalla-secundaria-body org-modal-body scrollbar-on-scroll">
+        <p class="org-modal-desc">Estructura del taller: dueño, socios, responsables y equipo.</p>
+        <div id="organigramaContainer" class="organigrama-container"></div>
+      </div>
+    </div>
+
+    <!-- Pantalla completa Registro de clientes (BBDD + pendientes de aprobación) -->
+    <div id="pantallaRegistroClientes" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnRegistroClientesHome" aria-label="Volver al paso anterior">
+          <svg class="btn-home-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          ← Volver
+        </button>
+        <h2 class="pantalla-secundaria-titulo">Registro de clientes</h2>
+      </div>
+      <div class="registro-clientes-tabs">
+        <button type="button" class="registro-clientes-tab active" data-tab="mificha">Mi ficha</button>
+        <button type="button" class="registro-clientes-tab" data-tab="fichas">Fichas de clientes</button>
+        <button type="button" class="registro-clientes-tab" data-tab="bbdd">Tabla BBDD</button>
+        <button type="button" class="registro-clientes-tab" data-tab="vetados">Vetados</button>
+        <button type="button" class="registro-clientes-tab" data-tab="pendientes">Pendientes de aprobación</button>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <div id="panelRegistroClientesMificha" class="registro-clientes-panel">
+          <h3 class="mi-ficha-titulo">Mis vehículos</h3>
+          <p class="registro-clientes-hint">Da de alta tus propios vehículos (marca, modelo, matrícula y fotos). Puedes ver la ficha y añadir más fotos desde cada vehículo.</p>
+          <div class="mi-ficha-toolbar">
+            <button type="button" class="btn btn-register" id="btnAnadirMiVehiculo">+ Añadir mi vehículo</button>
+          </div>
+          <div id="listaMiFichaVehiculos" class="fichas-clientes-grid mi-ficha-grid"></div>
+        </div>
+        <div id="panelRegistroClientesFichas" class="registro-clientes-panel" style="display:none">
+          <p class="registro-clientes-hint">Fichas de todos los clientes. Haz clic en un cliente para ver su ficha: datos, vehículos, historial de reparaciones y fotos.</p>
+          <div class="registro-clientes-filtro">
+            <label for="filtroFichasClientes" class="sr-only">Buscar en fichas</label>
+            <input type="text" id="filtroFichasClientes" class="input-buscar-registro" placeholder="Buscar por nombre, matrícula, teléfono, ID, nº socio LSCM…" autocomplete="off">
+          </div>
+          <div id="listaFichasClientes" class="fichas-clientes-grid"></div>
+        </div>
+        <div id="panelRegistroClientesBBDD" class="registro-clientes-panel" style="display:none">
+          <p class="registro-clientes-hint">Clientes y matrículas registrados. Edita los valores y se actualizan al guardar. Las columnas de fechas, interacciones y total se rellenan al registrar servicios.</p>
+          <div class="registro-clientes-filtro">
+            <label for="filtroTablaBBDD" class="sr-only">Buscar en tabla BBDD</label>
+            <input type="text" id="filtroTablaBBDD" class="input-buscar-registro" placeholder="Buscar por matrícula, nombre, teléfono, ID, convenio…" autocomplete="off">
+          </div>
+          <div class="clientes-bbdd-table-wrap">
+            <table class="convenios-table clientes-bbdd-table">
+              <thead>
+                <tr>
+                  <th>ID cliente</th>
+                  <th>Matrícula</th>
+                  <th>Nombre quien registró</th>
+                  <th>Teléfono cliente</th>
+                  <th>Nombre propietario</th>
+                  <th>Nº socio LSCM</th>
+                  <th>Placa policial</th>
+                  <th>Código vehículo</th>
+                  <th>Nombre vehículo</th>
+                  <th>Categoría</th>
+                  <th>Convenio</th>
+                  <th>Estado</th>
+                  <th>1ª interacción</th>
+                  <th>Últ. actualización</th>
+                  <th>Interacciones</th>
+                  <th>Total invertido</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="listaClientesBBDD"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="panelRegistroClientesVetados" class="registro-clientes-panel" style="display:none">
+          <p class="registro-clientes-hint">Clientes vetados y morosos. Se marcan en la ficha del cliente (Editar o ver Ficha).</p>
+          <div class="vetados-secciones">
+            <section class="vetados-seccion">
+              <h4 class="vetados-titulo">Vetados</h4>
+              <ul id="listaVetados" class="lista-vetados"></ul>
+            </section>
+            <section class="vetados-seccion">
+              <h4 class="vetados-titulo">Morosos</h4>
+              <ul id="listaMorosos" class="lista-vetados"></ul>
+            </section>
+          </div>
+        </div>
+        <div id="panelRegistroClientesPendientes" class="registro-clientes-panel" style="display:none">
+          <p class="registro-clientes-hint">Altas solicitadas por mecánicos. Revisa, edita si hay errores y aprueba o rechaza.</p>
+          <div class="registro-clientes-filtro">
+            <label for="filtroPendientes" class="sr-only">Buscar en pendientes</label>
+            <input type="text" id="filtroPendientes" class="input-buscar-registro" placeholder="Buscar por matrícula, propietario, teléfono…" autocomplete="off">
+          </div>
+          <div id="listaPendientesRegistro" class="lista-pendientes-registro"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar cliente (BBDD) -->
+    <div id="modalEditarCliente" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Editar cliente</h3>
+          <button type="button" class="modal-close" id="modalEditarClienteClose">&times;</button>
+        </div>
+        <form id="formEditarCliente" class="modal-body">
+          <input type="hidden" id="editarClienteMatriculaOriginal">
+          <div class="field field-admin-only"><label>ID cliente</label><input type="text" id="editarClienteIdCliente" readonly class="readonly-field"></div>
+          <div class="field"><label>Matrícula</label><input type="text" id="editarClienteMatricula" required></div>
+          <div class="field field-admin-only"><label>Nombre quien registró</label><input type="text" id="editarClienteNombreRegistrador"></div>
+          <div class="field"><label>Teléfono cliente</label><input type="tel" id="editarClienteTelefono" placeholder="Ej: 612 345 678"></div>
+          <div class="field"><label>Nombre propietario del vehículo</label><input type="text" id="editarClienteNombrePropietario" placeholder="Nombre del dueño del coche"></div>
+          <div class="field"><label>Nº socio LSCM</label><input type="text" id="editarClienteNumeroSocioLSCM" placeholder="Número de socio Los Santos Car Meet"></div>
+          <div class="field field-admin-only"><label>Placa policial</label><input type="text" id="editarClientePlaca"></div>
+          <div class="field"><label>Marca</label><input type="text" id="editarClienteMarca" placeholder="Marca del vehículo"></div>
+          <div class="field"><label>Código vehículo</label><input type="text" id="editarClienteCodigo"></div>
+          <div class="field"><label>Nombre vehículo / Modelo</label><input type="text" id="editarClienteNombre"></div>
+          <div class="field field-admin-only"><label>Categoría</label><input type="text" id="editarClienteCategoria"></div>
+          <div class="field field-admin-only"><label>Convenio</label><input type="text" id="editarClienteConvenio"></div>
+          <div class="field field-admin-only"><label>1ª interacción</label><input type="datetime-local" id="editarClienteFechaPrimera" readonly class="readonly-field"></div>
+          <div class="field field-admin-only"><label>Últ. actualización</label><input type="datetime-local" id="editarClienteFechaUltima" readonly class="readonly-field"></div>
+          <div class="field field-admin-only"><label>Interacciones</label><input type="number" id="editarClienteInteracciones" min="0"></div>
+          <div class="field field-admin-only"><label>Total invertido</label><input type="number" id="editarClienteTotal" min="0" step="0.01"></div>
+          <div class="field"><label>Observaciones</label><textarea id="editarClienteObservaciones" rows="3" placeholder="Comentarios o notas sobre el cliente"></textarea></div>
+          <div class="field field-checkboxes-inline">
+            <label><input type="checkbox" id="editarClienteMoroso"> Moroso</label>
+            <label><input type="checkbox" id="editarClienteVetado"> Vetado</label>
+            <label><input type="checkbox" id="editarClientePrepago"> Solicitar prepago</label>
+          </div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Añadir mi vehículo (empleados: marca, modelo, matrícula, fotos) -->
+    <div id="modalAnadirMiVehiculo" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Añadir mi vehículo</h3>
+          <button type="button" class="modal-close" id="modalAnadirMiVehiculoClose">&times;</button>
+        </div>
+        <form id="formAnadirMiVehiculo" class="modal-body">
+          <div class="field"><label>Matrícula</label><input type="text" id="miVehiculoMatricula" required placeholder="Ej: ABC1234"></div>
+          <div class="field"><label>Marca</label><input type="text" id="miVehiculoMarca" placeholder="Marca del vehículo"></div>
+          <div class="field"><label>Modelo / Nombre vehículo</label><input type="text" id="miVehiculoModelo" required placeholder="Nombre del modelo"></div>
+          <div class="field"><label>Código vehículo</label><input type="text" id="miVehiculoCodigo" placeholder="Código interno (opcional)"></div>
+          <div class="field"><label>Fotos</label><input type="file" id="miVehiculoFotos" accept="image/*" multiple placeholder="Seleccionar imágenes"></div>
+          <button type="submit" class="btn btn-register">Guardar vehículo</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Ficha de cliente (datos, vehículos, reparaciones, fotos) -->
+    <div id="modalFichaCliente" class="modal modal-ficha-cliente">
+      <div class="modal-content modal-content-ficha">
+        <div class="modal-header">
+          <h3>Ficha de cliente</h3>
+          <button type="button" class="modal-close" id="modalFichaClienteClose">&times;</button>
+        </div>
+        <div class="modal-body modal-body-ficha">
+          <div class="ficha-cliente-header" id="fichaClienteHeader"></div>
+          <div class="ficha-cliente-extra" id="fichaClienteExtra"></div>
+          <div class="ficha-cliente-vehiculos" id="fichaClienteVehiculos"></div>
+          <div class="ficha-cliente-actions">
+            <button type="button" class="btn btn-register btn-sm" id="fichaClienteBtnEditar" title="Editar todos los campos del cliente">Editar</button>
+            <button type="button" class="btn btn-outline btn-sm" id="fichaClienteBtnAddVehiculo" title="Añadir vehículo al cliente">+ Añadir vehículo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /appContent -->
+
+    <!-- Modal Registro de Servicios -->
+    <div id="modalRegistro" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>REGISTRO DE SERVICIOS</h3>
+          <button type="button" class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="listaServicios"></div>
+          <button type="button" class="btn btn-clear" id="btnLimpiarRegistro" data-permiso="limpiarRegistro">Limpiar registro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar/Crear convenio -->
+    <div id="modalConvenio" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalConvenioTitulo">Nuevo convenio</h3>
+          <button type="button" class="modal-close" id="modalConvenioClose">&times;</button>
+        </div>
+        <form id="formConvenio" class="modal-body">
+          <input type="hidden" id="convenioId">
+          <div class="field">
+            <label>Empresa</label>
+            <input type="text" id="convenioNombre" required placeholder="Nombre de la empresa">
+          </div>
+          <div class="field">
+            <label>Convenio (%)</label>
+            <input type="number" id="convenioDescuento" min="0" max="100" value="0" required>
+          </div>
+          <div class="field">
+            <label>Fecha acordado</label>
+            <input type="date" id="convenioFechaAcuerdo">
+          </div>
+          <div class="field">
+            <label>Acordado por (taller / Salt Lab)</label>
+            <input type="text" id="convenioAcordadoTaller" placeholder="Nombre del responsable del taller">
+          </div>
+          <div class="field">
+            <label>Acordado por (empresa)</label>
+            <input type="text" id="convenioAcordadoEmpresa" placeholder="Nombre del responsable de la empresa">
+          </div>
+          <div class="field checkbox-field">
+            <label><input type="checkbox" id="convenioPrivado"> Privado (solo lo ven máximos responsables)</label>
+          </div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Editar/Crear usuario -->
+    <div id="modalUsuario" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalUsuarioTitulo">Nuevo usuario</h3>
+          <button type="button" class="modal-close" id="modalUsuarioClose">&times;</button>
+        </div>
+        <form id="formUsuario" class="modal-body">
+          <input type="hidden" id="usuarioId">
+          <div class="field">
+            <label>Usuario (login)</label>
+            <input type="text" id="usuarioUsername" required>
+          </div>
+          <div class="field">
+            <label>Nombre completo</label>
+            <input type="text" id="usuarioNombre" placeholder="Ej: Juan García">
+          </div>
+          <div class="field field-password-wrap" id="fieldPasswordActual" style="display:none">
+            <label>Contraseña actual</label>
+            <div class="input-password-group">
+              <input type="text" id="usuarioPasswordActual" readonly value="••••••••" placeholder="Almacenada de forma segura. Escribe la nueva abajo para cambiarla." autocomplete="off">
+            </div>
+          </div>
+          <div class="field field-password-wrap" id="fieldPassword">
+            <label>Contraseña</label>
+            <span class="field-hint field-password-admin-hint" id="hintPasswordAdmin" style="display:none">Visible para administrador. Mínimo 4 caracteres.</span>
+            <div class="input-password-group">
+              <input type="text" id="usuarioPassword" placeholder="Vacío = no cambiar (o 1234 en nuevo usuario)" autocomplete="off">
+              <button type="button" class="btn-password-toggle" aria-label="Ocultar contraseña" data-password-target="usuarioPassword" title="Ocultar contraseña" style="display:none">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Rol</label>
+            <select id="usuarioRol">
+              <option value="peon">PEÓN</option>
+              <option value="enPracticas">EN PRÁCTICAS</option>
+              <option value="mecanico">Mecánico</option>
+              <option value="responsableMecanicos">RESPONSABLE MECÁNICOS</option>
+              <option value="admin">ADMIN</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fecha de alta</label>
+            <input type="date" id="usuarioFechaAlta">
+          </div>
+          <div class="field">
+            <label>Responsable (usuario)</label>
+            <input type="text" id="usuarioResponsable" placeholder="Usuario del responsable">
+          </div>
+          <div class="field">
+            <label>Puesto</label>
+            <input type="text" id="usuarioPuesto" placeholder="Ej: Mecánico senior">
+          </div>
+          <div class="field">
+            <label>Salario (€)</label>
+            <input type="number" id="usuarioSalario" min="0" step="0.01" placeholder="Opcional">
+          </div>
+          <div class="field" id="fieldEquipo" style="display:none">
+            <label>Equipo (IDs de usuarios a su cargo, separados por coma)</label>
+            <input type="text" id="usuarioEquipo" placeholder="u-123..., u-456...">
+          </div>
+          <div class="permisos-section">
+            <label>Permisos</label>
+            <div id="permisosCheckboxes"></div>
+          </div>
+          <div class="field checkbox-field" id="fieldActivo">
+            <label><input type="checkbox" id="usuarioActivo" checked> Usuario activo</label>
+          </div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+        <div id="usuarioSeccionMaterialEntregado" class="usuario-material-entregado" style="display:none">
+          <h4 class="usuario-material-entregado-titulo">Material entregado a este empleado</h4>
+          <p class="usuario-material-entregado-hint">El responsable puede registrar qué material se ha entregado y cuándo.</p>
+          <div class="usuario-material-entregado-toolbar">
+            <button type="button" class="btn btn-outline btn-sm" id="btnRegistrarEntregaDesdeFicha">+ Registrar entrega</button>
+          </div>
+          <div id="listaMaterialEntregadoFicha" class="usuario-material-entregado-lista"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Compra (economía) -->
+  <div id="modalCompra" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalCompraBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3 id="modalCompraTitulo">Nueva compra</h3><button type="button" class="modal-close" id="modalCompraClose">&times;</button></div>
+      <div class="modal-body">
+        <form id="formCompra">
+          <input type="hidden" id="compraId">
+          <div class="field"><label>Concepto</label><input type="text" id="compraConcepto" required placeholder="Ej: Aceite 5W40"></div>
+          <div class="field"><label>Categoría</label><select id="compraCategoria"></select></div>
+          <div class="field"><label>Cantidad</label><input type="number" id="compraCantidad" min="0" step="any" value="1"></div>
+          <div class="field"><label>Unidad</label><input type="text" id="compraUnidad" placeholder="ud, kg, L..." value="ud"></div>
+          <div class="field"><label>Importe estimado (€)</label><input type="number" id="compraImporteEstimado" min="0" step="0.01" value="0"></div>
+          <div class="field"><label>Solicitado por</label><input type="text" id="compraSolicitadoPor" placeholder="Nombre"></div>
+          <div class="field"><label>Estado</label><select id="compraEstado"></select></div>
+          <div class="field"><label>Notas</label><input type="text" id="compraNotas"></div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Detalle pedido (historial) + Repetir compra -->
+  <div id="modalDetallePedido" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalDetallePedidoBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3>Detalle del pedido</h3><button type="button" class="modal-close" id="modalDetallePedidoClose">&times;</button></div>
+      <div class="modal-body modal-detalle-pedido-body">
+        <div id="detallePedidoContenido" class="detalle-pedido-campos"></div>
+        <div class="detalle-pedido-actions">
+          <button type="button" class="btn btn-register" id="btnRepetirCompra">Repetir compra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Detalle materiales almacén (al hacer clic en Total materiales) -->
+  <div id="modalDetalleMaterialesAlmacen" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalDetalleMaterialesAlmacenBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3>Detalle materiales en almacén</h3><button type="button" class="modal-close" id="modalDetalleMaterialesAlmacenClose">&times;</button></div>
+      <div class="modal-body">
+        <p class="almacen-detalle-hint">Unidades por tipo de material.</p>
+        <div id="detalleMaterialesAlmacenLista" class="almacen-detalle-lista"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Registrar materiales recuperados -->
+  <div id="modalRegistrarMaterialesRecuperados" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalRegistrarMaterialesRecuperadosBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3>Registrar materiales recuperados</h3><button type="button" class="modal-close" id="modalRegistrarMaterialesRecuperadosClose">&times;</button></div>
+      <div class="modal-body">
+        <p class="almacen-registro-hint">Indica las cantidades que se dejan en almacén (p. ej. tras una reparación).</p>
+        <form id="formRegistrarMaterialesRecuperados" class="form-almacen-materiales"></form>
+        <button type="submit" form="formRegistrarMaterialesRecuperados" class="btn btn-register">Guardar</button>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Registrar entrega de material a trabajador -->
+  <div id="modalEntregaMaterial" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalEntregaMaterialBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3>Registrar entrega de material</h3><button type="button" class="modal-close" id="modalEntregaMaterialClose">&times;</button></div>
+      <div class="modal-body">
+        <form id="formEntregaMaterial">
+          <div class="field"><label>Trabajador que recibe</label><select id="entregaTrabajador" required></select></div>
+          <div class="field"><label>Material / Concepto</label><select id="entregaMaterial"></select></div>
+          <div class="field"><label>Cantidad</label><input type="number" id="entregaCantidad" min="0" step="any" value="1" required></div>
+          <div class="field"><label>Unidad</label><input type="text" id="entregaUnidad" value="ud" placeholder="ud, kg, L..."></div>
+          <div class="field"><label>Fecha de entrega</label><input type="datetime-local" id="entregaFecha" required></div>
+          <div class="field"><label>Entregado por</label><input type="text" id="entregaEntregadoPor" readonly class="readonly-field" placeholder="Usuario que registra"></div>
+          <button type="submit" class="btn btn-register">Guardar entrega</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Inventario / Nuevo pedido (economía) -->
+  <div id="modalInventario" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalInventarioBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3 id="modalInventarioTitulo">Nuevo pedido</h3><button type="button" class="modal-close" id="modalInventarioClose">&times;</button></div>
+      <div class="modal-body">
+        <form id="formInventario">
+          <input type="hidden" id="inventarioId">
+          <div class="field"><label>Solicitante</label><input type="text" id="inventarioSolicitante" required placeholder="Persona que hace el pedido"></div>
+          <div class="field"><label>Categoría</label><select id="inventarioCategoriaGrupo"><option value="">— Selecciona categoría —</option></select></div>
+          <div class="field"><label id="inventarioConceptoDesc">Concepto</label><select id="inventarioConcepto" disabled><option value="">— Primero elige categoría —</option></select></div>
+          <div class="field"><label>Cantidad a pedir</label><input type="number" id="inventarioCantidadAPedir" min="0" step="1" value="1" placeholder="Unidades a pedir"></div>
+          <div class="field"><label>Cantidad actual</label><input type="number" id="inventarioCantidad" min="0" step="any" value="0"></div>
+          <div class="field"><label>Unidad</label><input type="text" id="inventarioUnidad" value="ud"></div>
+          <div class="field field-stock-admin" id="fieldStockMinimo">
+            <label>Stock mínimo (alerta)</label>
+            <input type="number" id="inventarioStockMinimo" min="0" step="any" value="0" title="Solo administradores pueden editar">
+            <span class="field-hint" id="hintStockLimites">Solo administradores pueden editar mín. y máx.</span>
+          </div>
+          <div class="field field-stock-admin" id="fieldStockMaximo">
+            <label>Stock máximo</label>
+            <input type="number" id="inventarioStockMaximo" min="0" step="any" value="" placeholder="Sin límite">
+          </div>
+          <div class="field"><label>Notas</label><input type="text" id="inventarioNotas"></div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Gasto (economía) -->
+  <div id="modalGasto" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalGastoBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3 id="modalGastoTitulo">Registrar gasto</h3><button type="button" class="modal-close" id="modalGastoClose">&times;</button></div>
+      <div class="modal-body">
+        <form id="formGasto">
+          <input type="hidden" id="gastoId">
+          <div class="field"><label>Fecha</label><input type="date" id="gastoFecha" required></div>
+          <div class="field"><label>Categoría</label><select id="gastoCategoria"></select></div>
+          <div class="field"><label>Concepto</label><input type="text" id="gastoConcepto" required placeholder="Descripción"></div>
+          <div class="field"><label>Importe (€)</label><input type="number" id="gastoImporte" min="0" step="0.01" required></div>
+          <div class="field checkbox-field"><label><input type="checkbox" id="gastoRecurrente"> Gasto recurrente (mensual)</label></div>
+          <div class="field"><label>Registrado por</label><input type="text" id="gastoRegistradoPor" placeholder="Nombre"></div>
+          <div class="field"><label>Notas</label><input type="text" id="gastoNotas"></div>
+          <button type="submit" class="btn btn-register">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver vídeo (admin: reproducir solicitud gráfica antes de aprobar/rechazar) -->
+  <div id="modalVerVideoSolicitud" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalVerVideoSolicitudBackdrop"></div>
+    <div class="modal-content modal-ver-video-solicitud">
+      <div class="modal-header">
+        <h3>Ver vídeo — Revisar solicitud</h3>
+        <button type="button" class="modal-close" id="modalVerVideoSolicitudClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalVerVideoSolicitudInfo" class="modal-ver-video-info"></p>
+        <div class="modal-ver-video-player-wrap">
+          <video id="modalVerVideoSolicitudPlayer" class="modal-ver-video-player" controls playsinline preload="metadata"></video>
+        </div>
+        <div class="modal-ver-video-actions">
+          <button type="button" class="btn btn-outline btn-sm" id="modalVerVideoSolicitudRechazar">Rechazar</button>
+          <button type="button" class="btn btn-register" id="modalVerVideoSolicitudAprobar">Aprobar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Subir video (solicitud gráfica para todos los usuarios) -->
+  <div id="modalSubirVideo" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalSubirVideoBackdrop"></div>
+    <div class="modal-content modal-subir-video">
+      <div class="modal-header">
+        <h3>Solicitar vídeo para el taller</h3>
+        <button type="button" class="modal-close" id="modalSubirVideoClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subir-video-desc">Envía un vídeo para que el administrador lo revise. Si lo aprueba, se mostrará en la pantalla del taller.</p>
+        <form id="formSubirVideo" class="form-subir-video">
+          <div class="field">
+            <label>Enlace al vídeo (URL)</label>
+            <input type="url" id="subirVideoUrl" placeholder="https://... (opcional si subes archivo)">
+          </div>
+          <div class="field">
+            <label>O subir archivo (máx. 4 MB recomendado)</label>
+            <input type="file" id="subirVideoFile" accept="video/mp4,video/webm,video/ogg,video/quicktime,.mp4,.webm,.ogg,.mov">
+          </div>
+          <p id="subirVideoError" class="subir-video-error" style="display:none"></p>
+          <button type="submit" class="btn btn-register">Enviar solicitud</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Histórico indicadores (al hacer clic en un indicador del vehículo) -->
+  <div id="modalHistorialIndicador" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalHistorialIndicadorBackdrop"></div>
+    <div class="modal-content modal-historial-indicador">
+      <div class="modal-header">
+        <h3 id="modalHistorialIndicadorTitulo">Histórico</h3>
+        <button type="button" class="modal-close" id="modalHistorialIndicadorClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalHistorialIndicadorMatricula" class="modal-historial-matricula"></p>
+        <ul id="modalHistorialIndicadorLista" class="lista-historial-indicador"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="data/vehiculos.js"></script>
+  <script src="data/vehiculos-registro.js"></script>
+  <script src="data/convenios.js"></script>
+  <script src="data/fichajes.js"></script>
+  <script src="data/organigrama.js"></script>
+  <script src="data/content-list.js"></script>
+  <script src="data/normativas.js"></script>
+  <script src="data/economia.js"></script>
+  <script src="data/precios-piezas.js"></script>
+  <script src="data/almacen-materiales.js"></script>
+  <script src="data/entregas-material.js"></script>
+  <script src="data/clientes-seed.js"></script>
+  <script src="data/clientes-bbdd.js"></script>
+  <script src="js/organigrama.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
