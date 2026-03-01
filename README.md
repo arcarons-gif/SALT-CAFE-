@@ -1,16 +1,19 @@
 # SALTLAB Calculator
 
-App web que replica la calculadora de costes de reparación y tuneo del taller de roleplay para FiveM, con sistema de usuarios y permisos.
+App web de la calculadora del taller SALTLAB CAFE para FiveM: presupuestos de reparación y tuneo, fichajes, normativas, gestión de usuarios y organigrama, economía, clientes y personalización.
 
-## Uso
+**Instrucciones completas:** ver [INSTRUCCIONES_USO.md](INSTRUCCIONES_USO.md).
 
-1. Abre `index.html` en tu navegador (doble clic o arrastrando al Chrome/Edge).
-2. **Primera vez:** usuario `admin`, contraseña `1234`. Deberás cambiarla obligatoriamente en el primer acceso.
-4. Selecciona modelo de vehículo, marca las opciones de tuneo/reparación y aplica descuentos.
-5. Los precios se calculan al instante.
-6. **REGISTRAR TUNEO** / **REGISTRAR REPARACION** guardan el servicio en el registro local.
-7. **REGISTRO SERVICIOS** muestra el historial de servicios.
-8. **RESET** limpia los campos para una nueva facturación.
+## Uso rápido
+
+1. Abre `index.html` en tu navegador.
+2. **Primera vez:** usuario `admin`, contraseña `1234` (deberás cambiarla en el primer acceso).
+3. **Ficha entrada** (indicador en la barra superior o menú Fichajes).
+4. Elige **Reparación**, **Tuneo** o **Tuneo + Reparación** → introduce **matrícula** → ajusta la calculadora.
+5. **REGISTRAR TUNEO** o **REGISTRAR REPARACION** guarda el servicio.
+6. **HOME** para otro servicio; **Salir** cierra sesión (y registra salida automática si tenías entrada abierta).
+
+Otras funciones: **Mi ficha**, **Mi historial**, **Normativas**, **Resultados**, **Gestión** (usuarios, convenios, organigrama, economía), **Clientes**, **Personalización**, y el **asistente de dudas** (chatbot) en la esquina inferior derecha para preguntas sobre normativas e instrucciones.
 
 ## Base de datos de vehículos
 

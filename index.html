@@ -49,6 +49,17 @@
         <p class="login-demo-wrap">
           <button type="button" class="btn btn-demo" id="loginDemo">Demo</button>
         </p>
+        <div class="login-servidor-wrap">
+          <button type="button" class="btn-link login-servidor-link" id="loginConfigurarServidor">Configurar URL del servidor</button>
+          <div id="loginServidorPanel" class="login-servidor-panel" style="display:none">
+            <label for="loginServidorUrl">URL del servidor (ej. http://192.168.1.10:3001)</label>
+            <input type="text" id="loginServidorUrl" class="login-input" placeholder="http://localhost:3001" autocomplete="off">
+            <div class="login-servidor-actions">
+              <button type="button" class="btn btn-sm" id="loginServidorGuardar">Guardar</button>
+              <span id="loginServidorEstado" class="login-servidor-estado"></span>
+            </div>
+          </div>
+        </div>
         <p class="login-saltlab">SALTLAB CAFE · FLAVOR MEETS THE SEA</p>
       </div>
     </div>
@@ -1401,6 +1412,16 @@
       <div class="pantalla-secundaria-body scrollbar-on-scroll personalizacion-body">
         <p class="personalizacion-desc">Ajusta colores, fuentes, fondo de pantalla y más. Los cambios se guardan por usuario y se aplican al instante.</p>
         <form id="formPersonalizacion" class="personalizacion-form">
+          <section class="personalizacion-seccion personalizacion-seccion-servidor">
+            <h3 class="personalizacion-seccion-titulo">Conexión al servidor</h3>
+            <p class="personalizacion-seccion-desc">Para sincronizar usuarios y fichajes con otros dispositivos, indica la URL del servidor (la IP del PC donde corre el API).</p>
+            <div class="field">
+              <label for="personalizacionApiUrl">URL del servidor API</label>
+              <input type="text" id="personalizacionApiUrl" class="personalizacion-input" placeholder="http://localhost:3001" autocomplete="off">
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btnPersonalizacionGuardarApiUrl">Guardar y conectar</button>
+            <span id="personalizacionApiUrlEstado" class="personalizacion-api-estado"></span>
+          </section>
           <section class="personalizacion-seccion">
             <h3 class="personalizacion-seccion-titulo">Color de acento</h3>
             <p class="personalizacion-seccion-desc">Color principal de botones, enlaces y elementos destacados.</p>
@@ -1805,6 +1826,9 @@
   <script src="data/vehiculos-registro.js"></script>
   <script src="data/convenios.js"></script>
   <script src="data/fichajes.js"></script>
+  <!-- Backend API: sincronización con servidor (usuarios/fichajes entre dispositivos) -->
+  <script>window.SALTLAB_API_URL = window.SALTLAB_API_URL || 'http://localhost:3001';</script>
+  <script src="js/backend-api.js"></script>
   <script src="data/organigrama.js"></script>
   <script src="data/content-list.js"></script>
   <script src="data/normativas.js"></script>

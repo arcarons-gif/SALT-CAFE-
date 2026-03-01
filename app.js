@@ -1046,6 +1046,40 @@ function arranqueAuthContinuar() {
       if (typeof initNormativasPantalla === 'function') initNormativasPantalla('demo', true);
     });
   }
+  var btnConfigurarServidor = document.getElementById('loginConfigurarServidor');
+  var panelServidor = document.getElementById('loginServidorPanel');
+  var inputServidorUrl = document.getElementById('loginServidorUrl');
+  var btnServidorGuardar = document.getElementById('loginServidorGuardar');
+  var estadoServidor = document.getElementById('loginServidorEstado');
+  if (btnConfigurarServidor && panelServidor) {
+    btnConfigurarServidor.addEventListener('click', function () {
+      var visible = panelServidor.style.display !== 'none';
+      panelServidor.style.display = visible ? 'none' : 'block';
+      if (!visible && inputServidorUrl && window.backendApi) {
+        inputServidorUrl.value = window.backendApi.getApiUrl() || '';
+      }
+      if (estadoServidor) estadoServidor.textContent = '';
+    });
+  }
+  if (btnServidorGuardar && inputServidorUrl && estadoServidor && window.backendApi) {
+    btnServidorGuardar.addEventListener('click', function () {
+      var url = (inputServidorUrl.value || '').trim();
+      if (!url) {
+        estadoServidor.textContent = 'Escribe la URL del servidor.';
+        estadoServidor.style.color = 'var(--text-muted)';
+        return;
+      }
+      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'http://' + url;
+      window.backendApi.setApiUrl(url);
+      estadoServidor.textContent = 'Guardado. Conectando...';
+      estadoServidor.style.color = 'var(--accent, #d4af37)';
+      window.backendApi.init().then(function (ok) {
+        estadoServidor.textContent = ok ? 'Conectado al servidor.' : 'No se pudo conectar. Comprueba la URL y que el servidor esté en marcha.';
+        estadoServidor.style.color = ok ? 'var(--success, #22c55e)' : 'var(--danger, #dc3545)';
+      });
+    });
+  }
+
   var btnCrearUsuario = document.getElementById('loginCrearUsuario');
   var modalCrearUsuario = document.getElementById('modalCrearUsuario');
   var modalCrearUsuarioClose = document.getElementById('modalCrearUsuarioClose');
@@ -4101,17 +4135,26 @@ function vincularFichajes() {
   }
 
   var ledFichajeWrap = document.getElementById('ledFichajeWrap');
-  if (ledFichajeWrap) {
-    ledFichajeWrap.addEventListener('click', function () {
+  if (ledFichajeWrap && !ledFichajeWrap.dataset.fichajeLedBound) {
+    ledFichajeWrap.dataset.fichajeLedBound = '1';
+    var fichajeLedProcesando = false;
+    ledFichajeWrap.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (fichajeLedProcesando) return;
       var session = getSession();
       if (!session) return;
+      var userId = session.username || session.id || '';
+      if (!userId) return;
+      fichajeLedProcesando = true;
+      setTimeout(function () { fichajeLedProcesando = false; }, 600);
       limpiarEntradasAbiertasAntiguas();
-      var abierta = typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username);
+      var abierta = typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(userId);
       if (abierta) {
         var now = new Date().toISOString();
-        if (cerrarUltimoFichaje(session.username, now)) {
-          renderListaFichajesReciente(session.username);
-          renderFichajesDashboard(session.username);
+        if (typeof cerrarUltimoFichaje === 'function' && cerrarUltimoFichaje(userId, now)) {
+          renderListaFichajesReciente(userId);
+          renderFichajesDashboard(userId);
           actualizarEstadoBotonEntrada();
           if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
           alert('Salida registrada a las ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
@@ -4121,7 +4164,7 @@ function vincularFichajes() {
       } else {
         var now = new Date();
         var nowIso = now.toISOString();
-        addFichaje(session.username, nowIso, null);
+        if (typeof addFichaje === 'function') addFichaje(userId, nowIso, null);
         var entradaManual = document.getElementById('fichajeEntrada');
         if (entradaManual) {
           var y = now.getFullYear();
@@ -4131,8 +4174,8 @@ function vincularFichajes() {
           var min = String(now.getMinutes()).padStart(2, '0');
           entradaManual.value = y + '-' + m + '-' + d + 'T' + h + ':' + min;
         }
-        renderListaFichajesReciente(session.username);
-        renderFichajesDashboard(session.username);
+        renderListaFichajesReciente(userId);
+        renderFichajesDashboard(userId);
         actualizarEstadoBotonEntrada();
         if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
         alert('Entrada registrada a las ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
@@ -5229,8 +5272,46 @@ function vincularCambiarUsuario() {
   var dropdown = document.getElementById('cambiarUsuarioDropdown');
   var lista = document.getElementById('cambiarUsuarioLista');
   if (!btn || !dropdown || !lista) return;
+  if (btn.dataset.cambiarUsuarioBound) return;
+  btn.dataset.cambiarUsuarioBound = '1';
 
-  function cerrarDropdown() { dropdown.style.display = 'none'; }
+  function cerrarDropdown() {
+    dropdown.style.display = 'none';
+    dropdown.classList.remove('open');
+  }
+
+  function abrirDropdown() {
+    var users = typeof getUsers === 'function' ? getUsers().filter(function (u) { return u.activo !== false; }) : [];
+    var current = getSession();
+    lista.innerHTML = '';
+    users.forEach(function (u) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'cambiar-usuario-item';
+      item.textContent = (u.nombre || u.username) + (u.rol ? ' · ' + u.rol : '');
+      item.dataset.userId = u.id || u.username || '';
+      if (current && (current.id || current.username || '') === (u.id || u.username || '')) item.classList.add('cambiar-usuario-item-actual');
+      item.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        actualizarSesionYVista(u);
+        cerrarDropdown();
+      });
+      lista.appendChild(item);
+    });
+    var sep = document.createElement('div');
+    sep.className = 'cambiar-usuario-separator';
+    sep.setAttribute('aria-hidden', 'true');
+    lista.appendChild(sep);
+    var btnPrefs = document.createElement('button');
+    btnPrefs.type = 'button';
+    btnPrefs.className = 'cambiar-usuario-item cambiar-usuario-item-personalizacion';
+    btnPrefs.textContent = '⚙ Personalizar experiencia';
+    btnPrefs.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); abrirPantallaPersonalizacion(); });
+    lista.appendChild(btnPrefs);
+    dropdown.style.display = 'block';
+    dropdown.classList.add('open');
+  }
 
   function actualizarSesionYVista(user) {
     setSession(user);
@@ -5250,42 +5331,19 @@ function vincularCambiarUsuario() {
   }
 
   btn.addEventListener('click', function (e) {
+    e.preventDefault();
     e.stopPropagation();
-    if (dropdown.style.display === 'block') {
+    if (dropdown.classList.contains('open') || dropdown.style.display === 'block') {
       cerrarDropdown();
       return;
     }
-    var users = typeof getUsers === 'function' ? getUsers().filter(function (u) { return u.activo !== false; }) : [];
-    var current = getSession();
-    lista.innerHTML = '';
-    users.forEach(function (u) {
-      var item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'cambiar-usuario-item';
-      item.textContent = (u.nombre || u.username) + (u.rol ? ' · ' + u.rol : '');
-      item.dataset.userId = u.id || '';
-      if (current && (current.id || '') === (u.id || '')) item.classList.add('cambiar-usuario-item-actual');
-      item.addEventListener('click', function () {
-        actualizarSesionYVista(u);
-        cerrarDropdown();
-      });
-      lista.appendChild(item);
-    });
-    var sep = document.createElement('div');
-    sep.className = 'cambiar-usuario-separator';
-    sep.setAttribute('aria-hidden', 'true');
-    lista.appendChild(sep);
-    var btnPrefs = document.createElement('button');
-    btnPrefs.type = 'button';
-    btnPrefs.className = 'cambiar-usuario-item cambiar-usuario-item-personalizacion';
-    btnPrefs.textContent = '⚙ Personalizar experiencia';
-    btnPrefs.addEventListener('click', abrirPantallaPersonalizacion);
-    lista.appendChild(btnPrefs);
-    dropdown.style.display = 'block';
+    abrirDropdown();
   });
 
   document.addEventListener('click', function (e) {
-    if (!btn.contains(e.target) && !dropdown.contains(e.target)) cerrarDropdown();
+    if (!dropdown.classList.contains('open')) return;
+    if (btn.contains(e.target) || dropdown.contains(e.target)) return;
+    cerrarDropdown();
   });
 }
 
@@ -5336,6 +5394,10 @@ function vincularPersonalizacion() {
     if (motionCb) motionCb.checked = !!prefs.reducedMotion;
     var radiusSel = document.getElementById('personalizacionBorderRadius');
     if (radiusSel) radiusSel.value = prefs.borderRadius || 'default';
+    var apiUrlInput = document.getElementById('personalizacionApiUrl');
+    if (apiUrlInput && typeof window.backendApi !== 'undefined' && window.backendApi.getApiUrl) {
+      apiUrlInput.value = window.backendApi.getApiUrl() || '';
+    }
   }
 
   function toggleBackgroundSubwraps() {
@@ -5359,6 +5421,29 @@ function vincularPersonalizacion() {
     if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
     else { pantalla.style.display = 'none'; document.getElementById('appBody').style.display = 'flex'; }
   });
+
+  var btnGuardarApiUrl = document.getElementById('btnPersonalizacionGuardarApiUrl');
+  var apiUrlEstado = document.getElementById('personalizacionApiUrlEstado');
+  if (btnGuardarApiUrl && typeof window.backendApi !== 'undefined') {
+    btnGuardarApiUrl.addEventListener('click', function () {
+      var input = document.getElementById('personalizacionApiUrl');
+      var url = (input && input.value) ? input.value.trim() : '';
+      if (!url) {
+        if (apiUrlEstado) { apiUrlEstado.textContent = 'Escribe la URL del servidor.'; apiUrlEstado.style.color = 'var(--text-muted)'; }
+        return;
+      }
+      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'http://' + url;
+      window.backendApi.setApiUrl(url);
+      if (apiUrlEstado) { apiUrlEstado.textContent = 'Guardado. Conectando...'; apiUrlEstado.style.color = 'var(--accent, #d4af37)'; }
+      window.backendApi.init().then(function (ok) {
+        if (apiUrlEstado) {
+          apiUrlEstado.textContent = ok ? 'Conectado al servidor.' : 'No se pudo conectar. Comprueba la URL y que el servidor esté en marcha.';
+          apiUrlEstado.style.color = ok ? 'var(--success, #22c55e)' : 'var(--danger, #dc3545)';
+        }
+        if (ok && typeof actualizarVista === 'function') actualizarVista();
+      });
+    });
+  }
 
   if (btnSubirFondo && inputFondo) {
     btnSubirFondo.addEventListener('click', function () { inputFondo.click(); });
@@ -5468,11 +5553,50 @@ function init() {
   initScrollbarVisible();
   // Refresco de indicadores al cargar (por si el panel se pinta después)
   requestAnimationFrame(function () { renderStatsVehiculo(''); });
-  // Si otro empleado/tab registra, actualizar indicadores
+  // Sincronización entre pestañas del mismo navegador: cuando otra pestaña cambia localStorage,
+  // actualizar la vista. Con backend API, entre ordenadores se sincroniza por polling.
+  function refrescarVistaPorUsuariosSync() {
+    var session = getSession();
+    if (session && typeof getUsers === 'function') {
+      var users = getUsers();
+      var currentId = session.id || session.username;
+      var updated = users.find(function (u) { return (u.id || u.username) === currentId; });
+      if (updated) setSession(updated);
+    }
+    session = getSession();
+    aplicarPermisos(session);
+    var headerUserNameText = document.getElementById('headerUserNameText');
+    if (headerUserNameText && session) headerUserNameText.textContent = (session.nombre || session.username) || '';
+    var dropdown = document.getElementById('cambiarUsuarioDropdown');
+    if (dropdown && dropdown.classList.contains('open')) dropdown.style.display = 'none';
+    if (dropdown) dropdown.classList.remove('open');
+    var pantallaGestion = document.getElementById('pantallaGestion');
+    if (pantallaGestion && pantallaGestion.style.display !== 'none' && typeof renderListaUsuarios === 'function') {
+      renderListaUsuarios();
+    }
+    if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+  }
+
   window.addEventListener('storage', function (e) {
     if (e.key === 'benny_servicios' && typeof paso !== 'undefined' && paso === 'inicio') {
       requestAnimationFrame(function () { renderStatsVehiculo(''); });
     }
+    if (e.key === 'benny_users') {
+      requestAnimationFrame(refrescarVistaPorUsuariosSync);
+    }
+  });
+
+  // Sincronización desde el backend (otros dispositivos): polling actualiza localStorage y dispara este evento
+  window.addEventListener('benny-backend-sync', function (e) {
+    var detail = (e && e.detail) || {};
+    requestAnimationFrame(function () {
+      if (detail.users) refrescarVistaPorUsuariosSync();
+      if (detail.fichajes) {
+        var session = getSession();
+        if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
+        if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+      }
+    });
   });
   // Al volver a la pestaña, refrescar indicadores por si hubo registros en otra pestaña
   document.addEventListener('visibilitychange', function () {
