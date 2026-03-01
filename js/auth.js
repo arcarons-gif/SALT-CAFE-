@@ -226,6 +226,7 @@ async function createUser(userData, createdBy) {
   const passwordInicial = userData.password || PASSWORD_PREDETERMINADA;
   const salt = crypto.randomUUID() + Date.now();
   const passwordHash = await hashPassword(passwordInicial, salt);
+  const esAutoregistro = createdBy === 'self';
   const newUser = {
     id: 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
     username: userData.username.trim(),
@@ -235,7 +236,7 @@ async function createUser(userData, createdBy) {
     rol: userData.rol || 'mecanico',
     permisos: userData.permisos || {},
     activo: true,
-    cambiarPasswordObligatorio: true,
+    cambiarPasswordObligatorio: esAutoregistro ? false : true,
     creadoPor: createdBy,
     fechaCreacion: new Date().toISOString(),
     fechaAlta: (userData.fechaAlta || new Date().toISOString().slice(0, 10)),

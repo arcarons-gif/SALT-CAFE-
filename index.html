@@ -165,9 +165,17 @@
           <button type="button" class="btn btn-home btn-header-back" id="btnHeaderVolver" aria-label="Ir a inicio">HOME</button>
         </div>
         <div id="headerExtra" class="header-extra">
-        <div id="ledFichajeWrap" class="led-fichaje-wrap" aria-label="Estado de fichaje" title="Estado de fichaje">
-          <span id="ledFichajeBulb" class="led-fichaje-bulb led-off"></span>
-          <span id="ledFichajeText" class="led-fichaje-text">No fichado</span>
+        <div class="header-fichaje-y-cambiar">
+          <div id="ledFichajeWrap" class="led-fichaje-wrap" aria-label="Estado de fichaje" title="Estado de fichaje">
+            <span id="ledFichajeBulb" class="led-fichaje-bulb led-off"></span>
+            <span id="ledFichajeText" class="led-fichaje-text">No fichado</span>
+          </div>
+          <div id="cambiarUsuarioWrap" class="cambiar-usuario-wrap" style="display:none">
+            <button type="button" class="btn btn-cambiar-usuario" id="btnCambiarUsuario" title="Cambiar de usuario (sin cerrar sesión)">⇄</button>
+            <div id="cambiarUsuarioDropdown" class="cambiar-usuario-dropdown" style="display:none">
+              <div class="cambiar-usuario-dropdown-list" id="cambiarUsuarioLista"></div>
+            </div>
+          </div>
         </div>
         <div id="headerCalendarWrap" class="header-calendar-row header-calendar-simple" style="display:none" aria-label="Fecha y hora">
           <span id="calendarDateLabel" class="calendar-date-label">—</span>

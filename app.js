@@ -257,6 +257,8 @@ function aplicarPermisos(user) {
   if (btnSubirVideo) btnSubirVideo.style.display = user ? '' : 'none';
   const btnNormativas = document.getElementById('btnNormativas');
   if (btnNormativas) btnNormativas.style.display = user ? '' : 'none';
+  const cambiarUsuarioWrap = document.getElementById('cambiarUsuarioWrap');
+  if (cambiarUsuarioWrap) cambiarUsuarioWrap.style.display = hasPermission(user, 'gestionarUsuarios') ? '' : 'none';
   actualizarDescuentoSuperior();
 }
 
@@ -4271,6 +4273,49 @@ function vincularPasswordToggle() {
   }, true);
 }
 
+function vincularCambiarUsuario() {
+  var btn = document.getElementById('btnCambiarUsuario');
+  var dropdown = document.getElementById('cambiarUsuarioDropdown');
+  var lista = document.getElementById('cambiarUsuarioLista');
+  if (!btn || !dropdown || !lista) return;
+  function cerrarDropdown() { dropdown.style.display = 'none'; }
+  function actualizarSesionYVista(user) {
+    setSession(user);
+    var headerUserNameText = document.getElementById('headerUserNameText');
+    if (headerUserNameText) headerUserNameText.textContent = user.nombre || user.username;
+    if (el.mecanico) el.mecanico.value = user.nombre || user.username;
+    aplicarPermisos(user);
+    actualizarLedFichaje();
+    actualizarVista();
+  }
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (dropdown.style.display === 'block') {
+      cerrarDropdown();
+      return;
+    }
+    var users = typeof getUsers === 'function' ? getUsers().filter(function (u) { return u.activo !== false; }) : [];
+    lista.innerHTML = '';
+    users.forEach(function (u) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'cambiar-usuario-item';
+      item.textContent = (u.nombre || u.username) + (u.rol ? ' · ' + u.rol : '');
+      item.dataset.userId = u.id || '';
+      item.addEventListener('click', function () {
+        var user = users.find(function (x) { return (x.id || '') === (item.dataset.userId || ''); });
+        if (user) actualizarSesionYVista(user);
+        cerrarDropdown();
+      });
+      lista.appendChild(item);
+    });
+    dropdown.style.display = 'block';
+  });
+  document.addEventListener('click', function (e) {
+    if (!btn.contains(e.target) && !dropdown.contains(e.target)) cerrarDropdown();
+  });
+}
+
 function init() {
   initWatermarks();
   registroServicios = getRegistroServicios();
@@ -4289,6 +4334,7 @@ function init() {
   vincularResultadosCalculadora();
   vincularIndicadoresHistorial();
   vincularPasswordToggle();
+  vincularCambiarUsuario();
   mostrarPaso('inicio');
   actualizarVista();
   initContentLoop();
