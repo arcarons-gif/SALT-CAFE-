@@ -43,11 +43,6 @@
         <p class="login-recovery-wrap">
           <button type="button" class="btn-link login-recovery-link" id="loginOlvidasteCredenciales">¿Olvidaste las credenciales?</button>
         </p>
-        <div id="loginTicketWrap" class="login-ticket-wrap" style="display:none">
-          <p class="login-ticket-label">Tu número de ticket (indícalo en Discord):</p>
-          <p id="loginTicketNumero" class="login-ticket-numero"></p>
-          <p class="login-ticket-nota">Se abrirá el canal de Discord. Escribe este número en tu mensaje para solicitar ayuda con las credenciales.</p>
-        </div>
         <p class="login-recovery-wrap">
           <button type="button" class="btn-link login-recovery-link" id="loginCrearUsuario">Crear usuario</button>
         </p>
@@ -86,6 +81,35 @@
           </div>
           <p id="crearUsuarioError" class="login-error" style="display:none;"></p>
           <button type="submit" class="btn btn-login">Crear usuario</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Recuperar contraseña (olvidé credenciales) -->
+    <div id="modalRecuperarPassword" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="modalRecuperarPasswordBackdrop"></div>
+      <div class="modal-content modal-crear-usuario">
+        <div class="modal-header">
+          <h3>Recuperar contraseña</h3>
+          <button type="button" class="modal-close" id="modalRecuperarPasswordClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formRecuperarPassword" class="modal-body">
+          <p class="modal-recuperar-desc">Indica tu usuario y una nueva contraseña. Quedará actualizada en el registro.</p>
+          <div class="field">
+            <label>Usuario (login)</label>
+            <input type="text" id="recuperarPasswordUsername" required autocomplete="username" placeholder="Tu nombre de usuario">
+          </div>
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input type="password" id="recuperarPasswordNueva" required minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>Confirmar nueva contraseña</label>
+            <input type="password" id="recuperarPasswordConfirmar" required minlength="4" placeholder="Repite la contraseña" autocomplete="new-password">
+            <span class="field-hint field-error" id="recuperarPasswordConfirmarError" style="display:none;"></span>
+          </div>
+          <p id="recuperarPasswordError" class="login-error" style="display:none;"></p>
+          <button type="submit" class="btn btn-login">Actualizar contraseña</button>
         </form>
       </div>
     </div>
@@ -275,7 +299,10 @@
               <label>Placa de servicio (policía/EMS)</label>
               <input type="text" id="nuevoVehiculoPlacaServicio" placeholder="Opcional">
             </div>
-            <button type="button" class="btn btn-register" id="btnGuardarNuevoVehiculo">Guardar y continuar</button>
+            <div class="nuevo-vehiculo-actions">
+              <button type="button" class="btn btn-back" id="btnVolverNuevoVehiculo">← Volver</button>
+              <button type="button" class="btn btn-register" id="btnGuardarNuevoVehiculo">Guardar y continuar</button>
+            </div>
           </div>
         </div>
       </div>

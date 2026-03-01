@@ -1758,6 +1758,7 @@ button.login-recovery-link {
 /* Modal Subir video */
 .modal-subir-video .modal-content { max-width: 420px; }
 .modal-subir-video-desc { margin: 0 0 1rem; font-size: 0.9rem; color: var(--text-muted); }
+.modal-recuperar-desc { margin: 0 0 1rem; font-size: 0.9rem; color: var(--text-muted); }
 .form-subir-video .field { margin-bottom: 0.75rem; }
 .form-subir-video .field label { display: block; margin-bottom: 0.25rem; font-size: 0.9rem; }
 .form-subir-video input[type="url"],
@@ -2140,6 +2141,20 @@ button.login-recovery-link {
   background: var(--accent-soft);
   box-shadow: 0 4px 16px rgba(212, 168, 83, 0.15);
   transform: translateY(-1px);
+}
+
+.btn-paso-apple:disabled,
+.btn-paso-apple.btn-deshabilitado-sin-fichaje {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+.btn-paso-apple:disabled:hover,
+.btn-paso-apple.btn-deshabilitado-sin-fichaje:hover {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transform: none;
 }
 .btn-paso-apple:active {
   transform: scale(0.98);
@@ -2583,6 +2598,13 @@ button.login-recovery-link {
 
 .nuevo-vehiculo-form .btn-register {
   margin-top: 0.5rem;
+}
+
+.nuevo-vehiculo-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .paso-calculadora-header {

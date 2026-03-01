@@ -622,6 +622,25 @@ function actualizarLedFichaje() {
   bulb.classList.toggle('led-on', !!fichado);
   bulb.classList.toggle('led-off', !fichado);
   text.textContent = fichado ? 'Fichado' : 'No fichado';
+  actualizarBotonesTipoServicioPorFichaje();
+}
+
+/** Fichaje obligatorio: deshabilita Reparación / Tuneo / Tuneo+Rep si el usuario no ha fichado entrada */
+function actualizarBotonesTipoServicioPorFichaje() {
+  const session = getSession();
+  const fichado = session && typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username);
+  const btns = [
+    document.getElementById('btnTipoReparacion'),
+    document.getElementById('btnTipoTuneo'),
+    document.getElementById('btnTipoTuneoReparacion'),
+  ];
+  const msg = 'Debes fichar entrada para usar la calculadora. Ve a Fichajes y pulsa «Fichar entrada».';
+  btns.forEach(function (btn) {
+    if (!btn) return;
+    btn.disabled = !fichado;
+    btn.setAttribute('title', fichado ? '' : msg);
+    btn.classList.toggle('btn-deshabilitado-sin-fichaje', !fichado);
+  });
 }
 
 function manejarLogout() {
@@ -810,22 +829,50 @@ function arranqueAuthContinuar() {
     });
   }
   var btnOlvidaste = document.getElementById('loginOlvidasteCredenciales');
-  var ticketWrap = document.getElementById('loginTicketWrap');
-  var ticketNumeroEl = document.getElementById('loginTicketNumero');
-  var DISCORD_CREDENCIALES_URL = 'https://discord.com/channels/1476281294932676832/1476281295880323176';
-  if (btnOlvidaste && ticketWrap && ticketNumeroEl) {
+  var modalRecuperarPassword = document.getElementById('modalRecuperarPassword');
+  var modalRecuperarPasswordClose = document.getElementById('modalRecuperarPasswordClose');
+  var modalRecuperarPasswordBackdrop = document.getElementById('modalRecuperarPasswordBackdrop');
+  if (btnOlvidaste && modalRecuperarPassword) {
     btnOlvidaste.addEventListener('click', function () {
-      var now = new Date();
-      var y = now.getFullYear();
-      var m = String(now.getMonth() + 1).padStart(2, '0');
-      var d = String(now.getDate()).padStart(2, '0');
-      var h = String(now.getHours()).padStart(2, '0');
-      var min = String(now.getMinutes()).padStart(2, '0');
-      var rnd = Math.random().toString(36).replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 4);
-      var ticketId = 'SALT-' + y + m + d + '-' + h + min + '-' + rnd;
-      ticketNumeroEl.textContent = ticketId;
-      ticketWrap.style.display = 'block';
-      window.open(DISCORD_CREDENCIALES_URL, '_blank', 'noopener,noreferrer');
+      modalRecuperarPassword.classList.add('active');
+      document.getElementById('formRecuperarPassword').reset();
+      document.getElementById('recuperarPasswordError').style.display = 'none';
+      document.getElementById('recuperarPasswordConfirmarError').style.display = 'none';
+    });
+  }
+  if (modalRecuperarPasswordClose) modalRecuperarPasswordClose.addEventListener('click', function () { modalRecuperarPassword.classList.remove('active'); });
+  if (modalRecuperarPasswordBackdrop) modalRecuperarPasswordBackdrop.addEventListener('click', function () { modalRecuperarPassword.classList.remove('active'); });
+  var formRecuperarPassword = document.getElementById('formRecuperarPassword');
+  if (formRecuperarPassword) {
+    formRecuperarPassword.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var username = (document.getElementById('recuperarPasswordUsername').value || '').trim();
+      var nueva = (document.getElementById('recuperarPasswordNueva').value || '').trim();
+      var confirmar = (document.getElementById('recuperarPasswordConfirmar').value || '').trim();
+      var errEl = document.getElementById('recuperarPasswordError');
+      var confirmErrEl = document.getElementById('recuperarPasswordConfirmarError');
+      if (errEl) errEl.style.display = 'none';
+      if (confirmErrEl) confirmErrEl.style.display = 'none';
+      if (nueva.length < 4) {
+        if (errEl) { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (nueva !== confirmar) {
+        if (confirmErrEl) { confirmErrEl.textContent = 'Las contraseñas no coinciden.'; confirmErrEl.style.display = 'block'; }
+        if (errEl) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (!username) {
+        if (errEl) { errEl.textContent = 'Indica tu nombre de usuario.'; errEl.style.display = 'block'; }
+        return;
+      }
+      var res = typeof resetPasswordPorUsuario === 'function' ? await resetPasswordPorUsuario(username, nueva) : { error: 'No disponible' };
+      if (res.error) {
+        if (errEl) { errEl.textContent = res.error; errEl.style.display = 'block'; }
+        return;
+      }
+      modalRecuperarPassword.classList.remove('active');
+      alert('Contraseña actualizada. Ya puedes iniciar sesión con tu usuario y la nueva contraseña.');
     });
   }
   var btnLogout = document.getElementById('btnLogout');
@@ -4375,7 +4422,13 @@ function cargarVehiculos() {
   const ordenados = [...VEHICULOS_DB].sort((a, b) => (a.nombreIC || a.modelo || '').localeCompare(b.nombreIC || b.modelo || '', 'es'));
   el.modelo.innerHTML = '';
   const nuevoSelect = document.getElementById('nuevoVehiculoModelo');
-  if (nuevoSelect) nuevoSelect.innerHTML = '';
+  if (nuevoSelect) {
+    nuevoSelect.innerHTML = '';
+    var optVac = document.createElement('option');
+    optVac.value = '';
+    optVac.textContent = '— Selecciona modelo —';
+    nuevoSelect.appendChild(optVac);
+  }
   ordenados.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.modelo;
@@ -4445,6 +4498,8 @@ function mostrarPaso(paso) {
   if (mainDashboardWrap) mainDashboardWrap.style.display = paso === 'inicio' ? '' : 'none';
   if (paso === 'matricula') {
     document.getElementById('nuevoVehiculoWrap').style.display = 'none';
+    var conj = document.querySelector('#pasoMatricula .paso-matricula-conjunto');
+    if (conj) conj.style.display = '';
     if (el.matricula) el.matricula.value = '';
     cargarMatriculasGuardadas();
     renderUltimasReparaciones();
@@ -4519,6 +4574,12 @@ function vincularPasos() {
     if (!btn) return;
     const tipos = ['reparacion', 'tuneo', 'tuneoReparacion'];
     btn.addEventListener('click', () => {
+      const session = getSession();
+      const fichado = session && typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username);
+      if (!fichado) {
+        alert('Debes fichar entrada para usar la calculadora. Ve a Fichajes y pulsa «Fichar entrada».');
+        return;
+      }
       tipoServicio = tipos[i];
       document.getElementById('nuevoVehiculoWrap').style.display = 'none';
       if (!matriculaActual || !matriculaActual.trim()) {
@@ -4577,9 +4638,15 @@ function vincularPasos() {
         }
       } else {
         matriculaActual = mat.toUpperCase();
+        var pasoMatriculaConjunto = document.querySelector('#pasoMatricula .paso-matricula-conjunto');
+        if (pasoMatriculaConjunto) pasoMatriculaConjunto.style.display = 'none';
         document.getElementById('nuevoVehiculoWrap').style.display = 'block';
         const nvConvenio = document.getElementById('nuevoVehiculoConvenio');
         if (nvConvenio && nvConvenio.options.length === 0) {
+          var optConvVac = document.createElement('option');
+          optConvVac.value = '';
+          optConvVac.textContent = '— Selecciona convenio —';
+          nvConvenio.appendChild(optConvVac);
           const session = getSession();
           let convenios = typeof getConveniosVisibles === 'function' ? getConveniosVisibles(hasPermission(session, 'verConveniosPrivados')) : (typeof getConvenios === 'function' ? getConvenios() : []);
           convenios = [...convenios].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
@@ -4590,6 +4657,10 @@ function vincularPasos() {
             nvConvenio.appendChild(o);
           });
         }
+        document.getElementById('nuevoVehiculoModelo').value = '';
+        document.getElementById('nuevoVehiculoNombreIC').value = '';
+        if (nvConvenio) nvConvenio.value = '';
+        document.getElementById('nuevoVehiculoPlacaServicio').value = '';
       }
     });
   }
@@ -4634,9 +4705,20 @@ function vincularPasos() {
       aplicarRegistroACalculadora(reg);
       if (el.matriculaCalc) el.matriculaCalc.value = matriculaActual;
       document.getElementById('nuevoVehiculoWrap').style.display = 'none';
+      var pasoMatriculaConjunto = document.querySelector('#pasoMatricula .paso-matricula-conjunto');
+      if (pasoMatriculaConjunto) pasoMatriculaConjunto.style.display = '';
       guardarMatricula(matriculaActual);
       cargarMatriculasGuardadas();
       mostrarPaso('inicio');
+    });
+  }
+
+  var btnVolverNuevoVehiculo = document.getElementById('btnVolverNuevoVehiculo');
+  if (btnVolverNuevoVehiculo) {
+    btnVolverNuevoVehiculo.addEventListener('click', function () {
+      document.getElementById('nuevoVehiculoWrap').style.display = 'none';
+      var pasoMatriculaConjunto = document.querySelector('#pasoMatricula .paso-matricula-conjunto');
+      if (pasoMatriculaConjunto) pasoMatriculaConjunto.style.display = '';
     });
   }
 

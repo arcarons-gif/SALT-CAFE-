@@ -218,18 +218,31 @@ function logout() {
   clearSession();
 }
 
-async function createUser(userData, createdBy) {
+/** Comprueba si el nombre de usuario ya está registrado (BBDD de usuarios). excludeUserId opcional para edición */
+function isUsernameTaken(username, excludeUserId) {
+  const u = (username || '').toString().trim().toLowerCase();
+  if (!u) return false;
   const users = getUsers();
-  if (users.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
-    return { error: 'Ya existe un usuario con ese nombre' };
+  return users.some(function (x) {
+    if (excludeUserId && x.id === excludeUserId) return false;
+    return (x.username || '').toString().trim().toLowerCase() === u;
+  });
+}
+
+async function createUser(userData, createdBy) {
+  const usernameTrim = (userData.username || '').toString().trim();
+  if (!usernameTrim) return { error: 'El nombre de usuario es obligatorio' };
+  if (isUsernameTaken(usernameTrim)) {
+    return { error: 'Ese nombre de usuario ya está registrado. Elige otro.' };
   }
+  const users = getUsers();
   const passwordInicial = userData.password || PASSWORD_PREDETERMINADA;
   const salt = crypto.randomUUID() + Date.now();
   const passwordHash = await hashPassword(passwordInicial, salt);
   const esAutoregistro = createdBy === 'self';
   const newUser = {
     id: 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
-    username: userData.username.trim(),
+    username: usernameTrim,
     passwordHash,
     salt,
     nombre: (userData.nombre || userData.username).trim(),
@@ -257,11 +270,13 @@ async function updateUser(userId, userData, updatedBy) {
   const idx = users.findIndex(u => u.id === userId);
   if (idx === -1) return { error: 'Usuario no encontrado' };
   const existing = users[idx];
-  if (userData.username && userData.username !== existing.username) {
-    if (users.some(u => u.id !== userId && u.username.toLowerCase() === userData.username.toLowerCase())) {
-      return { error: 'Ya existe un usuario con ese nombre' };
+  if (userData.username !== undefined) {
+    const usernameTrim = (userData.username || '').toString().trim();
+    if (!usernameTrim) return { error: 'El nombre de usuario no puede estar vacío' };
+    if (usernameTrim.toLowerCase() !== (existing.username || '').toString().trim().toLowerCase() && isUsernameTaken(usernameTrim, userId)) {
+      return { error: 'Ese nombre de usuario ya está registrado. Elige otro.' };
     }
-    users[idx].username = userData.username.trim();
+    users[idx].username = usernameTrim;
   }
   if (userData.nombre) users[idx].nombre = userData.nombre.trim();
   if (userData.rol) users[idx].rol = userData.rol;
@@ -307,6 +322,24 @@ async function cambiarPassword(userId, nuevaPassword) {
   const users = getUsers();
   const idx = users.findIndex(u => u.id === userId);
   if (idx === -1) return { error: 'Usuario no encontrado' };
+  if (!nuevaPassword || nuevaPassword.length < 4) {
+    return { error: 'La contraseña debe tener al menos 4 caracteres' };
+  }
+  const salt = crypto.randomUUID() + Date.now();
+  users[idx].passwordHash = await hashPassword(nuevaPassword, salt);
+  users[idx].salt = salt;
+  users[idx].cambiarPasswordObligatorio = false;
+  saveUsers(users);
+  return { ok: true };
+}
+
+/** Recuperar contraseña (olvidé mi contraseña): actualiza la contraseña del usuario por nombre de usuario en la BBDD */
+async function resetPasswordPorUsuario(username, nuevaPassword) {
+  const u = (username || '').toString().trim();
+  if (!u) return { error: 'Indica tu nombre de usuario' };
+  const users = getUsers();
+  const idx = users.findIndex(x => (x.username || '').toString().trim().toLowerCase() === u.toLowerCase());
+  if (idx === -1) return { error: 'No existe ningún usuario con ese nombre' };
   if (!nuevaPassword || nuevaPassword.length < 4) {
     return { error: 'La contraseña debe tener al menos 4 caracteres' };
   }
