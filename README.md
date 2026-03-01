@@ -1,4 +1,4 @@
-# Benny's Original Motor Works - Calculadora Genesis Community V3
+# SALTLAB Calculator
 
 App web que replica la calculadora de costes de reparación y tuneo del taller de roleplay para FiveM, con sistema de usuarios y permisos.
 
@@ -64,7 +64,7 @@ Los valores por defecto dan ~$47/pieza para un Previon de $38k (4+4 partes ≈ $
 
 ## Datos guardados
 
-- **Usuarios**: en `localStorage` (benny_users).
+- **Usuarios**: en `localStorage` (clave interna `benny_users`).
 - **Registro de servicios**: en `localStorage` (persiste entre sesiones).
 - **Matrículas usadas**: se guardan para autocompletar en el siguiente uso.
 
@@ -77,7 +77,7 @@ La app es estática (solo HTML/CSS/JS). Para que alguien pueda abrirla por inter
 ### Opción 1: Netlify Drop (rápido, sin cuenta obligatoria)
 
 1. Entra en [https://app.netlify.com/drop](https://app.netlify.com/drop).
-2. Arrastra la carpeta **`benny-calculator`** completa (con `index.html`, `app.js`, `data/`, `js/`, `styles.css`, `assets/`, etc.) a la zona de “Deploy”.
+2. Arrastra la carpeta **SALTLAB Calculator** completa (con `index.html`, `app.js`, `data/`, `js/`, `styles.css`, `assets/`, etc.) a la zona de “Deploy”.
 3. Netlify te dará una URL tipo `https://nombre-random-123.netlify.app`. Esa es la URL que puedes pasar a tu compañero.
 
 **Con cuenta Netlify:** puedes elegir un nombre (ej. `saltlab-calculadora.netlify.app`) en Site settings → Domain management.
@@ -86,12 +86,12 @@ La app es estática (solo HTML/CSS/JS). Para que alguien pueda abrirla por inter
 
 1. Crea cuenta en [vercel.com](https://vercel.com).
 2. Instala Vercel CLI: `npm i -g vercel` (o usa “Import Project” en la web con GitHub).
-3. En la carpeta del proyecto ejecuta: `vercel` y sigue los pasos. La carpeta que contiene `index.html` debe ser la raíz del proyecto (por ejemplo `benny-calculator`).
+3. En la carpeta del proyecto ejecuta: `vercel` y sigue los pasos. La carpeta que contiene `index.html` debe ser la raíz del proyecto.
 4. Te darán una URL tipo `https://tu-proyecto.vercel.app`.
 
 ### Opción 3: GitHub Pages
 
-1. Crea un repositorio en GitHub y sube todo el contenido de `benny-calculator` (la raíz del repo debe tener `index.html`).
+1. Crea un repositorio en GitHub y sube todo el contenido del proyecto (la raíz del repo debe tener `index.html`).
 2. En el repo: **Settings → Pages** → Source: “Deploy from a branch” → rama `main` (o `master`) → carpeta `/ (root)` → Save.
 3. La app quedará en `https://tu-usuario.github.io/nombre-repo/`.
 

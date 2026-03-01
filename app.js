@@ -1,5 +1,5 @@
 /**
- * Benny's Original Motor Works - Calculadora Genesis Community V3
+ * SALTLAB Calculator - Calculadora Genesis Community V3
  * Lógica de cálculo de costes de reparación y tuneo + Control de usuarios
  */
 
@@ -41,8 +41,105 @@ const CREDENTIALS_STORAGE = 'benny_remember_credentials';
 const LOGIN_USUARIOS_STORAGE = 'benny_login_usuarios';
 const LOGIN_USUARIOS_MAX = 10;
 const PENDING_USER_UPDATES_STORAGE = 'benny_pending_user_updates';
+const PREFERENCIAS_STORAGE_PREFIX = 'benny_preferencias_';
 
-const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaResultadosCalculadora', 'pantallaFichaTrabajador'];
+var PREFERENCIAS_DEFAULT = {
+  accentColor: '#d4af37',
+  fontFamily: 'default',
+  fontSize: 'medium',
+  theme: 'dark',
+  highContrast: false,
+  backgroundType: 'none',
+  backgroundImage: null,
+  backgroundGradient: 'warm',
+  backgroundOpacity: 0.5,
+  compactNav: false,
+  borderRadius: 'default',
+  reducedMotion: false,
+  cardStyle: 'default'
+};
+
+function getPreferenciasStorageKey() {
+  var session = typeof getSession === 'function' ? getSession() : null;
+  return session && (session.id || session.username) ? PREFERENCIAS_STORAGE_PREFIX + (session.id || session.username) : null;
+}
+
+function getPreferenciasUsuario() {
+  var key = getPreferenciasStorageKey();
+  if (!key) return Object.assign({}, PREFERENCIAS_DEFAULT);
+  try {
+    var raw = localStorage.getItem(key);
+    var parsed = raw ? JSON.parse(raw) : {};
+    return Object.assign({}, PREFERENCIAS_DEFAULT, parsed);
+  } catch (e) { return Object.assign({}, PREFERENCIAS_DEFAULT); }
+}
+
+function savePreferenciasUsuario(prefs) {
+  var key = getPreferenciasStorageKey();
+  if (!key) return;
+  try { localStorage.setItem(key, JSON.stringify(prefs)); } catch (e) {}
+}
+
+function applyPreferencias(prefs) {
+  if (!prefs) prefs = getPreferenciasUsuario();
+  var root = document.documentElement;
+  var accent = (prefs.accentColor && prefs.accentColor !== 'default') ? prefs.accentColor : '#d4af37';
+  root.style.setProperty('--accent', accent);
+  root.style.setProperty('--accent-hover', prefs.accentColor ? (prefs.accentColor === 'default' ? '#e0c04a' : accent) : '#e0c04a');
+  var accentSoft = accent + '30';
+  if (accent.length === 7) {
+    var r = parseInt(accent.slice(1, 3), 16), g = parseInt(accent.slice(3, 5), 16), b = parseInt(accent.slice(5, 7), 16);
+    accentSoft = 'rgba(' + r + ',' + g + ',' + b + ',0.18)';
+  }
+  root.style.setProperty('--accent-soft', accentSoft);
+  var fontMap = { default: "'Plus Jakarta Sans', -apple-system, sans-serif", inter: "'Inter', sans-serif", outfit: "'Outfit', sans-serif", roboto: "'Roboto', sans-serif", system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+  root.style.setProperty('--font', fontMap[prefs.fontFamily] || fontMap.default);
+  var sizeMap = { small: '0.9375rem', medium: '1rem', large: '1.0625rem' };
+  root.style.setProperty('--font-size-base', sizeMap[prefs.fontSize] || sizeMap.medium);
+  document.body.classList.remove('personalizacion-size-small', 'personalizacion-size-medium', 'personalizacion-size-large');
+  document.body.classList.add('personalizacion-size-' + (prefs.fontSize || 'medium'));
+  document.body.classList.toggle('personalizacion-compact-nav', !!prefs.compactNav);
+  document.body.classList.remove('personalizacion-radius-default', 'personalizacion-radius-rounded', 'personalizacion-radius-sharp');
+  document.body.classList.add('personalizacion-radius-' + (prefs.borderRadius || 'default'));
+  document.body.classList.toggle('personalizacion-reduced-motion', !!prefs.reducedMotion);
+  document.body.classList.remove('theme-dark', 'theme-light');
+  document.body.classList.add('theme-' + (prefs.theme === 'light' ? 'light' : 'dark'));
+  document.body.classList.toggle('personalizacion-high-contrast', !!prefs.highContrast);
+  document.body.classList.remove('personalizacion-cards-default', 'personalizacion-cards-flat', 'personalizacion-cards-elevated');
+  document.body.classList.add('personalizacion-cards-' + (prefs.cardStyle || 'default'));
+  var bgWrap = document.getElementById('personalizacionBackgroundWrap');
+  if (!bgWrap) {
+    bgWrap = document.createElement('div');
+    bgWrap.id = 'personalizacionBackgroundWrap';
+    bgWrap.className = 'personalizacion-background-wrap';
+    bgWrap.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(bgWrap, document.body.firstChild);
+  }
+  var opacity = prefs.backgroundOpacity != null ? Number(prefs.backgroundOpacity) : 0.5;
+  if (opacity > 1) opacity = opacity / 100;
+  bgWrap.style.opacity = (prefs.backgroundType === 'image' && prefs.backgroundImage) ? String(opacity) : '1';
+  bgWrap.className = 'personalizacion-background-wrap personalizacion-bg-' + (prefs.backgroundType || 'none');
+  if (prefs.backgroundType === 'image' && prefs.backgroundImage) {
+    bgWrap.style.backgroundImage = 'url(' + prefs.backgroundImage + ')';
+    bgWrap.style.backgroundSize = 'cover';
+    bgWrap.style.backgroundPosition = 'center';
+  } else if (prefs.backgroundType === 'gradient') {
+    bgWrap.style.backgroundImage = '';
+    var gradMap = {
+      warm: 'linear-gradient(135deg, #1a0f0a 0%, #2d1810 50%, #1a1a1a 100%)',
+      cool: 'linear-gradient(135deg, #0a0f1a 0%, #0d1525 50%, #1a1d22 100%)',
+      ocean: 'linear-gradient(135deg, #0a1418 0%, #0d2028 40%, #1a2528 100%)',
+      dark: 'linear-gradient(180deg, #0c0c0c 0%, #1a1a1a 100%)',
+      minimal: 'linear-gradient(180deg, #1a1d22 0%, #252a32 100%)'
+    };
+    bgWrap.style.background = gradMap[prefs.backgroundGradient] || gradMap.warm;
+  } else {
+    bgWrap.style.backgroundImage = '';
+    bgWrap.style.background = '';
+  }
+}
+
+const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaResultadosCalculadora', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion'];
 
 const MEDIA_PENDING_STORAGE = 'benny_media_pending';
 const MEDIA_APPROVED_STORAGE = 'benny_media_approved';
@@ -128,6 +225,97 @@ function hasLeidoTodasNormativas(userId) {
   return true;
 }
 
+/** Test ABC de comprensión (normativas + instrucciones): almacén por usuario */
+const NORMATIVAS_TEST_STORAGE = 'benny_normativas_test_pasado';
+
+function hasPasadoTestNormativas(userId) {
+  if (!userId) return false;
+  var users = typeof getUsers === 'function' ? getUsers() : [];
+  var user = users.find(function (u) { return u.id === userId; });
+  if (user && typeof hasPermission === 'function' && hasPermission(user, 'exentoTestNormativas')) return true;
+  try {
+    var obj = JSON.parse(localStorage.getItem(NORMATIVAS_TEST_STORAGE) || '{}');
+    return !!obj[userId];
+  } catch (e) { return false; }
+}
+
+function setTestNormativasPasado(userId) {
+  if (!userId) return;
+  try {
+    var obj = JSON.parse(localStorage.getItem(NORMATIVAS_TEST_STORAGE) || '{}');
+    obj[userId] = true;
+    localStorage.setItem(NORMATIVAS_TEST_STORAGE, JSON.stringify(obj));
+  } catch (e) {}
+}
+
+/** Registro de resultados del test (para admin en Solicitudes) */
+const NORMATIVAS_TEST_REGISTRO_STORAGE = 'benny_normativas_test_registro';
+const NORMATIVAS_TEST_REGISTRO_MAX = 500;
+
+function getRegistroTestNormativas() {
+  try {
+    var raw = localStorage.getItem(NORMATIVAS_TEST_REGISTRO_STORAGE);
+    var arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+function addRegistroTestNormativas(entrada) {
+  try {
+    var arr = getRegistroTestNormativas();
+    arr.unshift(entrada);
+    if (arr.length > NORMATIVAS_TEST_REGISTRO_MAX) arr.length = NORMATIVAS_TEST_REGISTRO_MAX;
+    localStorage.setItem(NORMATIVAS_TEST_REGISTRO_STORAGE, JSON.stringify(arr));
+  } catch (e) {}
+}
+
+/** Banco de preguntas tipo ABC (opción correcta por índice 0, 1 o 2). Se eligen 5 al azar y se barajan opciones para cada usuario. */
+var TEST_NORMATIVAS_BANCO = [
+  { pregunta: 'Para poder usar los botones Reparación, Tuneo o Tuneo + Reparación en la calculadora, ¿qué debes hacer primero?', opciones: ['Leer las normativas', 'Fichar entrada', 'Introducir la matrícula'], correcta: 1 },
+  { pregunta: 'Si introduces una matrícula que no está registrada, ¿qué ocurre?', opciones: ['No se puede continuar', 'Rellenas la ficha del vehículo/cliente, guardas y continúas con el servicio elegido', 'Hay que volver a la pantalla principal'], correcta: 1 },
+  { pregunta: 'En los tuneos de vehículos importados, según la normativa, ¿se puede aplicar descuento?', opciones: ['Sí, el que indique el encargado', 'No, no se puede aplicar ningún descuento', 'Solo el jefe puede aplicarlo'], correcta: 1 },
+  { pregunta: '¿Se pueden hacer reparaciones o tuneos gratuitos a compañeros o amigos?', opciones: ['Sí, si son del taller', 'No; se cobra siempre, aplicando descuentos si corresponden', 'Solo los fines de semana'], correcta: 1 },
+  { pregunta: 'Cuando terminas de configurar el presupuesto en la calculadora, ¿qué debes hacer para registrar el servicio?', opciones: ['Cerrar la calculadora', 'Pulsar REGISTRAR TUNEO o REGISTRAR REPARACION según el tipo de servicio', 'Dejar la ficha para el encargado'], correcta: 1 },
+  { pregunta: 'Según la normativa interna, ¿qué debe hacer el mecánico al finalizar un servicio?', opciones: ['Dejar las herramientas en el vehículo', 'Dirigirse al almacén, guardar materiales recuperados y registrar el estado con una foto', 'Cerrar la calculadora'], correcta: 1 },
+  { pregunta: '¿Cuál es el flujo correcto en la calculadora?', opciones: ['Matrícula → Elegir servicio → Calculadora', 'Elegir servicio → Matrícula → Calculadora', 'Calculadora → Matrícula → Registrar'], correcta: 1 },
+  { pregunta: 'En el taller, según normativa, ¿se puede portar colores o símbolos de bandas estando de servicio?', opciones: ['Sí, si es discreto', 'No; el taller es un espacio neutral', 'Solo fuera del local'], correcta: 1 },
+  { pregunta: 'El indicador "No fichado" / "Fichado" en la barra superior sirve para:', opciones: ['Ver el estado; hay que ir a Fichajes para fichar', 'Fichar entrada o salida con un clic sin ir a la pestaña Fichajes', 'Cambiar de usuario'], correcta: 1 },
+  { pregunta: 'Si el servicio es solo Tuneo, ¿qué botón debes pulsar al final?', opciones: ['REGISTRAR REPARACION', 'REGISTRAR TUNEO', 'HOME'], correcta: 1 }
+];
+
+/** Test actual mostrado (5 preguntas aleatorias con opciones barajadas). Se rellena al mostrar el test. */
+var _normativasTestActual = [];
+
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/** Devuelve 5 preguntas aleatorias del banco, cada una con sus opciones barajadas y correcta actualizado. */
+function getTestNormativasAleatorio() {
+  var banco = (typeof TEST_NORMATIVAS_BANCO !== 'undefined' && Array.isArray(TEST_NORMATIVAS_BANCO)) ? TEST_NORMATIVAS_BANCO : [];
+  var indices = banco.map(function (_, i) { return i; });
+  shuffleArray(indices);
+  var numPreguntas = Math.min(5, banco.length);
+  var seleccion = [];
+  for (var s = 0; s < numPreguntas; s++) {
+    var q = banco[indices[s]];
+    var opcionesConIdx = q.opciones.map(function (txt, idx) { return { txt: txt, idx: idx }; });
+    var barajadas = shuffleArray(opcionesConIdx);
+    var nuevaCorrecta = barajadas.findIndex(function (o) { return o.idx === q.correcta; });
+    seleccion.push({
+      pregunta: q.pregunta,
+      opciones: barajadas.map(function (o) { return o.txt; }),
+      correcta: nuevaCorrecta
+    });
+  }
+  return seleccion;
+}
+
 /** Fuentes para el bucle de contenido: primero aprobadas por admin, luego archivos de CONTENT */
 function getContentLoopSources() {
   const approved = getApprovedMedia();
@@ -152,12 +340,14 @@ function debounce(fn, ms) {
 function cerrarTodasPantallasSecundarias() {
   const appBody = document.getElementById('appBody');
   const principal = document.getElementById('pantallaPrincipal');
+  const appContent = document.getElementById('appContent');
   PANTALLAS_SECUNDARIAS_IDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   if (appBody) appBody.style.display = 'flex';
   if (principal) principal.style.display = 'block';
+  if (appContent) appContent.classList.remove('pantalla-secundaria-visible', 'ficha-empleado-abierta');
   actualizarLedFichaje();
   if (typeof paso !== 'undefined') {
     if (paso === 'calculadora' && matriculaActual) renderStatsVehiculo(matriculaActual);
@@ -168,8 +358,10 @@ function cerrarTodasPantallasSecundarias() {
 function ocultarAppBodyMostrarSecundaria(pantallaId) {
   const appBody = document.getElementById('appBody');
   const pantalla = document.getElementById(pantallaId);
+  const appContent = document.getElementById('appContent');
   if (appBody) appBody.style.display = 'none';
   if (pantalla) pantalla.style.display = 'flex';
+  if (appContent) appContent.classList.add('pantalla-secundaria-visible');
 }
 
 function getPendingUserUpdates() {
@@ -487,14 +679,82 @@ function renderUltimasReparaciones() {
     list.innerHTML = '<li class="no-ultimas">No hay reparaciones ni tuneos recientes.</li>';
     return;
   }
-  list.innerHTML = servicios.map(s => {
+  list.innerHTML = servicios.map((s, i) => {
     const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
     const tipo = (s.tipo || '').toLowerCase();
     const label = tipo === 'reparación' ? 'Rep.' : tipo === 'tuneo' ? 'Tuneo' : (s.tipo || '—');
     const mat = (s.matricula || '—').toString();
     const imp = s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—';
-    return '<li><span>' + escapeHtml(mat) + ' · ' + escapeHtml(label) + ' · ' + imp + '</span><span class="ultimas-rep-fecha">' + escapeHtml(fecha) + '</span></li>';
+    return '<li class="ultimas-rep-item-clickable" data-ultimas-index="' + i + '" role="button" tabindex="0" title="Clic para ver resumen"><span>' + escapeHtml(mat) + ' · ' + escapeHtml(label) + ' · ' + imp + '</span><span class="ultimas-rep-fecha">' + escapeHtml(fecha) + '</span></li>';
   }).join('');
+  if (!list.dataset.ultimasBound) {
+    list.dataset.ultimasBound = '1';
+    list.addEventListener('click', function (e) {
+      var li = e.target && e.target.closest('.ultimas-rep-item-clickable');
+      if (!li) return;
+      var idx = parseInt(li.getAttribute('data-ultimas-index'), 10);
+      if (isNaN(idx)) return;
+      var todos = getRegistroServicios().slice(0, 10);
+      if (todos[idx]) mostrarResumenReparacion(todos[idx]);
+    });
+    list.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var li = e.target && e.target.closest('.ultimas-rep-item-clickable');
+      if (!li) return;
+      e.preventDefault();
+      li.click();
+    });
+  }
+}
+
+function mostrarResumenReparacion(s) {
+  var modal = document.getElementById('modalResumenReparacion');
+  var titulo = document.getElementById('modalResumenReparacionTitulo');
+  var body = document.getElementById('modalResumenReparacionBody');
+  var btnClose = document.getElementById('modalResumenReparacionClose');
+  var backdrop = document.getElementById('modalResumenReparacionBackdrop');
+  if (!modal || !body) return;
+  var tipo = (s.tipo || '').toUpperCase();
+  var tipoLabel = tipo.indexOf('REPARAC') !== -1 ? 'Reparación' : tipo.indexOf('TUNEO') !== -1 ? 'Tuneo' : (s.tipo || '—');
+  if (titulo) titulo.textContent = 'Resumen: ' + tipoLabel;
+  var fecha = s.fecha ? new Date(s.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  var rows = [
+    { label: 'Matrícula', value: (s.matricula || '—').toString() },
+    { label: 'Tipo', value: tipoLabel },
+    { label: 'Fecha', value: fecha },
+    { label: 'Modelo', value: (s.modelo || '—').toString() },
+    { label: 'Modificación', value: (s.modificacion || '—').toString() },
+    { label: 'Importe', value: s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—' },
+    { label: 'Empleado', value: (s.empleado || s.userId || '—').toString() },
+    { label: 'Convenio', value: (s.convenio || '—').toString() }
+  ];
+  if (s.descuento != null && s.descuento > 0) rows.push({ label: 'Descuento', value: s.descuento + '%' });
+  if (s.partesChasis != null || s.partesEsenciales != null || s.kitReparacion) {
+    if (s.kitReparacion) rows.push({ label: 'Kit reparación', value: 'Sí' });
+    if (s.partesChasis != null) rows.push({ label: 'Partes chasis', value: String(s.partesChasis) });
+    if (s.partesEsenciales != null) rows.push({ label: 'Partes esenciales', value: String(s.partesEsenciales) });
+  }
+  body.innerHTML = '<div class="resumen-reparacion-filas">' + rows.map(function (r) {
+    return '<div class="resumen-reparacion-row"><span class="resumen-reparacion-label">' + escapeHtml(r.label) + '</span><span class="resumen-reparacion-value">' + escapeHtml(r.value) + '</span></div>';
+  }).join('') + '</div>';
+  var onEscape = function (e) {
+    if (e.key === 'Escape') cerrarResumen();
+  };
+  function cerrarResumen() {
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', onEscape);
+  }
+  if (backdrop && !backdrop.dataset.resumenBound) {
+    backdrop.dataset.resumenBound = '1';
+    backdrop.addEventListener('click', cerrarResumen);
+  }
+  if (btnClose) btnClose.onclick = cerrarResumen;
+  document.addEventListener('keydown', onEscape);
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
 }
 
 async function manejarLogin(e) {
@@ -537,13 +797,14 @@ async function manejarLogin(e) {
     if (cf) cf.addEventListener('submit', manejarCambioPassword);
     return;
   }
-  if (!hasLeidoTodasNormativas(user.id)) {
+  if (!hasLeidoTodasNormativas(user.id) || !hasPasadoTestNormativas(user.id)) {
     var ls2 = document.getElementById('loginScreen');
     var ns = document.getElementById('normativasScreen');
     var app = document.getElementById('appContent');
     if (ls2) ls2.style.display = 'none';
     if (ns) ns.style.display = 'flex';
     if (app) app.style.display = 'none';
+    if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(false);
     setSession(user);
     if (typeof initNormativasPantalla === 'function') initNormativasPantalla(user.id, true);
     return;
@@ -582,12 +843,13 @@ async function manejarCambioPassword(e) {
   if (cambioScreen) cambioScreen.style.display = 'none';
   if (cambioForm) { cambioForm.reset(); cambioForm.removeEventListener('submit', manejarCambioPassword); }
   const currentSession = getSession();
-  if (!hasLeidoTodasNormativas(currentSession.id)) {
-    document.getElementById('normativasScreen').style.display = 'flex';
-    document.getElementById('appContent').style.display = 'none';
-    initNormativasPantalla(currentSession.id, true);
-    return;
-  }
+  if (!hasLeidoTodasNormativas(currentSession.id) || !hasPasadoTestNormativas(currentSession.id)) {
+  document.getElementById('normativasScreen').style.display = 'flex';
+  document.getElementById('appContent').style.display = 'none';
+  if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(false);
+  initNormativasPantalla(currentSession.id, true);
+  return;
+}
   entrarApp(getSession());
 }
 
@@ -599,9 +861,12 @@ function entrarApp(user) {
   if (ls) ls.style.display = 'none';
   if (cs) cs.style.display = 'none';
   if (app) app.style.display = 'block';
+  mostrarChatbotWrap(true);
+  if (typeof vincularChatbot === 'function') vincularChatbot();
   const centerName = document.getElementById('headerUserNameText');
   if (centerName) centerName.textContent = (u && (u.nombre || u.username)) || '';
   if (u) aplicarPermisos(u);
+  applyPreferencias(getPreferenciasUsuario());
   el.mecanico.value = u.nombre || u.username;
   init();
   vincularAdmin();
@@ -622,6 +887,7 @@ function actualizarLedFichaje() {
   bulb.classList.toggle('led-on', !!fichado);
   bulb.classList.toggle('led-off', !fichado);
   text.textContent = fichado ? 'Fichado' : 'No fichado';
+  wrap.setAttribute('title', fichado ? 'Clic para fichar salida' : 'Clic para fichar entrada');
   actualizarBotonesTipoServicioPorFichaje();
 }
 
@@ -644,10 +910,16 @@ function actualizarBotonesTipoServicioPorFichaje() {
 }
 
 function manejarLogout() {
+  var session = getSession();
+  if (session && typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username)) {
+    if (typeof limpiarEntradasAbiertasAntiguas === 'function') limpiarEntradasAbiertasAntiguas();
+    if (typeof cerrarUltimoFichaje === 'function') cerrarUltimoFichaje(session.username, new Date().toISOString());
+  }
   logout();
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appContent').style.display = 'none';
   document.getElementById('cambioPasswordScreen').style.display = 'none';
+  if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(false);
   rellenarLoginUsuariosRecientes();
   const saved = (() => { try { return JSON.parse(localStorage.getItem(CREDENTIALS_STORAGE) || 'null'); } catch { return null; } })();
   if (!saved) {
@@ -736,17 +1008,19 @@ function arranqueAuthContinuar() {
       if (cambioForm) cambioForm.addEventListener('submit', manejarCambioPassword);
       return;
     }
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (cambioScreen) cambioScreen.style.display = 'none';
-    if (appContent) appContent.style.display = 'block';
-    const centerName = document.getElementById('headerUserNameText');
-    if (centerName) centerName.textContent = session.nombre || session.username;
-    aplicarPermisos(session);
-    init();
-    vincularAdmin();
-    vincularOrganigrama();
-    vincularFichajes();
-    actualizarLedFichaje();
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (cambioScreen) cambioScreen.style.display = 'none';
+  if (appContent) appContent.style.display = 'block';
+  if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(true);
+  if (typeof vincularChatbot === 'function') vincularChatbot();
+  const centerName = document.getElementById('headerUserNameText');
+  if (centerName) centerName.textContent = session.nombre || session.username;
+  aplicarPermisos(session);
+  init();
+  vincularAdmin();
+  vincularOrganigrama();
+  vincularFichajes();
+  actualizarLedFichaje();
   } else {
     var loginScreen = document.getElementById('loginScreen');
     if (loginScreen) loginScreen.style.display = 'flex';
@@ -992,6 +1266,42 @@ function vincularAdmin() {
   document.getElementById('formConvenio')?.addEventListener('submit', guardarConvenio);
   modalUsuarioClose?.addEventListener('click', () => modalUsuario.classList.remove('active'));
   modalUsuario?.addEventListener('click', e => { if (e.target === modalUsuario) modalUsuario.classList.remove('active'); });
+  document.getElementById('btnFichaEmpleadoHome')?.addEventListener('click', function () { cerrarTodasPantallasSecundarias(); });
+  var btnFichaAnadirFoto = document.getElementById('btnFichaEmpleadoAnadirFoto');
+  var inputFichaFoto = document.getElementById('fichaEmpleadoFotoInput');
+  if (btnFichaAnadirFoto && inputFichaFoto) {
+    btnFichaAnadirFoto.addEventListener('click', function () { inputFichaFoto.click(); });
+    inputFichaFoto.addEventListener('change', function () {
+      var files = this.files;
+      if (!files || files.length === 0) return;
+      var id = document.getElementById('usuarioId').value;
+      if (!id) return;
+      var users = getUsers();
+      var u = users.find(function (x) { return x.id === id; });
+      var fotos = (u && Array.isArray(u.fotosFicha)) ? u.fotosFicha.slice() : [];
+      var session = getSession();
+      if (!session || typeof updateUser !== 'function') return;
+      var readNext = function (i) {
+        if (i >= files.length) {
+          updateUser(id, { fotosFicha: fotos }, session.username).then(function () {
+            if (typeof renderFichaEmpleadoFotos === 'function') renderFichaEmpleadoFotos(id);
+            if (typeof aplicarFondoFichaEmpleado === 'function') aplicarFondoFichaEmpleado(id);
+          }).catch(function () {});
+          inputFichaFoto.value = '';
+          return;
+        }
+        var file = files[i];
+        if (!file.type.startsWith('image/')) { readNext(i + 1); return; }
+        var reader = new FileReader();
+        reader.onload = function () {
+          fotos.push(reader.result);
+          readNext(i + 1);
+        };
+        reader.readAsDataURL(file);
+      };
+      readNext(0);
+    });
+  }
   vincularEconomia();
   vincularResetDatos();
 }
@@ -2007,8 +2317,8 @@ function vincularEconomia() {
   });
   var btnRegistrarEntregaDesdeFicha = document.getElementById('btnRegistrarEntregaDesdeFicha');
   if (btnRegistrarEntregaDesdeFicha) btnRegistrarEntregaDesdeFicha.addEventListener('click', function () {
-    var modalUsuario = document.getElementById('modalUsuario');
-    var userId = modalUsuario && modalUsuario.getAttribute('data-usuario-ficha-id');
+    var pantallaFicha = document.getElementById('pantallaFichaEmpleado');
+    var userId = pantallaFicha && pantallaFicha.dataset && pantallaFicha.dataset.userId ? pantallaFicha.dataset.userId : null;
     if (!userId || typeof getUsers !== 'function') return;
     var users = getUsers().filter(function (u) { return u.activo !== false; });
     var u = users.find(function (x) { return x.id === userId; });
@@ -2344,7 +2654,31 @@ function renderSolicitudesGraficas() {
       renderSolicitudesGraficas();
     });
   });
+  if (typeof renderRegistroTestNormativas === 'function') renderRegistroTestNormativas();
 }
+
+function renderRegistroTestNormativas() {
+  var listEl = document.getElementById('registroTestNormativasLista');
+  var emptyEl = document.getElementById('registroTestNormativasVacio');
+  if (!listEl) return;
+  var registros = getRegistroTestNormativas();
+  if (registros.length === 0) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  var html = '<table class="registro-test-normativas-tabla"><thead><tr><th>Usuario</th><th>Fecha y hora</th><th>Resultado</th></tr></thead><tbody>';
+  registros.forEach(function (r) {
+    var fechaStr = r.fecha ? new Date(r.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    var resultado = r.aprobado ? 'Aprobado' : 'No aprobado';
+    var clase = r.aprobado ? 'resultado-aprobado' : 'resultado-no-aprobado';
+    html += '<tr><td>' + escapeHtml(r.userNombre || r.userId || '—') + '</td><td>' + escapeHtml(fechaStr) + '</td><td class="' + clase + '">' + escapeHtml(resultado) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  listEl.innerHTML = html;
+}
+
 function escapeHtmlAttr(s) {
   if (s == null) return '';
   const div = document.createElement('div');
@@ -2381,7 +2715,16 @@ function initNormativasPantalla(userId, obligatorio) {
 function showNormativasList() {
   document.getElementById('normativasListWrap').style.display = '';
   document.getElementById('normativasReaderWrap').style.display = 'none';
-  document.getElementById('normativasFooter').style.display = _normativasObligatorio && hasLeidoTodasNormativas(_normativasUserId) ? 'block' : 'none';
+  var leidoTodo = hasLeidoTodasNormativas(_normativasUserId);
+  var testPasado = hasPasadoTestNormativas(_normativasUserId);
+  var testWrap = document.getElementById('normativasTestWrap');
+  var footer = document.getElementById('normativasFooter');
+  if (testWrap) testWrap.style.display = (_normativasObligatorio && leidoTodo && !testPasado) ? 'block' : 'none';
+  if (footer) footer.style.display = (_normativasObligatorio && leidoTodo && testPasado) ? 'block' : 'none';
+  if (testWrap && testWrap.style.display === 'block') {
+    _normativasTestActual = typeof getTestNormativasAleatorio === 'function' ? getTestNormativasAleatorio() : [];
+    renderNormativasTestPreguntas();
+  }
   actualizarNormativasProgress();
 }
 
@@ -2459,7 +2802,47 @@ function actualizarNormativasProgress() {
     readPages += (leidas[d.id] || []).filter(Boolean).length;
   });
   progressText.textContent = 'Has leído ' + readPages + ' de ' + totalPages + ' páginas.';
-  if (footer && _normativasObligatorio) footer.style.display = hasLeidoTodasNormativas(_normativasUserId) ? 'block' : 'none';
+  if (footer && _normativasObligatorio) {
+    var leidoTodo = hasLeidoTodasNormativas(_normativasUserId);
+    var testPasado = hasPasadoTestNormativas(_normativasUserId);
+    footer.style.display = (leidoTodo && testPasado) ? 'block' : 'none';
+  }
+  var testWrap = document.getElementById('normativasTestWrap');
+  if (testWrap && _normativasObligatorio) {
+    var leidoTodo2 = hasLeidoTodasNormativas(_normativasUserId);
+    var testPasado2 = hasPasadoTestNormativas(_normativasUserId);
+    testWrap.style.display = (leidoTodo2 && !testPasado2) ? 'block' : 'none';
+  }
+}
+
+function renderNormativasTestPreguntas() {
+  var container = document.getElementById('normativasTestPreguntas');
+  var msgEl = document.getElementById('normativasTestMensaje');
+  var preguntas = Array.isArray(_normativasTestActual) && _normativasTestActual.length ? _normativasTestActual : [];
+  if (!container) return;
+  if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; msgEl.className = 'normativas-test-mensaje'; }
+  container.innerHTML = '';
+  preguntas.forEach(function (q, i) {
+    var block = document.createElement('div');
+    block.className = 'normativas-test-pregunta';
+    var label = document.createElement('label');
+    label.textContent = (i + 1) + '. ' + q.pregunta;
+    block.appendChild(label);
+    var opts = document.createElement('div');
+    opts.className = 'normativas-test-opciones';
+    (q.opciones || []).forEach(function (opt, j) {
+      var wrap = document.createElement('label');
+      var radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'normativas-q' + i;
+      radio.value = String(j);
+      wrap.appendChild(radio);
+      wrap.appendChild(document.createTextNode(opt));
+      opts.appendChild(wrap);
+    });
+    block.appendChild(opts);
+    container.appendChild(block);
+  });
 }
 
 function bindNormativasContinuar() {
@@ -2499,6 +2882,35 @@ function bindNormativasContinuar() {
     vincularFichajes();
     actualizarLedFichaje();
   });
+
+  var testForm = document.getElementById('normativasTestForm');
+  var testMsg = document.getElementById('normativasTestMensaje');
+  if (testForm) testForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!_normativasUserId || !Array.isArray(_normativasTestActual) || !_normativasTestActual.length) return;
+    var fallos = 0;
+    _normativasTestActual.forEach(function (q, i) {
+      var radio = document.querySelector('input[name="normativas-q' + i + '"]:checked');
+      var val = radio ? parseInt(radio.value, 10) : -1;
+      if (val !== q.correcta) fallos++;
+    });
+    var userNombre = (typeof getSession === 'function' && getSession()) ? (getSession().nombre || getSession().username || _normativasUserId) : _normativasUserId;
+    addRegistroTestNormativas({ userId: _normativasUserId, userNombre: userNombre, fecha: new Date().toISOString(), aprobado: fallos === 0 });
+    if (testMsg) {
+      testMsg.style.display = 'block';
+      if (fallos > 0) {
+        testMsg.className = 'normativas-test-mensaje error';
+        testMsg.textContent = 'Has fallado ' + fallos + ' pregunta(s). Revisa las normativas e instrucciones y vuelve a intentar.';
+      } else {
+        testMsg.className = 'normativas-test-mensaje ok';
+        testMsg.textContent = '¡Correcto! Has superado el test. Puedes continuar al taller.';
+        setTestNormativasPasado(_normativasUserId);
+        document.getElementById('normativasTestWrap').style.display = 'none';
+        var footer = document.getElementById('normativasFooter');
+        if (footer) footer.style.display = 'block';
+      }
+    }
+  });
 }
 
 function vincularNormativas() {
@@ -2511,6 +2923,8 @@ function vincularNormativas() {
     _normativasUserId = session.id;
     _normativasObligatorio = false;
     document.getElementById('normativasScreen').style.display = 'flex';
+    document.getElementById('appContent').style.display = 'none';
+    if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(false);
     document.getElementById('normativasProgressWrap').style.display = 'none';
     document.getElementById('normativasFooter').style.display = 'none';
     var subtitle = document.getElementById('normativasSubtitle');
@@ -2525,6 +2939,134 @@ function vincularNormativas() {
 function cerrarNormativasConsulta() {
   if (!_normativasObligatorio) {
     document.getElementById('normativasScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    if (typeof mostrarChatbotWrap === 'function') mostrarChatbotWrap(true);
+  }
+}
+
+// ========== CHATBOT NORMATIVAS E INSTRUCCIONES ==========
+var _chatbotBound = false;
+
+/** Construye chunks buscables a partir de normativas + instrucciones (solo contenido oficial) */
+function getChatbotChunks() {
+  if (typeof getNormativas !== 'function') return [];
+  var docs = getNormativas();
+  var chunks = [];
+  docs.forEach(function (doc) {
+    var text = (doc.content || '').replace(/\r\n/g, '\n').trim();
+    if (!text) return;
+    var parts = text.split(/\n---\s*\n/);
+    if (parts.length <= 1) parts = text.split(/\n\n+/);
+    parts.forEach(function (p) {
+      p = p.trim();
+      if (p.length > 40) chunks.push({ source: doc.title || doc.id, text: p });
+    });
+  });
+  return chunks;
+}
+
+/** Normaliza texto para búsqueda: minúsculas, sin acentos opcionales, palabras */
+function normalizarParaBusqueda(s) {
+  if (typeof s !== 'string') return '';
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(function (w) { return w.length >= 2; });
+}
+
+/** Puntúa un chunk por coincidencias de palabras de la pregunta */
+function puntuarChunk(chunk, palabras) {
+  var texto = (chunk.text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var count = 0;
+  palabras.forEach(function (pal) {
+    if (texto.indexOf(pal) !== -1) count++;
+  });
+  return count;
+}
+
+/** Responde solo con contenido de normativas e instrucciones; si no hay match, mensaje acotado */
+function getRespuestaChatbotNormativas(pregunta) {
+  var msgFueraTema = 'Solo puedo responder sobre normativas del taller e instrucciones de la calculadora. Reformula tu pregunta usando términos como: fichaje, descuento, reparación, tuneo, matrícula, almacén, convenio, SAPD, importados, etc.';
+  var t = (pregunta || '').trim();
+  if (t.length < 2) return msgFueraTema;
+  var palabras = normalizarParaBusqueda(t);
+  if (palabras.length === 0) return msgFueraTema;
+  var chunks = getChatbotChunks();
+  if (chunks.length === 0) return 'No hay normativas cargadas. Consulta el menú Normativas.';
+  var scored = chunks.map(function (c) { return { chunk: c, score: puntuarChunk(c, palabras) }; });
+  scored.sort(function (a, b) { return b.score - a.score; });
+  var top = scored.filter(function (x) { return x.score > 0; }).slice(0, 3);
+  if (top.length === 0) return msgFueraTema;
+  var maxLen = 1100;
+  var out = [];
+  var len = 0;
+  for (var i = 0; i < top.length && len < maxLen; i++) {
+    var frag = top[i].chunk.text;
+    if (len + frag.length > maxLen) frag = frag.substring(0, maxLen - len - 20) + '…';
+    out.push(frag);
+    len += frag.length;
+  }
+  return (out.join('\n\n—\n\n')).trim();
+}
+
+function vincularChatbot() {
+  var wrap = document.getElementById('chatbotWrap');
+  var toggle = document.getElementById('chatbotToggle');
+  var panel = document.getElementById('chatbotPanel');
+  var closeBtn = document.getElementById('chatbotClose');
+  var messages = document.getElementById('chatbotMessages');
+  var input = document.getElementById('chatbotInput');
+  var sendBtn = document.getElementById('chatbotSend');
+  if (!wrap || !toggle || !panel || !messages || !input || !sendBtn) return;
+  if (_chatbotBound) return;
+  _chatbotBound = true;
+
+  function appendMsg(text, isUser) {
+    var div = document.createElement('div');
+    div.className = 'chatbot-msg ' + (isUser ? 'user' : 'bot');
+    div.textContent = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function openPanel() {
+    panel.style.display = 'flex';
+    if (messages.children.length === 0) {
+      appendMsg('Hola. Pregunta solo sobre normativas del taller o uso de la calculadora. Ej: "¿Cómo fichar entrada?", "¿Descuento en tuneo importados?"', false);
+    }
+    input.focus();
+  }
+
+  function closePanel() {
+    panel.style.display = 'none';
+  }
+
+  toggle.addEventListener('click', function () {
+    if (panel.style.display === 'none' || !panel.style.display) openPanel(); else closePanel();
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closePanel);
+  sendBtn.addEventListener('click', enviarChatbot);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); enviarChatbot(); }
+  });
+
+  function enviarChatbot() {
+    var text = (input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+    appendMsg(text, true);
+    var respuesta = getRespuestaChatbotNormativas(text);
+    appendMsg(respuesta, false);
+  }
+}
+
+function mostrarChatbotWrap(mostrar) {
+  var wrap = document.getElementById('chatbotWrap');
+  if (wrap) wrap.style.display = mostrar ? 'block' : 'none';
+  if (!mostrar) {
+    var panel = document.getElementById('chatbotPanel');
+    if (panel) panel.style.display = 'none';
   }
 }
 
@@ -3168,7 +3710,7 @@ function vincularRegistroClientes() {
       const target = getUsers().find(u => u.id === id);
       if (target && !hasPermission(target, 'noRequiereAprobacionAdmin')) {
         addPendingUserUpdate({ targetId: id, data, requestedBy: session.username, fecha: new Date().toISOString() });
-        modalUsuario.classList.remove('active');
+        cerrarFichaEmpleadoSiAbierta();
         renderListaUsuarios();
         alert('Cambios enviados. Un administrador debe aprobarlos.');
         return;
@@ -3185,7 +3727,7 @@ function vincularRegistroClientes() {
       alert(res.error);
       return;
     }
-    if (modalUsuario) modalUsuario.classList.remove('active');
+    cerrarFichaEmpleadoSiAbierta();
     renderListaUsuarios();
     renderAprobacionesPendientes();
     if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama')?.style.display === 'flex') {
@@ -3216,6 +3758,10 @@ function abrirPantallaOrganigrama() {
   }
   if (btnAddNivel) btnAddNivel.style.display = 'none';
   if (typeof hideOrganigramaToolbar === 'function') hideOrganigramaToolbar();
+  var previewPlaceholder = document.getElementById('organigramaFichaPreviewPlaceholder');
+  var previewContent = document.getElementById('organigramaFichaPreviewContent');
+  if (previewPlaceholder) { previewPlaceholder.style.display = ''; previewPlaceholder.textContent = 'Selecciona un empleado para ver su ficha.'; }
+  if (previewContent) previewContent.style.display = 'none';
   cerrarTodasPantallasSecundarias();
   ocultarAppBodyMostrarSecundaria('pantallaOrganigrama');
 }
@@ -3286,6 +3832,14 @@ function vincularOrganigrama() {
           if (typeof hideOrganigramaToolbar === 'function') hideOrganigramaToolbar();
         });
       }
+    });
+  }
+  var orgPreviewBtnEditar = document.getElementById('orgPreviewBtnEditar');
+  if (orgPreviewBtnEditar) {
+    orgPreviewBtnEditar.addEventListener('click', function() {
+      var panel = document.getElementById('organigramaFichaPreview');
+      var userId = panel && panel.dataset && panel.dataset.userId ? panel.dataset.userId : null;
+      if (userId && typeof abrirFormUsuario === 'function') abrirFormUsuario(userId);
     });
   }
 }
@@ -3545,6 +4099,47 @@ function vincularFichajes() {
       }
     });
   }
+
+  var ledFichajeWrap = document.getElementById('ledFichajeWrap');
+  if (ledFichajeWrap) {
+    ledFichajeWrap.addEventListener('click', function () {
+      var session = getSession();
+      if (!session) return;
+      limpiarEntradasAbiertasAntiguas();
+      var abierta = typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username);
+      if (abierta) {
+        var now = new Date().toISOString();
+        if (cerrarUltimoFichaje(session.username, now)) {
+          renderListaFichajesReciente(session.username);
+          renderFichajesDashboard(session.username);
+          actualizarEstadoBotonEntrada();
+          if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+          alert('Salida registrada a las ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
+        } else {
+          alert('No puedes fichar salida sin una entrada previa.');
+        }
+      } else {
+        var now = new Date();
+        var nowIso = now.toISOString();
+        addFichaje(session.username, nowIso, null);
+        var entradaManual = document.getElementById('fichajeEntrada');
+        if (entradaManual) {
+          var y = now.getFullYear();
+          var m = String(now.getMonth() + 1).padStart(2, '0');
+          var d = String(now.getDate()).padStart(2, '0');
+          var h = String(now.getHours()).padStart(2, '0');
+          var min = String(now.getMinutes()).padStart(2, '0');
+          entradaManual.value = y + '-' + m + '-' + d + 'T' + h + ':' + min;
+        }
+        renderListaFichajesReciente(session.username);
+        renderFichajesDashboard(session.username);
+        actualizarEstadoBotonEntrada();
+        if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+        alert('Entrada registrada a las ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
+      }
+    });
+  }
+
   document.querySelectorAll('.fichajes-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const t = tab.dataset.fichajesTab;
@@ -3641,6 +4236,11 @@ function renderAprobacionesPendientes() {
   });
 }
 
+var EMPLEADOS_NIVEL_LABELS = { 0: 'Dirección', 1: 'Responsables', 2: 'Equipo', 3: 'Operativos' };
+function getEmpleadoNivelLabel(nivel) {
+  return EMPLEADOS_NIVEL_LABELS[nivel] || ('Nivel ' + nivel);
+}
+
 function renderListaUsuarios() {
   const lista = document.getElementById('listaUsuarios');
   if (!lista) return;
@@ -3661,56 +4261,153 @@ function renderListaUsuarios() {
     lista.appendChild(hint);
   }
   if (hasPermission(session, 'gestionarUsuarios')) renderAprobacionesPendientes();
-  users.forEach(u => {
-    const div = document.createElement('div');
-    div.className = 'usuario-item';
-    const puedeEliminar = hasPermission(session, 'gestionarUsuarios');
-    div.innerHTML = `
-      <div class="usuario-item-info">
-        <span>${escapeHtml(u.nombre || u.username)}</span>
-        <span class="rol">${escapeHtml(u.username)} · ${escapeHtml(u.rol)}${u.activo ? '' : ' (inactivo)'}</span>
-      </div>
-      <div class="usuario-item-actions">
-        <button type="button" class="btn btn-outline" data-edit="${escapeHtmlAttr(u.id)}">Editar</button>
-        ${puedeEliminar ? '<button type="button" class="btn btn-outline btn-danger" data-delete="' + escapeHtmlAttr(u.id) + '" title="Eliminar empleado">Eliminar</button>' : ''}
-      </div>
-    `;
-    div.querySelector('[data-edit]').addEventListener('click', () => abrirFormUsuario(u.id));
-    const btnDelete = div.querySelector('[data-delete]');
-    if (btnDelete) {
-      btnDelete.addEventListener('click', () => {
-        const nombre = (u.nombre || u.username);
-        if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
-        const res = typeof deleteUser === 'function' ? deleteUser(u.id) : { error: 'No disponible' };
-        if (res && res.error) {
-          alert(res.error);
-          return;
-        }
-        renderListaUsuarios();
-        if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
-          renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
-        }
-      });
+
+  var organigrama = typeof getOrganigrama === 'function' ? getOrganigrama() : null;
+  var nodes = (organigrama && organigrama.nodes) ? organigrama.nodes : [];
+  var nivelByUserId = {};
+  nodes.forEach(function (n) {
+    if (n.id != null) nivelByUserId[n.id] = n.nivel != null ? n.nivel : 0;
+  });
+  var byNivel = {};
+  users.forEach(function (u) {
+    var niv = nivelByUserId[u.id] != null ? nivelByUserId[u.id] : 2;
+    if (!byNivel[niv]) byNivel[niv] = [];
+    byNivel[niv].push(u);
+  });
+  var nivelesOrdenados = Object.keys(byNivel).map(Number).sort(function (a, b) { return a - b; });
+
+  function buildFichaCard(u) {
+    var users = getUsers();
+    var responsable = (u.responsable && users.find(function (r) { return r.username === u.responsable; }))
+      ? (users.find(function (r) { return r.username === u.responsable; }).nombre || u.responsable) : (u.responsable || '—');
+    var uid = u.username || u.id;
+    var horasSemana, totalCobrado;
+    if (esUsuarioAdminParaTotales(u) && typeof getTotalesTaller === 'function') {
+      var totales = getTotalesTaller();
+      horasSemana = totales.horasSemana;
+      totalCobrado = totales.totalCobrado;
+    } else {
+      horasSemana = typeof getHorasSemana === 'function' ? getHorasSemana(uid, new Date()) : 0;
+      var servicios = getRegistroServicios();
+      totalCobrado = servicios.filter(function (s) { return (s.userId || s.empleado) === uid; }).reduce(function (sum, s) { return sum + (s.importe || 0); }, 0);
     }
-    lista.appendChild(div);
+    var fechaAlta = u.fechaAlta ? new Date(u.fechaAlta).toLocaleDateString('es-ES') : (u.fechaCreacion ? new Date(u.fechaCreacion).toLocaleDateString('es-ES') : '—');
+    var foto = (u.fotoPerfil || '').trim();
+    var fotoHtml = (foto && (foto.startsWith('http') || foto.startsWith('data:')))
+      ? '<div class="empleado-ficha-foto"><img src="' + escapeHtml(foto) + '" alt="" onerror="this.parentElement.classList.add(\'foto-error\')"></div>'
+      : '<div class="empleado-ficha-foto empleado-ficha-iniciales"><span>' + escapeHtml((u.nombre || u.username || '?').substring(0, 2).toUpperCase()) + '</span></div>';
+    var puedeEliminar = hasPermission(session, 'gestionarUsuarios');
+    var inactivo = u.activo === false ? ' empleado-ficha-inactivo' : '';
+    return '<div class="empleado-ficha-card' + inactivo + '" data-user-id="' + escapeHtmlAttr(u.id) + '">' +
+      fotoHtml +
+      '<div class="empleado-ficha-body">' +
+      '<h4 class="empleado-ficha-nombre">' + escapeHtml(u.nombre || u.username) + '</h4>' +
+      '<p class="empleado-ficha-rol">' + escapeHtml(u.puesto || u.rol || '—') + '</p>' +
+      '<div class="empleado-ficha-datos">' +
+      '<div class="empleado-ficha-row"><span class="empleado-ficha-label">Responsable</span><span>' + escapeHtml(responsable) + '</span></div>' +
+      '<div class="empleado-ficha-row"><span class="empleado-ficha-label">Puesto</span><span>' + escapeHtml(u.puesto || '—') + '</span></div>' +
+      '<div class="empleado-ficha-row"><span class="empleado-ficha-label">Fecha alta</span><span>' + escapeHtml(fechaAlta) + '</span></div>' +
+      '<div class="empleado-ficha-row"><span class="empleado-ficha-label">Horas esta semana</span><span>' + (horasSemana || 0).toFixed(1) + ' h</span></div>' +
+      '<div class="empleado-ficha-row"><span class="empleado-ficha-label">Total cobrado</span><span>' + totalCobrado.toLocaleString('es-ES') + ' €</span></div>' +
+      '</div>' +
+      '<div class="empleado-ficha-actions">' +
+      '<button type="button" class="btn btn-outline btn-sm btn-editar-ficha" data-edit="' + escapeHtmlAttr(u.id) + '">Editar</button>' +
+      (puedeEliminar ? '<button type="button" class="btn btn-outline btn-sm btn-danger btn-eliminar-ficha" data-delete="' + escapeHtmlAttr(u.id) + '" title="Eliminar empleado">Eliminar</button>' : '') +
+      '</div></div></div>';
+  }
+
+  var wrap = document.createElement('div');
+  wrap.className = 'empleados-niveles-wrap';
+  nivelesOrdenados.forEach(function (nivel) {
+    var list = byNivel[nivel];
+    if (!list || list.length === 0) return;
+    var titulo = getEmpleadoNivelLabel(nivel);
+    var section = document.createElement('div');
+    section.className = 'empleados-nivel-bloque nivel-' + nivel;
+    section.innerHTML = '<h3 class="empleados-nivel-titulo">' + escapeHtml(titulo) + '</h3><div class="empleados-fichas-grid">' +
+      list.map(buildFichaCard).join('') + '</div>';
+    wrap.appendChild(section);
+  });
+  lista.appendChild(wrap);
+
+  lista.querySelectorAll('.btn-editar-ficha').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-edit');
+      if (id) abrirFormUsuario(id);
+    });
+  });
+  lista.querySelectorAll('.btn-eliminar-ficha').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-delete');
+      if (!id) return;
+      var u = users.find(function (x) { return x.id === id; });
+      var nombre = (u && (u.nombre || u.username)) || id;
+      if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+      var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
+      if (res && res.error) { alert(res.error); return; }
+      renderListaUsuarios();
+      if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
+        renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
+      }
+    });
   });
 }
 
+function cerrarFichaEmpleadoSiAbierta() {
+  var pantalla = document.getElementById('pantallaFichaEmpleado');
+  if (pantalla && pantalla.style.display === 'flex') cerrarTodasPantallasSecundarias();
+}
+
+/** Iconos SVG por permiso para la ficha del empleado */
+var PERMISO_ICONS = {
+  verCalculadora: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>',
+  verPresupuesto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  registrarTuneo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  registrarReparacion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  verRegistroServicios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>',
+  limpiarRegistro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  verOrganigrama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="9" y2="16"/><line x1="12" y1="8" x2="15" y2="16"/></svg>',
+  gestionarUsuarios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  gestionarEquipo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
+  noRequiereAprobacionAdmin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  gestionarRegistroClientes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+  verConveniosPrivados: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  gestionarCompras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+  exentoTestNormativas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
+};
+
 function abrirFormUsuario(userId) {
-  const modal = document.getElementById('modalUsuario');
-  const titulo = document.getElementById('modalUsuarioTitulo');
+  const pantalla = document.getElementById('pantallaFichaEmpleado');
+  const titulo = document.getElementById('fichaEmpleadoTitulo');
+  const subtitulo = document.getElementById('fichaEmpleadoSubtitulo');
   const form = document.getElementById('formUsuario');
   const fieldPassword = document.getElementById('fieldPassword');
   const fieldPasswordActual = document.getElementById('fieldPasswordActual');
   const fieldActivo = document.getElementById('fieldActivo');
   const permisosDiv = document.getElementById('permisosCheckboxes');
-  if (!modal || !titulo || !form || !fieldPassword || !permisosDiv) return;
+  if (!form || !fieldPassword || !permisosDiv) return;
 
   if (userId) {
     const users = getUsers();
     const u = users.find(x => x.id === userId);
     if (!u) return;
-    titulo.textContent = 'Editar usuario';
+    if (titulo) titulo.textContent = (u.nombre || u.username) || 'Editar usuario';
+    if (subtitulo) subtitulo.textContent = (u.username || '') + (u.puesto ? ' · ' + u.puesto : '');
+    var fotoWrap = document.getElementById('fichaEmpleadoFotoWrap');
+    var fotoImg = document.getElementById('fichaEmpleadoFotoImg');
+    var fotoIniciales = document.getElementById('fichaEmpleadoFotoIniciales');
+    if (fotoImg && fotoIniciales) {
+      if (u.fotoPerfil && (u.fotoPerfil.startsWith('http') || u.fotoPerfil.startsWith('data:'))) {
+        fotoImg.src = u.fotoPerfil;
+        fotoImg.style.display = 'block';
+        fotoIniciales.style.display = 'none';
+      } else {
+        fotoImg.src = '';
+        fotoImg.style.display = 'none';
+        fotoIniciales.style.display = '';
+        fotoIniciales.textContent = (u.nombre || u.username || '?').substring(0, 2).toUpperCase();
+      }
+    }
     document.getElementById('usuarioId').value = u.id;
     document.getElementById('usuarioUsername').value = u.username;
     document.getElementById('usuarioUsername').readOnly = true;
@@ -3720,7 +4417,7 @@ function abrirFormUsuario(userId) {
     if (fieldPasswordActual) {
       fieldPasswordActual.style.display = 'block';
       document.getElementById('usuarioPasswordActual').value = '••••••••';
-      document.getElementById('usuarioPasswordActual').placeholder = 'Almacenada de forma segura. Escribe la nueva abajo para cambiarla.';
+      document.getElementById('usuarioPasswordActual').placeholder = 'Almacenada de forma segura.';
     }
     var fieldPasswordConfirmEdit = document.getElementById('fieldPasswordConfirm');
     if (fieldPasswordConfirmEdit) fieldPasswordConfirmEdit.style.display = 'none';
@@ -3753,7 +4450,12 @@ function abrirFormUsuario(userId) {
     }
     if (toggleBtn) toggleBtn.style.display = 'none';
   } else {
-    titulo.textContent = 'Nuevo usuario';
+    if (titulo) titulo.textContent = 'Nuevo usuario';
+    if (subtitulo) subtitulo.textContent = 'Crear credenciales y permisos';
+    var fotoInicialesNew = document.getElementById('fichaEmpleadoFotoIniciales');
+    var fotoImgNew = document.getElementById('fichaEmpleadoFotoImg');
+    if (fotoInicialesNew) { fotoInicialesNew.style.display = ''; fotoInicialesNew.textContent = '+'; }
+    if (fotoImgNew) { fotoImgNew.style.display = 'none'; fotoImgNew.src = ''; }
     form.reset();
     document.getElementById('usuarioId').value = '';
     document.getElementById('usuarioUsername').readOnly = false;
@@ -3783,20 +4485,26 @@ function abrirFormUsuario(userId) {
   }
 
   permisosDiv.innerHTML = '';
+  var defaultIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
   Object.entries(PERMISOS).forEach(([key, label]) => {
     if (key === 'gestionarUsuarios' && document.getElementById('usuarioRol').value === 'admin') return;
-    const div = document.createElement('div');
-    div.className = 'permiso-item';
-    const uEdit = userId ? getUsers().find(x => x.id === userId) : null;
-  const val = uEdit ? (uEdit.permisos?.[key] ?? (uEdit.rol === 'admin')) : (key !== 'gestionarUsuarios' && key !== 'gestionarCompras');
-    div.innerHTML = `<label><input type="checkbox" id="perm_${key}" ${val ? 'checked' : ''}> ${label}</label>`;
+    var uEdit = userId ? getUsers().find(function (x) { return x.id === userId; }) : null;
+    var val = uEdit ? (uEdit.permisos && uEdit.permisos[key] !== undefined ? uEdit.permisos[key] : (uEdit.rol === 'admin')) : (key !== 'gestionarUsuarios' && key !== 'gestionarCompras');
+    var iconSvg = (PERMISO_ICONS && PERMISO_ICONS[key]) || defaultIcon;
+    var div = document.createElement('div');
+    div.className = 'permiso-card' + (val ? ' permiso-activo' : '');
+    div.setAttribute('data-permiso', key);
+    div.innerHTML = '<div class="permiso-card-icon">' + iconSvg + '</div><label class="permiso-card-label"><input type="checkbox" id="perm_' + key + '" ' + (val ? 'checked' : '') + '> ' + escapeHtml(label) + '</label>';
     permisosDiv.appendChild(div);
+    div.querySelector('input').addEventListener('change', function () { div.classList.toggle('permiso-activo', this.checked); });
   });
 
-  if (userId && ['admin', 'responsableMecanicos'].includes(getUsers().find(x => x.id === userId)?.rol)) {
-    const div = document.createElement('div');
-    div.className = 'permiso-item';
-    div.innerHTML = `<label><input type="checkbox" id="perm_gestionarUsuarios" checked disabled> ${PERMISOS.gestionarUsuarios}</label>`;
+  if (userId && ['admin', 'responsableMecanicos'].includes((getUsers().find(function (x) { return x.id === userId; }) || {}).rol)) {
+    var iconSvgAdmin = (PERMISO_ICONS && PERMISO_ICONS.gestionarUsuarios) || defaultIcon;
+    var div = document.createElement('div');
+    div.className = 'permiso-card permiso-activo';
+    div.setAttribute('data-permiso', 'gestionarUsuarios');
+    div.innerHTML = '<div class="permiso-card-icon">' + iconSvgAdmin + '</div><label class="permiso-card-label"><input type="checkbox" id="perm_gestionarUsuarios" checked disabled> ' + escapeHtml(PERMISOS.gestionarUsuarios) + '</label>';
     permisosDiv.appendChild(div);
   }
 
@@ -3810,14 +4518,117 @@ function abrirFormUsuario(userId) {
       var puedeVerEntregas = session && (hasPermission(session, 'gestionarUsuarios') || (uEdit && (uEdit.responsable || '').toString().trim() === (session.username || '').toString().trim()));
       seccionMaterial.style.display = puedeVerEntregas ? 'block' : 'none';
       if (puedeVerEntregas && typeof renderMaterialEntregadoEnFicha === 'function') renderMaterialEntregadoEnFicha(userId);
-      if (modal) modal.setAttribute('data-usuario-ficha-id', userId);
     } else {
       seccionMaterial.style.display = 'none';
-      if (modal) modal.removeAttribute('data-usuario-ficha-id');
     }
   }
+  if (pantalla) {
+    pantalla.dataset.userId = userId || '';
+    if (userId) {
+      renderFichaEmpleadoFotos(userId);
+      aplicarFondoFichaEmpleado(userId);
+    } else {
+      var seccionFotos = document.getElementById('fichaSeccionFotos');
+      if (seccionFotos) seccionFotos.style.display = 'none';
+      aplicarFondoFichaEmpleado(null);
+    }
+    cerrarTodasPantallasSecundarias();
+    ocultarAppBodyMostrarSecundaria('pantallaFichaEmpleado');
+  }
+}
 
-  modal.classList.add('active');
+function aplicarFondoFichaEmpleado(userId) {
+  var wrap = document.getElementById('fichaEmpleadoFondoWrap');
+  var imgEl = document.getElementById('fichaEmpleadoFondoImg');
+  var pantalla = document.getElementById('pantallaFichaEmpleado');
+  if (!wrap || !imgEl || !pantalla) return;
+  if (!userId) {
+    wrap.style.display = 'none';
+    imgEl.style.backgroundImage = '';
+    pantalla.classList.remove('ficha-empleado-con-fondo');
+    return;
+  }
+  var users = getUsers();
+  var u = users.find(function (x) { return x.id === userId; });
+  if (!u || !Array.isArray(u.fotosFicha) || u.fotosFicha.length === 0) {
+    wrap.style.display = 'none';
+    imgEl.style.backgroundImage = '';
+    pantalla.classList.remove('ficha-empleado-con-fondo');
+    return;
+  }
+  var idx = u.fondoFichaIndex != null ? Math.max(0, Math.min(Number(u.fondoFichaIndex), u.fotosFicha.length - 1)) : 0;
+  var url = u.fotosFicha[idx];
+  if (!url || !(url.startsWith('data:') || url.startsWith('http'))) {
+    wrap.style.display = 'none';
+    imgEl.style.backgroundImage = '';
+    pantalla.classList.remove('ficha-empleado-con-fondo');
+    return;
+  }
+  imgEl.style.backgroundImage = 'url(' + url + ')';
+  wrap.style.display = 'block';
+  pantalla.classList.add('ficha-empleado-con-fondo');
+}
+
+function renderFichaEmpleadoFotos(userId) {
+  var seccionFotos = document.getElementById('fichaSeccionFotos');
+  var lista = document.getElementById('fichaEmpleadoFotosLista');
+  if (!seccionFotos || !lista) return;
+  seccionFotos.style.display = 'block';
+  var users = getUsers();
+  var u = users.find(function (x) { return x.id === userId; });
+  var fotos = (u && Array.isArray(u.fotosFicha)) ? u.fotosFicha : [];
+  if (fotos.length === 0) {
+    lista.innerHTML = '<p class="ficha-fotos-empty">Aún no hay fotos. Pulsa «Añadir foto» para subir una.</p>';
+    return;
+  }
+  var idxFondo = (u && u.fondoFichaIndex != null) ? Math.max(0, Math.min(Number(u.fondoFichaIndex), fotos.length - 1)) : 0;
+  lista.innerHTML = fotos.map(function (url, i) {
+    var esFondo = i === idxFondo;
+    return '<div class="ficha-foto-item" data-index="' + i + '">' +
+      '<div class="ficha-foto-thumb" data-url-index="' + i + '"></div>' +
+      '<div class="ficha-foto-actions">' +
+      '<button type="button" class="btn btn-outline btn-sm ficha-foto-btn-fondo' + (esFondo ? ' active' : '') + '" data-index="' + i + '" title="Usar como fondo de pantalla">' + (esFondo ? '✓ Fondo' : 'Usar como fondo') + '</button>' +
+      '<button type="button" class="btn btn-outline btn-sm btn-danger ficha-foto-btn-quitar" data-index="' + i + '" title="Quitar foto">Quitar</button>' +
+      '</div></div>';
+  }).join('');
+  lista.querySelectorAll('.ficha-foto-thumb').forEach(function (el) {
+    var i = parseInt(el.getAttribute('data-url-index'), 10);
+    if (fotos[i]) el.style.backgroundImage = 'url(' + fotos[i] + ')';
+  });
+  lista.querySelectorAll('.ficha-foto-btn-fondo').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = document.getElementById('usuarioId').value;
+      if (!id) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var session = getSession();
+      if (typeof updateUser !== 'function' || !session) return;
+      updateUser(id, { fondoFichaIndex: idx }, session.username).then(function () {
+        renderFichaEmpleadoFotos(id);
+        aplicarFondoFichaEmpleado(id);
+      }).catch(function () {});
+    });
+  });
+  lista.querySelectorAll('.ficha-foto-btn-quitar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = document.getElementById('usuarioId').value;
+      if (!id) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var users = getUsers();
+      var u = users.find(function (x) { return x.id === id; });
+      if (!u || !Array.isArray(u.fotosFicha)) return;
+      var fotos = u.fotosFicha.slice();
+      fotos.splice(idx, 1);
+      var newFondo = u.fondoFichaIndex != null ? Number(u.fondoFichaIndex) : 0;
+      if (newFondo >= fotos.length) newFondo = fotos.length > 0 ? 0 : null;
+      else if (idx < newFondo) newFondo = newFondo - 1;
+      var session = getSession();
+      if (typeof updateUser !== 'function' || !session) return;
+      updateUser(id, { fotosFicha: fotos, fondoFichaIndex: newFondo }, session.username).then(function () {
+        renderFichaEmpleadoFotos(id);
+        aplicarFondoFichaEmpleado(id);
+      }).catch(function () {});
+    });
+  });
 }
 
 function renderMaterialEntregadoEnFicha(userId) {
@@ -4013,6 +4824,85 @@ function getHorasTotal(userId) {
   return totalMs / (1000 * 60 * 60);
 }
 
+/** True solo para el usuario administrador principal: en su ficha se muestran los totales del taller, no los suyos propios */
+function esUsuarioAdminParaTotales(user) {
+  if (!user) return false;
+  var username = (user.username || '').toString().toLowerCase();
+  var rol = (user.rol || '').toString().toLowerCase();
+  return rol === 'admin' && username === 'admin';
+}
+
+/** Totales globales del taller (para mostrar en la ficha del administrador) */
+function getTotalesTaller() {
+  const users = typeof getUsers === 'function' ? getUsers() : [];
+  let horasHoy = 0, horasSemana = 0, horasMes = 0, horasTotal = 0;
+  users.forEach(u => {
+    const uid = u.username || u.id;
+    if (typeof getHorasHoy === 'function') horasHoy += getHorasHoy(uid) || 0;
+    if (typeof getHorasSemana === 'function') horasSemana += getHorasSemana(uid, new Date()) || 0;
+    if (typeof getHorasMes === 'function') horasMes += getHorasMes(uid) || 0;
+    if (typeof getHorasTotal === 'function') horasTotal += getHorasTotal(uid) || 0;
+  });
+  const servicios = getRegistroServicios();
+  const totalCobrado = servicios.reduce((sum, s) => sum + (s.importe || 0), 0);
+  return { horasHoy, horasSemana, horasMes, horasTotal, totalCobrado };
+}
+
+/** Rellena el panel de previsualización de ficha en el organigrama (empleado seleccionado) */
+window.renderOrganigramaFichaPreview = function(userId) {
+  const panel = document.getElementById('organigramaFichaPreview');
+  const placeholder = document.getElementById('organigramaFichaPreviewPlaceholder');
+  const content = document.getElementById('organigramaFichaPreviewContent');
+  if (!panel || !content) return;
+  if (panel.dataset) panel.dataset.userId = userId || '';
+  const users = typeof getUsers === 'function' ? getUsers() : [];
+  const user = users.find(u => u.id === userId || (u.username && u.username === userId));
+  if (!user) {
+    if (placeholder) { placeholder.style.display = ''; placeholder.textContent = 'Empleado no encontrado.'; }
+    content.style.display = 'none';
+    return;
+  }
+  const responsable = (user.responsable && users.find(u => u.username === user.responsable))
+    ? (users.find(u => u.username === user.responsable).nombre || user.responsable) : (user.responsable || '—');
+  const uid = user.username || user.id;
+  let horasSemana, totalCobrado;
+  if (esUsuarioAdminParaTotales(user) && typeof getTotalesTaller === 'function') {
+    const totales = getTotalesTaller();
+    horasSemana = totales.horasSemana;
+    totalCobrado = totales.totalCobrado;
+  } else {
+    horasSemana = typeof getHorasSemana === 'function' ? getHorasSemana(uid, new Date()) : 0;
+    const servicios = getRegistroServicios();
+    totalCobrado = servicios.filter(s => (s.userId || s.empleado) === uid).reduce((sum, s) => sum + (s.importe || 0), 0);
+  }
+
+  const setEl = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || '—'; };
+  setEl('orgPreviewNombre', user.nombre || user.username);
+  setEl('orgPreviewRol', user.puesto || user.rol || '—');
+  setEl('orgPreviewResponsable', responsable);
+  setEl('orgPreviewPuesto', user.puesto || '—');
+  setEl('orgPreviewFechaAlta', user.fechaAlta ? new Date(user.fechaAlta).toLocaleDateString('es-ES') : (user.fechaCreacion ? new Date(user.fechaCreacion).toLocaleDateString('es-ES') : '—'));
+  setEl('orgPreviewHorasSemana', (horasSemana || 0).toFixed(1) + ' h');
+  setEl('orgPreviewTotalCobrado', totalCobrado.toLocaleString('es-ES') + ' €');
+
+  const img = document.getElementById('orgPreviewFotoImg');
+  const placeholderFoto = document.getElementById('orgPreviewFotoPlaceholder');
+  if (user.fotoPerfil && (user.fotoPerfil.startsWith('http') || user.fotoPerfil.startsWith('data:'))) {
+    if (img) { img.src = user.fotoPerfil; img.style.display = 'block'; img.alt = user.nombre || ''; }
+    if (placeholderFoto) placeholderFoto.style.display = 'none';
+  } else {
+    if (img) { img.src = ''; img.style.display = 'none'; }
+    if (placeholderFoto) {
+      placeholderFoto.style.display = '';
+      placeholderFoto.textContent = (user.nombre || user.username || '?').substring(0, 2).toUpperCase();
+    }
+  }
+  if (placeholder) placeholder.style.display = 'none';
+  content.style.display = 'block';
+  var btnEditar = document.getElementById('orgPreviewBtnEditar');
+  if (btnEditar) btnEditar.style.display = (typeof getSession === 'function' && getSession() && typeof hasPermission === 'function' && hasPermission(getSession(), 'gestionarUsuarios')) ? '' : 'none';
+};
+
 function vincularFichaTrabajador() {
   const btn = document.getElementById('btnFichaTrabajador');
   const pantalla = document.getElementById('pantallaFichaTrabajador');
@@ -4031,13 +4921,27 @@ function vincularFichaTrabajador() {
     document.getElementById('fichaPuesto').textContent = user.puesto || '—';
     document.getElementById('fichaSalario').textContent = user.salario != null ? user.salario + ' €' : '—';
     const uid = session.username;
-    document.getElementById('fichaHorasHoy').textContent = (getHorasHoy(uid) || 0).toFixed(1) + ' h';
-    document.getElementById('fichaHorasSemana').textContent = (typeof getHorasSemana === 'function' ? getHorasSemana(uid, new Date()) : 0).toFixed(1) + ' h';
-    document.getElementById('fichaHorasMes').textContent = (getHorasMes(uid) || 0).toFixed(1) + ' h';
-    document.getElementById('fichaHorasTotal').textContent = (getHorasTotal(uid) || 0).toFixed(1) + ' h';
-    const servicios = getRegistroServicios();
-    const totalCobrado = servicios.filter(s => (s.userId || s.empleado) === uid).reduce((sum, s) => sum + (s.importe || 0), 0);
-    document.getElementById('fichaTotalCobrado').textContent = totalCobrado.toLocaleString('es-ES') + ' €';
+    let horasHoyVal, horasSemanaVal, horasMesVal, horasTotalVal, totalCobradoVal;
+    if (esUsuarioAdminParaTotales(user) && typeof getTotalesTaller === 'function') {
+      const totales = getTotalesTaller();
+      horasHoyVal = totales.horasHoy;
+      horasSemanaVal = totales.horasSemana;
+      horasMesVal = totales.horasMes;
+      horasTotalVal = totales.horasTotal;
+      totalCobradoVal = totales.totalCobrado;
+    } else {
+      horasHoyVal = getHorasHoy(uid) || 0;
+      horasSemanaVal = typeof getHorasSemana === 'function' ? getHorasSemana(uid, new Date()) : 0;
+      horasMesVal = getHorasMes(uid) || 0;
+      horasTotalVal = getHorasTotal(uid) || 0;
+      const servicios = getRegistroServicios();
+      totalCobradoVal = servicios.filter(s => (s.userId || s.empleado) === uid).reduce((sum, s) => sum + (s.importe || 0), 0);
+    }
+    document.getElementById('fichaHorasHoy').textContent = (horasHoyVal || 0).toFixed(1) + ' h';
+    document.getElementById('fichaHorasSemana').textContent = (horasSemanaVal || 0).toFixed(1) + ' h';
+    document.getElementById('fichaHorasMes').textContent = (horasMesVal || 0).toFixed(1) + ' h';
+    document.getElementById('fichaHorasTotal').textContent = (horasTotalVal || 0).toFixed(1) + ' h';
+    document.getElementById('fichaTotalCobrado').textContent = (totalCobradoVal || 0).toLocaleString('es-ES') + ' €';
     const img = document.getElementById('fichaFotoImg');
     const placeholder = document.getElementById('fichaFotoPlaceholder');
     if (user.fotoPerfil) {
@@ -4325,7 +5229,9 @@ function vincularCambiarUsuario() {
   var dropdown = document.getElementById('cambiarUsuarioDropdown');
   var lista = document.getElementById('cambiarUsuarioLista');
   if (!btn || !dropdown || !lista) return;
+
   function cerrarDropdown() { dropdown.style.display = 'none'; }
+
   function actualizarSesionYVista(user) {
     setSession(user);
     var headerUserNameText = document.getElementById('headerUserNameText');
@@ -4333,8 +5239,16 @@ function vincularCambiarUsuario() {
     if (el.mecanico) el.mecanico.value = user.nombre || user.username;
     aplicarPermisos(user);
     actualizarLedFichaje();
+    if (typeof applyPreferencias === 'function') applyPreferencias(getPreferenciasUsuario());
     actualizarVista();
   }
+
+  function abrirPantallaPersonalizacion() {
+    cerrarDropdown();
+    var btnPersonalizacion = document.getElementById('btnPersonalizacion');
+    if (btnPersonalizacion) btnPersonalizacion.click();
+  }
+
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
     if (dropdown.style.display === 'block') {
@@ -4342,6 +5256,7 @@ function vincularCambiarUsuario() {
       return;
     }
     var users = typeof getUsers === 'function' ? getUsers().filter(function (u) { return u.activo !== false; }) : [];
+    var current = getSession();
     lista.innerHTML = '';
     users.forEach(function (u) {
       var item = document.createElement('button');
@@ -4349,17 +5264,181 @@ function vincularCambiarUsuario() {
       item.className = 'cambiar-usuario-item';
       item.textContent = (u.nombre || u.username) + (u.rol ? ' · ' + u.rol : '');
       item.dataset.userId = u.id || '';
+      if (current && (current.id || '') === (u.id || '')) item.classList.add('cambiar-usuario-item-actual');
       item.addEventListener('click', function () {
-        var user = users.find(function (x) { return (x.id || '') === (item.dataset.userId || ''); });
-        if (user) actualizarSesionYVista(user);
+        actualizarSesionYVista(u);
         cerrarDropdown();
       });
       lista.appendChild(item);
     });
+    var sep = document.createElement('div');
+    sep.className = 'cambiar-usuario-separator';
+    sep.setAttribute('aria-hidden', 'true');
+    lista.appendChild(sep);
+    var btnPrefs = document.createElement('button');
+    btnPrefs.type = 'button';
+    btnPrefs.className = 'cambiar-usuario-item cambiar-usuario-item-personalizacion';
+    btnPrefs.textContent = '⚙ Personalizar experiencia';
+    btnPrefs.addEventListener('click', abrirPantallaPersonalizacion);
+    lista.appendChild(btnPrefs);
     dropdown.style.display = 'block';
   });
+
   document.addEventListener('click', function (e) {
     if (!btn.contains(e.target) && !dropdown.contains(e.target)) cerrarDropdown();
+  });
+}
+
+function vincularPersonalizacion() {
+  var btnAbrir = document.getElementById('btnPersonalizacion');
+  var pantalla = document.getElementById('pantallaPersonalizacion');
+  var btnHome = document.getElementById('btnPersonalizacionHome');
+  var form = document.getElementById('formPersonalizacion');
+  var bgType = document.getElementById('personalizacionBackgroundType');
+  var gradientWrap = document.getElementById('personalizacionGradientWrap');
+  var imageWrap = document.getElementById('personalizacionImageWrap');
+  var btnSubirFondo = document.getElementById('btnPersonalizacionSubirFondo');
+  var inputFondo = document.getElementById('personalizacionBackgroundImage');
+  var btnQuitarFondo = document.getElementById('btnPersonalizacionQuitarFondo');
+  var btnRestaurar = document.getElementById('btnPersonalizacionRestaurar');
+  if (!pantalla || !form) return;
+
+  function rellenarFormulario(prefs) {
+    prefs = prefs || getPreferenciasUsuario();
+    var accent = prefs.accentColor || '#d4af37';
+    if (accent === 'default') accent = '#d4af37';
+    var radios = form.querySelectorAll('input[name="accentColor"]');
+    radios.forEach(function (r) {
+      r.checked = (r.value === accent || (r.value === 'default' && accent === '#d4af37'));
+    });
+    var customColor = document.getElementById('personalizacionAccentCustom');
+    if (customColor) customColor.value = accent;
+    var themeSel = document.getElementById('personalizacionTheme');
+    if (themeSel) themeSel.value = prefs.theme || 'dark';
+    var fontSel = document.getElementById('personalizacionFontFamily');
+    if (fontSel) fontSel.value = prefs.fontFamily || 'default';
+    var sizeRadios = form.querySelectorAll('input[name="fontSize"]');
+    sizeRadios.forEach(function (r) { r.checked = (r.value === (prefs.fontSize || 'medium')); });
+    if (bgType) bgType.value = prefs.backgroundType || 'none';
+    toggleBackgroundSubwraps();
+    var gradSel = document.getElementById('personalizacionGradient');
+    if (gradSel) gradSel.value = prefs.backgroundGradient || 'warm';
+    if (btnQuitarFondo) btnQuitarFondo.style.display = (prefs.backgroundType === 'image' && prefs.backgroundImage) ? '' : 'none';
+    var opacitySel = document.getElementById('personalizacionBackgroundOpacity');
+    if (opacitySel) opacitySel.value = String(prefs.backgroundOpacity != null ? prefs.backgroundOpacity : 0.5);
+    var cardStyleSel = document.getElementById('personalizacionCardStyle');
+    if (cardStyleSel) cardStyleSel.value = prefs.cardStyle || 'default';
+    var compactCb = document.getElementById('personalizacionCompactNav');
+    if (compactCb) compactCb.checked = !!prefs.compactNav;
+    var highContrastCb = document.getElementById('personalizacionHighContrast');
+    if (highContrastCb) highContrastCb.checked = !!prefs.highContrast;
+    var motionCb = document.getElementById('personalizacionReducedMotion');
+    if (motionCb) motionCb.checked = !!prefs.reducedMotion;
+    var radiusSel = document.getElementById('personalizacionBorderRadius');
+    if (radiusSel) radiusSel.value = prefs.borderRadius || 'default';
+  }
+
+  function toggleBackgroundSubwraps() {
+    var t = bgType ? bgType.value : 'none';
+    if (gradientWrap) gradientWrap.style.display = (t === 'gradient') ? 'block' : 'none';
+    if (imageWrap) imageWrap.style.display = (t === 'image') ? 'block' : 'none';
+  }
+
+  if (bgType) bgType.addEventListener('change', toggleBackgroundSubwraps);
+
+  if (btnAbrir) btnAbrir.addEventListener('click', function () {
+    cerrarTodasPantallasSecundarias();
+    var dropdown = document.getElementById('cambiarUsuarioDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    rellenarFormulario();
+    if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaPersonalizacion');
+    else { pantalla.style.display = 'flex'; document.getElementById('appBody').style.display = 'none'; }
+  });
+
+  if (btnHome) btnHome.addEventListener('click', function () {
+    if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+    else { pantalla.style.display = 'none'; document.getElementById('appBody').style.display = 'flex'; }
+  });
+
+  if (btnSubirFondo && inputFondo) {
+    btnSubirFondo.addEventListener('click', function () { inputFondo.click(); });
+    inputFondo.addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var prefs = getPreferenciasUsuario();
+        prefs.backgroundType = 'image';
+        prefs.backgroundImage = reader.result;
+        savePreferenciasUsuario(prefs);
+        applyPreferencias(prefs);
+        rellenarFormulario(prefs);
+        if (btnQuitarFondo) btnQuitarFondo.style.display = '';
+        if (bgType) bgType.value = 'image';
+        toggleBackgroundSubwraps();
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+
+  if (btnQuitarFondo) btnQuitarFondo.addEventListener('click', function () {
+    var prefs = getPreferenciasUsuario();
+    prefs.backgroundType = 'none';
+    prefs.backgroundImage = null;
+    savePreferenciasUsuario(prefs);
+    applyPreferencias(prefs);
+    rellenarFormulario(prefs);
+    btnQuitarFondo.style.display = 'none';
+    if (bgType) bgType.value = 'none';
+    toggleBackgroundSubwraps();
+  });
+
+  if (btnRestaurar) btnRestaurar.addEventListener('click', function () {
+    var prefs = Object.assign({}, PREFERENCIAS_DEFAULT);
+    savePreferenciasUsuario(prefs);
+    applyPreferencias(prefs);
+    rellenarFormulario(prefs);
+    if (btnQuitarFondo) btnQuitarFondo.style.display = 'none';
+    if (bgType) bgType.value = 'none';
+    toggleBackgroundSubwraps();
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var accentRadio = form.querySelector('input[name="accentColor"]:checked');
+    var accent = (accentRadio && accentRadio.value !== 'default') ? accentRadio.value : document.getElementById('personalizacionAccentCustom').value;
+    var opacityEl = document.getElementById('personalizacionBackgroundOpacity');
+    var opacityVal = opacityEl ? parseFloat(opacityEl.value) : 0.5;
+    var prefs = {
+      accentColor: accent,
+      fontFamily: document.getElementById('personalizacionFontFamily').value || 'default',
+      fontSize: (form.querySelector('input[name="fontSize"]:checked') || {}).value || 'medium',
+      theme: (document.getElementById('personalizacionTheme') || {}).value || 'dark',
+      highContrast: document.getElementById('personalizacionHighContrast').checked,
+      backgroundType: bgType ? bgType.value : 'none',
+      backgroundImage: getPreferenciasUsuario().backgroundImage || null,
+      backgroundGradient: (document.getElementById('personalizacionGradient') || {}).value || 'warm',
+      backgroundOpacity: opacityVal,
+      compactNav: document.getElementById('personalizacionCompactNav').checked,
+      borderRadius: (document.getElementById('personalizacionBorderRadius') || {}).value || 'default',
+      reducedMotion: document.getElementById('personalizacionReducedMotion').checked,
+      cardStyle: (document.getElementById('personalizacionCardStyle') || {}).value || 'default'
+    };
+    savePreferenciasUsuario(prefs);
+    applyPreferencias(prefs);
+    if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+    else { pantalla.style.display = 'none'; document.getElementById('appBody').style.display = 'flex'; }
+  });
+
+  form.querySelectorAll('input[name="accentColor"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      if (this.value !== 'default') document.getElementById('personalizacionAccentCustom').value = this.value;
+    });
+  });
+  var customColorEl = document.getElementById('personalizacionAccentCustom');
+  if (customColorEl) customColorEl.addEventListener('input', function () {
+    form.querySelectorAll('input[name="accentColor"]').forEach(function (r) { r.checked = false; });
   });
 }
 
@@ -4382,6 +5461,7 @@ function init() {
   vincularIndicadoresHistorial();
   vincularPasswordToggle();
   vincularCambiarUsuario();
+  vincularPersonalizacion();
   mostrarPaso('inicio');
   actualizarVista();
   initContentLoop();
@@ -4709,7 +5789,17 @@ function vincularPasos() {
       if (pasoMatriculaConjunto) pasoMatriculaConjunto.style.display = '';
       guardarMatricula(matriculaActual);
       cargarMatriculasGuardadas();
-      mostrarPaso('inicio');
+      if (tipoServicio) {
+        document.getElementById('pasoCalculadoraTitulo').textContent =
+          tipoServicio === 'reparacion' ? 'Reparación' : tipoServicio === 'tuneo' ? 'Tuneo' : 'Tuneo + Reparación';
+        document.getElementById('pasoCalcMatricula').textContent = matriculaActual;
+        aplicarVisibilidadPorTipo();
+        mostrarPaso('calculadora');
+        actualizarVisibilidadPlacaServicio();
+        actualizarVista();
+      } else {
+        mostrarPaso('inicio');
+      }
     });
   }
 

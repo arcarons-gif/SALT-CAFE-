@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Salt Lab Cafe - Calculadora Taller</title>
+  <title>SALTLAB Calculator</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app">
@@ -18,7 +18,7 @@
           <img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" class="login-saltlab-logo" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden');">
           <span class="login-saltlab-text hidden">SALTLAB CAFE</span>
         </div>
-        <p class="login-subtitle">Calculadora Taller · SALTLAB CAFE</p>
+        <p class="login-subtitle">SALTLAB Calculator · SALTLAB CAFE</p>
         <div class="field login-usuarios-wrap">
           <label>Usuarios con sesión reciente</label>
           <select id="loginUsuariosRecientes" class="login-input">
@@ -143,6 +143,15 @@
             <button type="button" class="btn btn-register" id="normativasReaderNext">Siguiente</button>
           </div>
         </div>
+        <div id="normativasTestWrap" class="normativas-test-wrap" style="display:none">
+          <h2 class="normativas-test-titulo">Test de comprensión</h2>
+          <p class="normativas-test-desc">Responde estas 5 preguntas sobre las normativas y el uso de la calculadora. Debes acertar todas para continuar.</p>
+          <form id="normativasTestForm" class="normativas-test-form">
+            <div id="normativasTestPreguntas"></div>
+            <p id="normativasTestMensaje" class="normativas-test-mensaje" style="display:none"></p>
+            <button type="submit" class="btn btn-register" id="normativasTestEnviar">Enviar respuestas</button>
+          </form>
+        </div>
         <div id="normativasFooter" class="normativas-footer" style="display:none">
           <button type="button" class="btn btn-login btn-normativas-continuar" id="normativasBtnContinuar">He leído todas las normativas. Continuar al taller</button>
         </div>
@@ -178,7 +187,7 @@
         <div class="header-brand">
           <img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" class="header-saltlab-logo" onerror="this.style.display='none'">
           <div class="header-titles">
-            <h1 class="header-title">Calculadora</h1>
+            <h1 class="header-title">SALTLAB Calculator</h1>
             <span class="header-tagline">SALTLAB CAFE · FLAVOR MEETS THE SEA</span>
           </div>
         </div>
@@ -190,10 +199,10 @@
         </div>
         <div id="headerExtra" class="header-extra">
         <div class="header-fichaje-y-cambiar">
-          <div id="ledFichajeWrap" class="led-fichaje-wrap" aria-label="Estado de fichaje" title="Estado de fichaje">
+          <button type="button" id="ledFichajeWrap" class="led-fichaje-wrap" aria-label="Fichar entrada o salida" title="Clic para fichar entrada o salida">
             <span id="ledFichajeBulb" class="led-fichaje-bulb led-off"></span>
             <span id="ledFichajeText" class="led-fichaje-text">No fichado</span>
-          </div>
+          </button>
           <div id="cambiarUsuarioWrap" class="cambiar-usuario-wrap" style="display:none">
             <button type="button" class="btn btn-cambiar-usuario" id="btnCambiarUsuario" title="Cambiar de usuario (sin cerrar sesión)">⇄</button>
             <div id="cambiarUsuarioDropdown" class="cambiar-usuario-dropdown" style="display:none">
@@ -233,6 +242,7 @@
         <div class="paso-inicio-inferior">
           <div class="ultimas-reparaciones-wrap" id="ultimasReparacionesWrap">
             <h3 class="ultimas-reparaciones-titulo">Últimas reparaciones</h3>
+            <p class="ultimas-reparaciones-hint">Haz clic en una fila para ver el resumen.</p>
             <ul id="ultimasReparacionesList" class="ultimas-reparaciones-list"></ul>
           </div>
           <div id="mainDashboardWrap" class="main-dashboard-wrap main-dashboard-left">
@@ -542,6 +552,10 @@
         <button type="button" class="btn btn-nav-ios" id="btnResultadosCalculadora" title="Resultados">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></span>
           <span class="btn-nav-ios-label">Resultados</span>
+        </button>
+        <button type="button" class="btn btn-nav-ios" id="btnPersonalizacion" title="Personalizar apariencia">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          <span class="btn-nav-ios-label">Personalización</span>
         </button>
         <button type="button" class="btn btn-nav-ios btn-nav-logout" id="btnLogout" title="Cerrar sesión">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
@@ -952,6 +966,12 @@
           <p class="solicitudes-graficas-desc">Los empleados envían vídeos aquí. Revisa y aprueba los que quieras que aparezcan en la pantalla del taller.</p>
           <div id="solicitudesGraficasLista" class="solicitudes-graficas-lista"></div>
           <div id="solicitudesGraficasVacio" class="solicitudes-graficas-vacio" style="display:none">No hay solicitudes pendientes.</div>
+          <div id="registroTestNormativasWrap" class="registro-test-normativas-wrap">
+            <h4 class="registro-test-normativas-titulo">Registro de resultados del test de normativas</h4>
+            <p class="registro-test-normativas-desc">Historial de intentos del test de comprensión (normativas e instrucciones de la calculadora) por usuario.</p>
+            <div id="registroTestNormativasLista" class="registro-test-normativas-lista"></div>
+            <p id="registroTestNormativasVacio" class="registro-test-normativas-vacio" style="display:none">Aún no hay registros de test.</p>
+          </div>
         </div>
         <div id="panelReset" class="admin-panel panel-reset-datos" style="display:none">
           <p class="panel-reset-desc">Elimina datos de prueba por sección. Solo administradores. Los cambios son inmediatos.</p>
@@ -991,9 +1011,32 @@
         <button type="button" class="btn btn-sm btn-org-toolbar" id="orgToolbarAddChild" title="Añadir subordinado">+ Subordinado</button>
         <button type="button" class="btn btn-sm btn-org-toolbar btn-org-del" id="orgToolbarEliminar" title="Eliminar">Eliminar</button>
       </div>
-      <div class="pantalla-secundaria-body org-modal-body scrollbar-on-scroll">
-        <p class="org-modal-desc">Estructura del taller: dueño, socios, responsables y equipo.</p>
-        <div id="organigramaContainer" class="organigrama-container"></div>
+      <div class="pantalla-secundaria-body org-modal-body org-body-con-layout scrollbar-on-scroll">
+        <p class="org-modal-desc">Estructura del taller por niveles jerárquicos. Haz clic en un empleado para ver la previsualización de su ficha.</p>
+        <div class="organigrama-layout">
+          <div id="organigramaContainer" class="organigrama-container organigrama-por-niveles"></div>
+          <aside id="organigramaFichaPreview" class="organigrama-ficha-preview" aria-label="Previsualización ficha del empleado">
+            <div class="organigrama-ficha-preview-inner">
+              <p class="organigrama-ficha-preview-placeholder" id="organigramaFichaPreviewPlaceholder">Selecciona un empleado para ver su ficha.</p>
+              <div id="organigramaFichaPreviewContent" class="organigrama-ficha-preview-content" style="display:none">
+                <div class="org-preview-foto-wrap">
+                  <img id="orgPreviewFotoImg" src="" alt="" style="display:none">
+                  <span id="orgPreviewFotoPlaceholder" class="org-preview-iniciales">—</span>
+                </div>
+                <h3 id="orgPreviewNombre" class="org-preview-nombre">—</h3>
+                <p id="orgPreviewRol" class="org-preview-rol">—</p>
+                <div class="org-preview-datos">
+                  <div class="org-preview-row"><span class="org-preview-label">Responsable</span><span id="orgPreviewResponsable">—</span></div>
+                  <div class="org-preview-row"><span class="org-preview-label">Puesto</span><span id="orgPreviewPuesto">—</span></div>
+                  <div class="org-preview-row"><span class="org-preview-label">Fecha alta</span><span id="orgPreviewFechaAlta">—</span></div>
+                  <div class="org-preview-row"><span class="org-preview-label">Horas esta semana</span><span id="orgPreviewHorasSemana">—</span></div>
+                  <div class="org-preview-row"><span class="org-preview-label">Total cobrado</span><span id="orgPreviewTotalCobrado">—</span></div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm btn-block" id="orgPreviewBtnEditar">Editar usuario</button>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
 
@@ -1160,8 +1203,6 @@
       </div>
     </div>
 
-    </div><!-- /appContent -->
-
     <!-- Modal Registro de Servicios -->
     <div id="modalRegistro" class="modal">
       <div class="modal-content">
@@ -1173,6 +1214,18 @@
           <div id="listaServicios"></div>
           <button type="button" class="btn btn-clear" id="btnLimpiarRegistro" data-permiso="limpiarRegistro">Limpiar registro</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal resumen reparación (al clicar en última reparación) -->
+    <div id="modalResumenReparacion" class="modal" aria-hidden="true" style="display:none">
+      <div class="modal-backdrop" id="modalResumenReparacionBackdrop"></div>
+      <div class="modal-content modal-content-resumen-rep">
+        <div class="modal-header">
+          <h3 id="modalResumenReparacionTitulo">Resumen</h3>
+          <button type="button" class="modal-close" id="modalResumenReparacionClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body" id="modalResumenReparacionBody"></div>
       </div>
     </div>
 
@@ -1213,94 +1266,295 @@
       </div>
     </div>
 
-    <!-- Modal Editar/Crear usuario -->
-    <div id="modalUsuario" class="modal">
+    <!-- Pantalla completa Ficha del empleado (sustituye modal) -->
+    <div id="pantallaFichaEmpleado" class="pantalla-secundaria pantalla-ficha-empleado" style="display:none">
+      <div id="fichaEmpleadoFondoWrap" class="ficha-empleado-fondo-wrap" style="display:none" aria-hidden="true">
+        <div class="ficha-empleado-fondo" id="fichaEmpleadoFondoImg"></div>
+        <div class="ficha-empleado-fondo-overlay"></div>
+      </div>
+      <div class="pantalla-secundaria-header ficha-empleado-header">
+        <button type="button" class="btn btn-home" id="btnFichaEmpleadoHome" aria-label="Volver">← Volver</button>
+        <div class="ficha-empleado-header-info">
+          <div class="ficha-empleado-foto-wrap" id="fichaEmpleadoFotoWrap">
+            <img id="fichaEmpleadoFotoImg" src="" alt="" style="display:none">
+            <span id="fichaEmpleadoFotoIniciales" class="ficha-empleado-iniciales">—</span>
+          </div>
+          <div class="ficha-empleado-titulo-wrap">
+            <h2 id="fichaEmpleadoTitulo" class="pantalla-secundaria-titulo ficha-empleado-titulo">Ficha del empleado</h2>
+            <p id="fichaEmpleadoSubtitulo" class="ficha-empleado-subtitulo">Usuario · Puesto</p>
+          </div>
+        </div>
+      </div>
+      <div class="pantalla-secundaria-body ficha-empleado-body scrollbar-on-scroll">
+        <form id="formUsuario" class="ficha-empleado-form">
+          <input type="hidden" id="usuarioId">
+          <section class="ficha-empleado-seccion ficha-seccion-credenciales">
+            <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Credenciales y acceso</h3>
+            <div class="ficha-seccion-campos">
+              <div class="field">
+                <label>Usuario (login)</label>
+                <input type="text" id="usuarioUsername" required>
+              </div>
+              <div class="field">
+                <label>Nombre completo</label>
+                <input type="text" id="usuarioNombre" placeholder="Ej: Juan García">
+              </div>
+              <div class="field field-password-wrap" id="fieldPasswordActual" style="display:none">
+                <label>Contraseña actual</label>
+                <div class="input-password-group">
+                  <input type="text" id="usuarioPasswordActual" readonly value="••••••••" placeholder="Almacenada de forma segura." autocomplete="off">
+                </div>
+              </div>
+              <div class="field field-password-wrap" id="fieldPassword">
+                <label>Contraseña</label>
+                <span class="field-hint field-password-admin-hint" id="hintPasswordAdmin" style="display:none">Visible para administrador. Mínimo 4 caracteres.</span>
+                <div class="input-password-group">
+                  <input type="text" id="usuarioPassword" placeholder="Vacío = no cambiar" autocomplete="off">
+                  <button type="button" class="btn-password-toggle" aria-label="Ocultar contraseña" data-password-target="usuarioPassword" title="Ocultar contraseña" style="display:none">
+                    <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="field field-password-wrap" id="fieldPasswordConfirm" style="display:none">
+                <label>Confirmar contraseña</label>
+                <div class="input-password-group">
+                  <input type="password" id="usuarioPasswordConfirm" placeholder="Repite la contraseña" autocomplete="off">
+                </div>
+                <span class="field-hint" id="usuarioPasswordConfirmError" style="display:none; color: var(--danger, #c00);"></span>
+              </div>
+              <div class="field">
+                <label>Rol</label>
+                <select id="usuarioRol">
+                  <option value="peon">PEÓN</option>
+                  <option value="enPracticas">EN PRÁCTICAS</option>
+                  <option value="mecanico">Mecánico</option>
+                  <option value="responsableMecanicos">RESPONSABLE MECÁNICOS</option>
+                  <option value="admin">ADMIN</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Fecha de alta</label>
+                <input type="date" id="usuarioFechaAlta">
+              </div>
+              <div class="field">
+                <label>Responsable (usuario)</label>
+                <input type="text" id="usuarioResponsable" placeholder="Usuario del responsable">
+              </div>
+              <div class="field">
+                <label>Puesto</label>
+                <input type="text" id="usuarioPuesto" placeholder="Ej: Mecánico senior">
+              </div>
+              <div class="field checkbox-field" id="fieldActivo">
+                <label><input type="checkbox" id="usuarioActivo" checked> Usuario activo</label>
+              </div>
+            </div>
+          </section>
+          <section class="ficha-empleado-seccion ficha-seccion-salario">
+            <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Salario y contrato</h3>
+            <div class="ficha-seccion-campos ficha-salario-grid">
+              <div class="field field-salario-destacado">
+                <label>Salario (€)</label>
+                <input type="number" id="usuarioSalario" min="0" step="0.01" placeholder="Opcional">
+              </div>
+              <div class="field" id="fieldEquipo" style="display:none">
+                <label>Equipo (IDs a su cargo, separados por coma)</label>
+                <input type="text" id="usuarioEquipo" placeholder="u-123..., u-456...">
+              </div>
+            </div>
+          </section>
+          <section class="ficha-empleado-seccion ficha-seccion-permisos">
+            <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Permisos</h3>
+            <p class="ficha-seccion-desc">Marca los permisos que tiene este empleado en la aplicación.</p>
+            <div id="permisosCheckboxes" class="permisos-cards-grid"></div>
+          </section>
+          <section class="ficha-empleado-seccion ficha-seccion-fotos" id="fichaSeccionFotos">
+            <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>Fotografías</h3>
+            <p class="ficha-seccion-desc">Añade fotos a la ficha. Puedes elegir una como fondo de pantalla al editar.</p>
+            <input type="file" id="fichaEmpleadoFotoInput" accept="image/*" multiple class="hidden">
+            <div class="ficha-fotos-toolbar">
+              <button type="button" class="btn btn-outline btn-sm" id="btnFichaEmpleadoAnadirFoto">+ Añadir foto</button>
+            </div>
+            <div id="fichaEmpleadoFotosLista" class="ficha-fotos-lista"></div>
+          </section>
+          <div class="ficha-empleado-actions">
+            <button type="submit" class="btn btn-register btn-ficha-guardar">Guardar cambios</button>
+          </div>
+        </form>
+        <section id="usuarioSeccionMaterialEntregado" class="ficha-empleado-seccion ficha-seccion-material" style="display:none">
+          <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>Material entregado</h3>
+          <p class="ficha-seccion-desc">Registro de material que se ha entregado a este empleado.</p>
+          <div class="usuario-material-entregado-toolbar">
+            <button type="button" class="btn btn-outline" id="btnRegistrarEntregaDesdeFicha">+ Registrar entrega</button>
+          </div>
+          <div id="listaMaterialEntregadoFicha" class="usuario-material-entregado-lista"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Pantalla Personalización (todos los usuarios) -->
+    <div id="pantallaPersonalizacion" class="pantalla-secundaria pantalla-personalizacion" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnPersonalizacionHome" aria-label="Volver">← Volver</button>
+        <h2 class="pantalla-secundaria-titulo">Personaliza tu experiencia</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll personalizacion-body">
+        <p class="personalizacion-desc">Ajusta colores, fuentes, fondo de pantalla y más. Los cambios se guardan por usuario y se aplican al instante.</p>
+        <form id="formPersonalizacion" class="personalizacion-form">
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Color de acento</h3>
+            <p class="personalizacion-seccion-desc">Color principal de botones, enlaces y elementos destacados.</p>
+            <div class="personalizacion-colores">
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="default" checked>
+                <span class="personalizacion-color-swatch" style="background:#d4af37" title="Oro"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#008080">
+                <span class="personalizacion-color-swatch" style="background:#008080" title="Turquesa"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#b01a1a">
+                <span class="personalizacion-color-swatch" style="background:#b01a1a" title="Rojo"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#3a9460">
+                <span class="personalizacion-color-swatch" style="background:#3a9460" title="Verde"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#6b7fd7">
+                <span class="personalizacion-color-swatch" style="background:#6b7fd7" title="Violeta"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#e0c04a">
+                <span class="personalizacion-color-swatch" style="background:#e0c04a" title="Amarillo"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#e67e22">
+                <span class="personalizacion-color-swatch" style="background:#e67e22" title="Naranja"></span>
+              </label>
+              <label class="personalizacion-color-option">
+                <input type="radio" name="accentColor" value="#3498db">
+                <span class="personalizacion-color-swatch" style="background:#3498db" title="Azul"></span>
+              </label>
+            </div>
+            <div class="personalizacion-color-custom">
+              <label>Color personalizado</label>
+              <input type="color" id="personalizacionAccentCustom" value="#d4af37" title="Elegir color">
+            </div>
+          </section>
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Tema</h3>
+            <div class="field">
+              <label>Tema de la aplicación</label>
+              <select id="personalizacionTheme">
+                <option value="dark">Oscuro (por defecto)</option>
+                <option value="light">Claro</option>
+              </select>
+            </div>
+          </section>
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Tipografía</h3>
+            <div class="field">
+              <label>Familia de fuente</label>
+              <select id="personalizacionFontFamily">
+                <option value="default">Por defecto (Plus Jakarta Sans)</option>
+                <option value="inter">Inter</option>
+                <option value="outfit">Outfit</option>
+                <option value="roboto">Roboto</option>
+                <option value="system">Sistema</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tamaño de texto</label>
+              <div class="personalizacion-size-options">
+                <label class="personalizacion-size-option"><input type="radio" name="fontSize" value="small"> Pequeño</label>
+                <label class="personalizacion-size-option"><input type="radio" name="fontSize" value="medium" checked> Medio</label>
+                <label class="personalizacion-size-option"><input type="radio" name="fontSize" value="large"> Grande</label>
+              </div>
+            </div>
+          </section>
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Fondo de pantalla</h3>
+            <p class="personalizacion-seccion-desc">Imagen o gradiente de fondo para toda la aplicación.</p>
+            <div class="field">
+              <label>Tipo de fondo</label>
+              <select id="personalizacionBackgroundType">
+                <option value="none">Sin imagen (fondo sólido)</option>
+                <option value="gradient">Gradiente</option>
+                <option value="image">Imagen personalizada</option>
+              </select>
+            </div>
+            <div id="personalizacionGradientWrap" class="personalizacion-subwrap" style="display:none">
+              <label>Gradiente</label>
+              <select id="personalizacionGradient">
+                <option value="warm">Cálido (naranja/rojo)</option>
+                <option value="cool">Frío (azul)</option>
+                <option value="ocean">Océano (turquesa)</option>
+                <option value="dark">Oscuro suave</option>
+                <option value="minimal">Minimalista (gris)</option>
+              </select>
+            </div>
+            <div id="personalizacionImageWrap" class="personalizacion-subwrap" style="display:none">
+              <input type="file" id="personalizacionBackgroundImage" accept="image/*" class="hidden">
+              <button type="button" class="btn btn-outline btn-sm" id="btnPersonalizacionSubirFondo">Subir imagen de fondo</button>
+              <button type="button" class="btn btn-outline btn-sm btn-danger" id="btnPersonalizacionQuitarFondo" style="display:none">Quitar imagen</button>
+              <div class="field personalizacion-opacity-wrap">
+                <label>Intensidad del fondo</label>
+                <select id="personalizacionBackgroundOpacity">
+                  <option value="0.25">Muy suave (25%)</option>
+                  <option value="0.5" selected>Media (50%)</option>
+                  <option value="0.75">Alta (75%)</option>
+                  <option value="1">Completa (100%)</option>
+                </select>
+              </div>
+            </div>
+          </section>
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Aspecto de tarjetas y paneles</h3>
+            <div class="field">
+              <label>Estilo de tarjetas</label>
+              <select id="personalizacionCardStyle">
+                <option value="default">Por defecto</option>
+                <option value="flat">Plano (menos sombra)</option>
+                <option value="elevated">Elevado (más sombra)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Esquinas de botones y tarjetas</label>
+              <select id="personalizacionBorderRadius">
+                <option value="default">Por defecto</option>
+                <option value="rounded">Más redondeadas</option>
+                <option value="sharp">Más rectas</option>
+              </select>
+            </div>
+          </section>
+          <section class="personalizacion-seccion">
+            <h3 class="personalizacion-seccion-titulo">Accesibilidad y uso</h3>
+            <div class="personalizacion-checkboxes">
+              <label class="personalizacion-check"><input type="checkbox" id="personalizacionHighContrast"> Contraste alto (mejor legibilidad)</label>
+              <label class="personalizacion-check"><input type="checkbox" id="personalizacionCompactNav"> Menú lateral compacto</label>
+              <label class="personalizacion-check"><input type="checkbox" id="personalizacionReducedMotion"> Reducir animaciones</label>
+            </div>
+          </section>
+          <div class="personalizacion-actions">
+            <button type="button" class="btn btn-outline" id="btnPersonalizacionRestaurar">Restaurar por defecto</button>
+            <button type="submit" class="btn btn-register">Guardar preferencias</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    </div><!-- /appContent -->
+
+    <!-- Modal Editar/Crear usuario (ya no se usa; la ficha es pantalla completa) -->
+    <div id="modalUsuario" class="modal" aria-hidden="true" style="display:none">
       <div class="modal-content">
         <div class="modal-header">
           <h3 id="modalUsuarioTitulo">Nuevo usuario</h3>
           <button type="button" class="modal-close" id="modalUsuarioClose">&times;</button>
         </div>
-        <form id="formUsuario" class="modal-body">
-          <input type="hidden" id="usuarioId">
-          <div class="field">
-            <label>Usuario (login)</label>
-            <input type="text" id="usuarioUsername" required>
-          </div>
-          <div class="field">
-            <label>Nombre completo</label>
-            <input type="text" id="usuarioNombre" placeholder="Ej: Juan García">
-          </div>
-          <div class="field field-password-wrap" id="fieldPasswordActual" style="display:none">
-            <label>Contraseña actual</label>
-            <div class="input-password-group">
-              <input type="text" id="usuarioPasswordActual" readonly value="••••••••" placeholder="Almacenada de forma segura. Escribe la nueva abajo para cambiarla." autocomplete="off">
-            </div>
-          </div>
-          <div class="field field-password-wrap" id="fieldPassword">
-            <label>Contraseña</label>
-            <span class="field-hint field-password-admin-hint" id="hintPasswordAdmin" style="display:none">Visible para administrador. Mínimo 4 caracteres.</span>
-            <div class="input-password-group">
-              <input type="text" id="usuarioPassword" placeholder="Vacío = no cambiar (o 1234 en nuevo usuario)" autocomplete="off">
-              <button type="button" class="btn-password-toggle" aria-label="Ocultar contraseña" data-password-target="usuarioPassword" title="Ocultar contraseña" style="display:none">
-                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="field field-password-wrap" id="fieldPasswordConfirm" style="display:none">
-            <label>Confirmar contraseña</label>
-            <div class="input-password-group">
-              <input type="password" id="usuarioPasswordConfirm" placeholder="Repite la contraseña" autocomplete="off">
-            </div>
-            <span class="field-hint" id="usuarioPasswordConfirmError" style="display:none; color: var(--danger, #c00);"></span>
-          </div>
-          <div class="field">
-            <label>Rol</label>
-            <select id="usuarioRol">
-              <option value="peon">PEÓN</option>
-              <option value="enPracticas">EN PRÁCTICAS</option>
-              <option value="mecanico">Mecánico</option>
-              <option value="responsableMecanicos">RESPONSABLE MECÁNICOS</option>
-              <option value="admin">ADMIN</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Fecha de alta</label>
-            <input type="date" id="usuarioFechaAlta">
-          </div>
-          <div class="field">
-            <label>Responsable (usuario)</label>
-            <input type="text" id="usuarioResponsable" placeholder="Usuario del responsable">
-          </div>
-          <div class="field">
-            <label>Puesto</label>
-            <input type="text" id="usuarioPuesto" placeholder="Ej: Mecánico senior">
-          </div>
-          <div class="field">
-            <label>Salario (€)</label>
-            <input type="number" id="usuarioSalario" min="0" step="0.01" placeholder="Opcional">
-          </div>
-          <div class="field" id="fieldEquipo" style="display:none">
-            <label>Equipo (IDs de usuarios a su cargo, separados por coma)</label>
-            <input type="text" id="usuarioEquipo" placeholder="u-123..., u-456...">
-          </div>
-          <div class="permisos-section">
-            <label>Permisos</label>
-            <div id="permisosCheckboxes"></div>
-          </div>
-          <div class="field checkbox-field" id="fieldActivo">
-            <label><input type="checkbox" id="usuarioActivo" checked> Usuario activo</label>
-          </div>
-          <button type="submit" class="btn btn-register">Guardar</button>
-        </form>
-        <div id="usuarioSeccionMaterialEntregado" class="usuario-material-entregado" style="display:none">
-          <h4 class="usuario-material-entregado-titulo">Material entregado a este empleado</h4>
-          <p class="usuario-material-entregado-hint">El responsable puede registrar qué material se ha entregado y cuándo.</p>
-          <div class="usuario-material-entregado-toolbar">
-            <button type="button" class="btn btn-outline btn-sm" id="btnRegistrarEntregaDesdeFicha">+ Registrar entrega</button>
-          </div>
-          <div id="listaMaterialEntregadoFicha" class="usuario-material-entregado-lista"></div>
-        </div>
+        <div class="modal-body"><p>La ficha del empleado se abre en pantalla completa.</p></div>
       </div>
     </div>
   </div>
@@ -1490,6 +1744,60 @@
         <ul id="modalHistorialIndicadorLista" class="lista-historial-indicador"></ul>
       </div>
     </div>
+  </div>
+
+  <!-- Chatbot: flamenco fotorrealista (solo forma, sin fondo, moviéndose por la pantalla) -->
+  <div id="chatbotWrap" class="chatbot-wrap" style="display:none" aria-label="Asistente de dudas sobre normativas e instrucciones">
+    <button type="button" id="chatbotToggle" class="chatbot-toggle" aria-label="Abrir asistente" title="Asistente: normativas e instrucciones del taller">
+      <span class="chatbot-toggle-mascot chatbot-flamenco-mascot-wrap" aria-hidden="true">
+        <img src="assets/flamenco-logo.png" alt="" class="chatbot-flamenco-imagen" id="chatbotFlamencoImagen">
+      </span>
+      <span class="chatbot-toggle-label">¿Dudas?</span>
+    </button>
+    <div id="chatbotPanel" class="chatbot-panel" style="display:none">
+      <div class="chatbot-panel-header">
+        <span class="chatbot-panel-mascot" aria-hidden="true">
+          <svg class="chatbot-flamenco chatbot-flamenco-logo chatbot-flamenco-small" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="flamenco-beak-grad-sm" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#e07850"/><stop offset="45%" stop-color="#f0d8c8"/><stop offset="70%" stop-color="#e8c8b0"/><stop offset="100%" stop-color="#2a2a2a"/>
+              </linearGradient>
+              <linearGradient id="flamenco-body-grad-sm" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#faf8f5"/><stop offset="100%" stop-color="#f5f0e6"/>
+              </linearGradient>
+              <linearGradient id="flamenco-wing-grad-sm" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fffef8"/><stop offset="100%" stop-color="#f5f0e0"/>
+              </linearGradient>
+            </defs>
+            <path class="flamenco-leg-standing" d="M 50 98 L 50 116" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+            <path class="flamenco-leg-bent" d="M 48 96 Q 44 102 46 108 L 48 112" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+            <ellipse class="flamenco-body" cx="50" cy="72" rx="26" ry="16" fill="url(#flamenco-body-grad-sm)" stroke="#e8e4dc" stroke-width="1"/>
+            <g class="flamenco-wing">
+              <path class="flamenco-wing-inner" d="M 68 62 Q 82 52 86 42 Q 88 36 84 34 Q 78 32 70 40 Q 66 50 66 58 Z" fill="url(#flamenco-wing-grad-sm)" stroke="#e8e0d0" stroke-width="1"/>
+              <path class="flamenco-wing-feathers" d="M 70 56 L 84 46 M 72 62 L 86 50 M 68 68 L 80 60" fill="none" stroke="#ebe6d8" stroke-width="1.2" stroke-linecap="round"/>
+            </g>
+            <path class="flamenco-neck" d="M 50 68 Q 32 48 38 26 Q 42 14 48 10" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="flamenco-neck-edge" d="M 50 68 Q 32 48 38 26 Q 42 14 48 10" fill="none" stroke="#e8e4dc" stroke-width="1" stroke-linecap="round"/>
+            <g class="flamenco-head-wrap">
+              <ellipse class="flamenco-head" cx="52" cy="10" rx="11" ry="10" fill="#ffffff" stroke="#e8e4dc" stroke-width="1"/>
+              <path class="flamenco-crest" d="M 58 6 Q 64 4 66 8 Q 65 12 60 14 Q 56 12 58 8 Z" fill="#e8a090" stroke="#d89080" stroke-width="0.8"/>
+              <circle class="flamenco-eye" cx="56" cy="9" r="2.5" fill="#1a1a1a"/>
+              <circle class="flamenco-eye-shine" cx="56.8" cy="8.2" r="0.6" fill="white"/>
+              <path class="flamenco-beak" d="M 40 10 Q 24 14 18 20 Q 14 24 16 28 Q 18 32 28 26 Q 38 18 40 10 Z" fill="url(#flamenco-beak-grad-sm)" stroke="#c86840" stroke-width="0.6"/>
+            </g>
+          </svg>
+        </span>
+        <h3 class="chatbot-panel-title">Normativas e instrucciones</h3>
+        <button type="button" id="chatbotClose" class="chatbot-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <p class="chatbot-panel-desc">Pregunta solo sobre normativas del taller o uso de la calculadora. Respondo con el contenido oficial.</p>
+      <div id="chatbotMessages" class="chatbot-messages"></div>
+      <div class="chatbot-input-wrap">
+        <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Ej: ¿Cómo fichar entrada? ¿Descuento en importados?" maxlength="500" autocomplete="off">
+        <button type="button" id="chatbotSend" class="chatbot-send">Enviar</button>
+      </div>
+    </div>
+  </div>
   </div>
 
   <script src="js/auth.js"></script>

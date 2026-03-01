@@ -1,5 +1,5 @@
 /**
- * Organigrama interactivo - Benny's Original Motor Works
+ * Organigrama interactivo - SALTLAB Calculator
  * Trabajadores: vista estática (como imagen)
  * Administrador: edición completa
  */
@@ -19,11 +19,111 @@ function buildOrganigramaTree(nodes) {
   return { byParent, byId };
 }
 
+var NIVEL_LABELS = { 0: 'Dirección', 1: 'Responsables', 2: 'Equipo', 3: 'Operativos' };
+function getNivelLabel(nivel) {
+  return NIVEL_LABELS[nivel] || ('Nivel ' + nivel);
+}
+
+function renderOrganigramaPorNiveles(container, data, isEditMode) {
+  var nodes = (data && data.nodes) ? data.nodes : [];
+  var byParent = {};
+  nodes.forEach(function (n) {
+    var pid = n.parentId || '__root';
+    if (!byParent[pid]) byParent[pid] = [];
+    byParent[pid].push(n);
+  });
+  Object.keys(byParent).forEach(function (pid) {
+    byParent[pid].sort(function (a, b) { return (a.orden || 0) - (b.orden || 0); });
+  });
+  var rootNodes = byParent['__root'] || nodes.filter(function (n) { return !n.parentId; });
+  if (rootNodes.length === 0) rootNodes = nodes.filter(function (n) { return (n.nivel || 0) === 0; });
+  rootNodes.sort(function (a, b) { return (a.orden || 0) - (b.orden || 0); });
+
+  function tipoClass(rol) {
+    var r = (rol || '').toLowerCase();
+    if (r.includes('dueño') || r.includes('admin')) return 'org-dueno';
+    if (r.includes('socio')) return 'org-socio';
+    if (r.includes('responsable')) return 'org-responsable';
+    return 'org-mecanico';
+  }
+  function cardHtml(node) {
+    var fotoUrl = (node.foto || '').trim();
+    var fotoHtml = fotoUrl && (fotoUrl.startsWith('http') || fotoUrl.startsWith('data:'))
+      ? '<div class="org-node-foto"><img src="' + escapeHtml(fotoUrl) + '" alt="" onerror="this.parentElement.classList.add(\'org-foto-error\')"></div>'
+      : '<div class="org-node-foto org-node-foto-placeholder"><span class="org-iniciales">' + escapeHtml(node.nombre ? node.nombre.substring(0, 2).toUpperCase() : '?') + '</span></div>';
+    var tc = tipoClass(node.rol);
+    return '<div class="org-node ' + tc + ' org-card-empleado" data-edit="' + escapeHtml(node.id) + '">' + fotoHtml +
+      '<div class="org-node-content"><span class="org-nombre">' + escapeHtml(node.nombre || 'Sin nombre') + '</span><span class="org-rol">' + escapeHtml(node.rol || '') + '</span></div></div>';
+  }
+
+  function renderLevelConLineas(nodes, level) {
+    if (!nodes || nodes.length === 0) return '';
+    var levelClass = 'org-level org-level-' + level;
+    var hasConnectorDrop = level > 0;
+    var html = '<div class="' + levelClass + '">';
+    nodes.forEach(function (node) {
+      var children = byParent[node.id] || [];
+      html += '<div class="org-node-wrap" data-id="' + escapeHtml(node.id) + '" data-username="' + escapeHtml(node.username || '') + '" data-nombre="' + escapeHtml(node.nombre || '') + '"' + (isEditMode ? ' draggable="true"' : '') + '>';
+      if (hasConnectorDrop) html += '<div class="org-connector-drop"></div>';
+      html += cardHtml(node);
+      if (children.length > 0) {
+        html += '<div class="org-children"><div class="org-connector org-connector-vertical"></div><div class="org-connector-h"></div>';
+        html += renderLevelConLineas(children, level + 1);
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  container.innerHTML = '<div class="org-chart org-chart-con-lineas">' + renderLevelConLineas(rootNodes, 0) + '</div>';
+  container.classList.add('organigrama-por-niveles');
+  container.classList.toggle('org-view-only', !isEditMode);
+  bindOrganigramaCardsSelect(container, data, isEditMode);
+  if (isEditMode) bindOrganigramaDragDrop(container, 'organigramaContainer', data);
+}
+
+function bindOrganigramaCardsSelect(container, data, isEditMode) {
+  if (!container) return;
+  container.querySelectorAll('.org-card-empleado').forEach(function (card) {
+    card.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var wrap = this.closest('.org-node-wrap');
+      var id = (wrap && wrap.getAttribute('data-id')) || this.getAttribute('data-id');
+      if (!id) return;
+      var node = data && data.nodes ? data.nodes.find(function (n) { return n.id === id; }) : null;
+      container.querySelectorAll('.org-node-wrap').forEach(function (w) { w.classList.remove('org-node-wrap-selected'); });
+      container.querySelectorAll('.org-card-empleado').forEach(function (c) { c.classList.remove('org-card-selected'); });
+      if (wrap) wrap.classList.add('org-node-wrap-selected');
+      this.classList.add('org-card-selected');
+      if (isEditMode) {
+        showOrganigramaToolbar(id, (node && node.nombre) || (wrap && wrap.getAttribute('data-nombre')) || '—', (node && node.username) || (wrap && wrap.getAttribute('data-username')) || '');
+      }
+      if (typeof window.renderOrganigramaFichaPreview === 'function') {
+        window.renderOrganigramaFichaPreview(id);
+      }
+      var placeholder = document.getElementById('organigramaFichaPreviewPlaceholder');
+      var content = document.getElementById('organigramaFichaPreviewContent');
+      if (placeholder) placeholder.style.display = 'none';
+      if (content) content.style.display = 'block';
+    });
+  });
+}
+
 function renderOrganigrama(containerId, isEditMode) {
   const container = document.getElementById(containerId);
   if (!container) return;
   // Siempre datos frescos desde usuarios/localStorage
   const data = getOrganigrama();
+  const usePorNiveles = container.classList.contains('organigrama-por-niveles');
+
+  if (usePorNiveles || (container.closest && container.closest('.organigrama-layout'))) {
+    renderOrganigramaPorNiveles(container, data, isEditMode);
+    hideOrganigramaToolbar();
+    return;
+  }
+
   const { byParent, byId } = buildOrganigramaTree(data.nodes);
 
   const rootNodes = byParent['__root'] || data.nodes.filter(n => !n.parentId);

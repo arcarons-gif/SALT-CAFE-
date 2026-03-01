@@ -1,5 +1,5 @@
 /**
- * Sistema de autenticación y control de usuarios - Benny's Original Motor Works
+ * Sistema de autenticación y control de usuarios - SALTLAB Calculator
  * Almacenamiento local (localStorage). Para producción con backend, sustituir por API.
  */
 
@@ -30,6 +30,7 @@ const PERMISOS = {
   gestionarRegistroClientes: 'Ver y editar BBDD de clientes / Aprobar altas',
   verConveniosPrivados: 'Ver convenios privados (máximos responsables)',
   gestionarCompras: 'Compras y existencias (compras, inventario; solo admin por defecto, se puede otorgar a empleados)',
+  exentoTestNormativas: 'Exento del test de normativas (no obligatorio hacer el test de comprensión)',
 };
 
 function createDefaultAdmin(passwordHash, salt) {
@@ -54,6 +55,7 @@ function createDefaultAdmin(passwordHash, salt) {
     gestionarRegistroClientes: true,
     verConveniosPrivados: true,
     gestionarCompras: true,
+    exentoTestNormativas: false,
     },
     activo: true,
     cambiarPasswordObligatorio: true,
@@ -65,6 +67,8 @@ function createDefaultAdmin(passwordHash, salt) {
     salario: null,
     fotoPerfil: null,
     equipo: [],
+    fotosFicha: [],
+    fondoFichaIndex: null,
   };
 }
 
@@ -258,8 +262,11 @@ async function createUser(userData, createdBy) {
     salario: userData.salario != null ? Number(userData.salario) : null,
     fotoPerfil: userData.fotoPerfil || null,
     equipo: Array.isArray(userData.equipo) ? userData.equipo : (userData.equipo ? [] : []),
+    fotosFicha: Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [],
+    fondoFichaIndex: userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null,
   };
   if (!newUser.equipo) newUser.equipo = [];
+  if (!newUser.fotosFicha) newUser.fotosFicha = [];
   users.push(newUser);
   saveUsers(users);
   return { user: { ...newUser, passwordHash: undefined, salt: undefined } };
@@ -288,6 +295,8 @@ async function updateUser(userId, userData, updatedBy) {
   if (userData.salario !== undefined) users[idx].salario = userData.salario != null ? Number(userData.salario) : null;
   if (userData.fotoPerfil !== undefined) users[idx].fotoPerfil = userData.fotoPerfil || null;
   if (userData.equipo !== undefined) users[idx].equipo = Array.isArray(userData.equipo) ? userData.equipo : [];
+  if (userData.fotosFicha !== undefined) users[idx].fotosFicha = Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [];
+  if (userData.fondoFichaIndex !== undefined) users[idx].fondoFichaIndex = userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null;
   if (userData.password && userData.password.length >= 4) {
     const salt = crypto.randomUUID() + Date.now();
     users[idx].passwordHash = await hashPassword(userData.password, salt);
