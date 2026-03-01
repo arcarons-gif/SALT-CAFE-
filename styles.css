@@ -150,11 +150,11 @@ h1, h2, h3, h4, .paso-titulo, .btn, .header-title, .section-destacado-titulo,
   z-index: 10001;
 }
 
-/* Cuerpo: área principal + menú lateral — permite scroll vertical cuando el contenido sobresale */
+/* Cuerpo: área principal + menú lateral — ocupa todo el espacio bajo el header para que matrícula y botones no se corten */
 .app-body {
   display: flex;
   flex-direction: row;
-  flex: 0 0 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: visible;
@@ -2894,22 +2894,21 @@ button.login-recovery-link {
   transform: scale(0.98);
 }
 
-/* Paso matrícula: centra el bloque sin forzar altura mínima */
+/* Paso matrícula: ocupa todo el espacio disponible y centra el bloque; si no cabe, hace scroll */
 .paso-matricula {
   position: relative;
   flex: 1;
   width: 100%;
-  padding: 1.5rem 0;
+  min-height: 0;
+  padding: 1.5rem 0 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
 }
 
 .paso-matricula-conjunto {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2918,6 +2917,7 @@ button.login-recovery-link {
   width: 100%;
   max-width: 640px;
   padding: 0 1rem;
+  flex-shrink: 0;
 }
 
 .paso-matricula .paso-titulo {
@@ -3524,10 +3524,15 @@ button.login-recovery-link {
   min-height: min-content;
 }
 
-/* Paso matrícula e inicio: una sola columna para centrar el contenido en toda la pantalla */
+/* Paso matrícula e inicio: una sola columna, usa todo el alto para que matrícula y botones salgan enteros */
 .pantalla-principal-layout.layout-paso-centro {
   grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
   gap: 0;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0 1rem 1.5rem;
 }
 
 /* Modo calculadora: una sola columna para usar todo el ancho de pantalla */
@@ -5191,8 +5196,8 @@ body.personalizacion-cards-elevated .economia-card {
 /* ========== Chatbot — Flamenco fijo en pantalla (sin movimiento) ========== */
 .chatbot-wrap {
   position: fixed;
-  bottom: 1rem;
-  right: 1rem;
+  bottom: 1.25rem;
+  right: 1.25rem;
   z-index: 9999;
   font-family: var(--font);
   pointer-events: none;
@@ -5202,7 +5207,7 @@ body.personalizacion-cards-elevated .economia-card {
   pointer-events: auto;
 }
 
-/* Botón del chatbot: forma redonda */
+/* Botón del chatbot: forma redonda; en viewports cortos se reduce para no cortarse */
 .chatbot-toggle {
   background: transparent !important;
   border: none !important;
@@ -5220,6 +5225,20 @@ body.personalizacion-cards-elevated .economia-card {
   min-height: 160px;
   border-radius: 50%;
   overflow: hidden;
+}
+@media (max-height: 700px) {
+  .chatbot-toggle {
+    width: 130px;
+    height: 130px;
+    min-width: 130px;
+    min-height: 130px;
+  }
+  .chatbot-flamenco-mascot-wrap,
+  .chatbot-flamenco-silhouette-wrap,
+  .chatbot-flamenco-photo-wrap {
+    width: 110px;
+    height: 140px;
+  }
 }
 .chatbot-toggle:hover {
   background: transparent !important;
