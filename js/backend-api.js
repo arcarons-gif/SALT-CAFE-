@@ -25,7 +25,7 @@
     if (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) {
       return window.SALTLAB_API_URL.replace(/\/$/, '');
     }
-    return DEFAULT_API_URL;
+    return '';
   }
 
   function setApiUrl(url) {
@@ -48,8 +48,10 @@
   }
 
   async function isAvailable() {
+    var base = getBaseUrl();
+    if (!base) return false;
     try {
-      const r = await fetch(getBaseUrl() + '/api/health', { method: 'GET' });
+      const r = await fetch(base + '/api/health', { method: 'GET' });
       return r.ok;
     } catch {
       return false;
@@ -141,6 +143,7 @@
   }
 
   async function init() {
+    if (!getStoredApiUrl()) return false;
     if (!(await isAvailable())) return false;
     await fetchAndApplyUsers();
     await fetchAndApplyFichajes();

@@ -1,21 +1,812 @@
-Nº;Matricula;Placa policial;Código vehiculo;Nombre vehiculo;Categoria;Convenio
-1;CCC13943;-;dub;Club;Compactos;"BENNY's Original Motor Works"
-2;NGEN4071;449;dominator3;Dominator GTX;Muscle;
-3;YIXN3746;108;weevil;Weevil;Motos;Bohem Beach
-4;HZP752;118;previon;Elegy Retro Custom;Deportivo;SAPD
-5;HALY9054;-;ssi7;Issi Sport;Coupes;Weedland
-6;EYOR6215;431;asteropez;Previon;VIP;
-7;PMTZ3603;452;elegy;Elegy Retro Custom;Sedans;NIA
-8;XOVP8482;150;primo;Primo;Compactos;SAPD
-9;LSU668;433;akuma;Akuma;Motos;"BENNY's Original Motor Works"
-10;CPKT5136;118;gargoyle;Gargoyle;Coupes;
-11;ACW3653;130;manana;Manana Custom;Todoterrenos;Departamento de Justicia
-12;RCYB5877;167;shinobi;Shinobi;Muscle;
-13;JUNR6111;-;stanier;Stanier;VIP;
-14;HYT19159;136;thrust;Thrust;Deportivo clásico;
-15;FBPQ7516;457;asterope;Asterope;Sedans;
-16;QTRF9206;444;faggio3;Faggio Mod;Motos;
-17;HAZM7916;-;omnis;Omnis;Todoterrenos;
-18;ZOLB2760;429;draugur;Draugur;Todoterrenos;
-19;PXVZ3764;108;asbo;Asbo;Compactos;"BENNY's Original Motor Works"
-20;PMDK3898;157;hellion;Hellion;Deportivo;
+﻿Nº;Matricula;Placa policial;Código vehiculo;Nombre vehiculo;Categoria;Convenio
+1;CCCI3943;--;club;Club;Compactos;
+2;NGEN4071;--;dominator3;Dominator GTX;Muscle;
+3;LGEN9870;--;weevil;Weevil;Compactos;
+4;OPIW3966;--;panthere;Panthere;Deportivo;
+5;YIXN3746;--;elegy;Elegy Retro Custom;Deportivo;
+6;TJGK3084;--;cliffhanger;Cliffhanger;Motos;
+7;ENFC2689;--;dominator3;Dominator GTX;Muscle;
+8;XDWW8209;--;issi7;Issi Sport;Compactos;BENNY's Original Motor Works
+9;HRUA9940;--;previon;Previon;Coupes;
+10;GHGT5968;--;paragon3;Paragon S;Deportivo;Bohem Beach
+11;NONX6344;--;asterope2;Asterope GZ;Sedans;
+12;HBMA4828;--;penumbra2;Penumbra FF;Deportivo;
+13;GPVL5100;--;previon;Previon;Coupes;
+14;RAU520;449;--;Vehículo policial;--;SAPD
+15;LFXB4037;--;kanjosj;Kanjo SJ;Coupes;
+16;FRCV5271;--;gbprospero;Prospero;VIP;
+17;MCNS0708;--;issi2;Issi;Compactos;
+18;NMWO3266;--;akuma;Akuma;Motos;
+19;PYAW8032;--;prairie;Prairie;Compactos;
+20;AUCZ7119;--;dorado;Dorado;SUVs;
+21;PUFC4026;--;l35;Walton L35;Todoterrenos;
+22;TXBR6357;--;l35;Walton L35;Todoterrenos;
+23;ISXX9624;--;ratbike;Rat Bike;Motos;
+24;KPKF8177;--;gbgresleystx;Gresley STX;VIP;
+25;TURM4278;--;offzenith;Zenith Offroad;VIP;
+26;UFUW2361;--;terminus;Terminus;Todoterrenos;
+27;TNLC2460;--;obeysport;Obey Sport GT;VIP;
+28;NNZN2499;--;gbcomets2r;Comet S2R;VIP;
+29;HWGQ7355;--;picador;Picador;Muscle;
+30;RNDE2294;--;jugular;Jugular;Deportivo;
+31;DETF0654;--;bf400;BF400;Motos;
+32;VYGS6478;--;issi3;Issi Classic;Compactos;
+33;ZXBG2715;--;asea;Asea;Sedans;
+34;BOIA5743;--;asbo;Asbo;Compactos;
+35;XRR841;429;--;Vehículo policial;--;
+36;WUQ T5574;--;gbmogulrs;Mogul RS;VIP;BENNY's Original Motor Works
+37;IKHP9762;--;previon;Previon;Coupes;BENNY's Original Motor Works
+38;RZKZ0198;--;issi3;Issi Classic;Compactos;
+39;VBJW6018;--;g4m82;G4 M82;VIP;
+40;RSV117;108;--;Vehículo policial;--;SAPD
+41;BXK386;118;--;Vehículo policial;--;SAPD
+42;ZQRC4725;--;hexer;Hexer;Motos;
+43;XYFG1744;--;asterope;Asterope;Sedans;
+44;KHYK0121;--;primo;Primo;Sedans;
+45;XPNO3678;--;obeysport;Obey Sport GT;VIP;
+46;XAYV2982;--;dominator7;Dominator ASP;Muscle;
+47;NEBL0083;--;ratbike;Rat Bike;Motos;
+48;UIJV5953;--;rhinehart;Rhinehart;Sedans;Weedland
+49;ZJJZ853;431;--;Vehículo policial;--;
+50;YWBX4695;--;winky;Winky;Todoterrenos;
+51;MVKR1970;--;asbo;Asbo;Compactos;
+52;PEDX0772;--;issi2;Issi;Compactos;
+53;ELEK3518;--;tailgater2;Tailgater S;Sedans;
+54;ZJEZ3115;--;cogcabrio;Cognoscenti Cabrio;Coupes;
+55;RQXN6987;--;issi7;Issi Sport;Compactos;
+56;JRTK2645;--;dominator9;Dominator GT;Muscle;
+57;JGK310;450;--;Vehículo policial;--;
+58;FIXF5433;--;kuruma;Kuruma;Deportivo;
+59;VRB139;440;--;Vehículo policial;--;
+60;GWT136;465;--;Vehículo policial;--;
+61;VQDJ7400;--;cogcabrio;Cognoscenti Cabrio;Coupes;
+62;HELV9054;--;previon;Previon;Coupes;
+63;SEEX1215;--;issi3;Issi Classic;Compactos;
+64;EIWH2998;--;gbcomets2r;Comet S2R;VIP;
+65;ZTXD3468;--;asea;Asea;Sedans;
+66;HCNH7836;--;eudora;Eudora;Sedans;
+67;UIY16148;--;previon;Previon;Coupes;
+68;ZXQ249;442;--;Vehículo policial;--;
+69;CHYI4001;--;gbsapphire;Sapphire;VIP;
+70;BEAW5982;--;bobcatxl;Bobcat XL Open;Furgonetas;
+71;ULN820;136;--;Vehículo policial;--;
+72;PIKQ5900;--;gbbisonhf;Bison HF;VIP;
+73;PSUS0443;--;gbgresleystx;Gresley STX;VIP;
+74;MWI840;400;--;Vehículo policial;--;SAPD
+75;PQG029;444;--;Vehículo policial;--;SAPD
+76;KVLQ6256;--;primo;Primo;Sedans;
+77;DWN192;--;bobcatxl;Bobcat XL Open;Furgonetas;
+78;TAHM1989;--;asbo;Asbo;Compactos;
+79;JGUZ6925;--;sugoi;Sugoi;Deportivo;
+80;HVTI9159;--;--;Vehículo policial;--;
+81;HZP752;167;--;Vehículo policial;--;
+82;HALY9054;--;previon;Previon;Coupes;
+83;EYOR6215;--;vindicator;Vindicator;Motos;
+84;HFTM9998;--;comet2;Comet;Deportivo;
+85;CFUJ5828;--;s790anim;S790 Animated;VIP;
+86;WILC0834;--;gbmogulrs;Mogul RS;VIP;
+87;KZL527;157;--;Vehículo policial;--;
+88;QZP749;438;--;Vehículo policial;--;
+89;AIZV9132;--;dominator3;Dominator GTX;Muscle;
+90;WXYC4758;--;blista2;Blista Compact;Compactos;
+91;ZQRC4725;--;hexer;Hexer;Motos;
+92;IGTJ2586;--;asterope;Asterope;Sedans;
+93;KGH883;441;--;Vehículo policial;--;
+94;ZBT195;167;--;Vehículo policial;--;
+95;ITGH5463;--;manchez;Manchez;Motos;
+96;ZGNT0556;--;tailgater2;Tailgater S;Sedans;
+97;ZQHY690;--;rhinehart;Rhinehart;Sedans;
+98;DKFN6682;--;gbdominatorgsx;Dominator GSX;VIP;Ruta 68
+99;EHVL9487;--;primo;Primo;Sedans;
+100;XJR858;--;buffalo;Buffalo;Muscle;
+101;EHNU6555;--;gbprospero;Prospero;VIP;
+102;MVT991;162;--;Vehículo policial;--;
+103;LYBM5972;--;gbprospero;Prospero;VIP;
+104;GANQ0576;--;ratbike;Rat Bike;Motos;
+105;SERQ2225;--;dominator8;Dominator GTT;Muscle;
+106;EVJ001;405;--;Vehículo policial;--;
+107;FWW275;429;--;Vehículo policial;--;
+108;SXZW6996;--;kuruma;Kuruma;Deportivo;
+109;RELH4978;--;bf400;BF400;Motos;
+110;LPPD8246;--;bmx;BMX;Bicicletas;
+111;NGIF9831;--;dominator9;Dominator GT;Muscle;
+112;QHQP6603;--;rhinehart;Rhinehart;Sedans;
+113;TFJA2062;--;vigero2;Vigero ZX;Muscle;
+114;ZQUZ2320;--;drafter;8F Drafter;Deportivo;
+115;IXGK1552;--;turismo2;Turismo Classic;Deportivo clasico;
+116;ECQW9448;--;tailgater2;Tailgater S;Sedans;
+117;YVJN4833;--;esskey;Esskey;Motos;
+118;CMBX4563;--;akuma;Akuma;Motos;BENNY's Original Motor Works
+119;MGUR4347;--;blista2;Blista Compact;Compactos;
+120;UAHJ2038;--;komoda;Komoda;Deportivo;
+121;EGD046;427;--;Vehículo policial;--;
+122;UPJY1523;--;asbo;Asbo;Compactos;
+123;FDFU4839;--;blista;Blista;Compactos;
+124;AIAX9241;--;s790;s790;VIP;
+125;TPP084;475;--;Vehículo policial;--;SAPD
+126;FLOH9991;--;rhinehart;Rhinehart;Sedans;
+127;TTP084;475;--;Vehículo policial;--;
+128;HVCD6957;--;akuma;Akuma;Motos;
+129;NPGY2856;--;asea;Asea;Sedans;
+130;XVRD0085;--;gbsultanrsx;Sultan RSX;VIP;
+131;KOZ527;141;--;Vehículo policial;--;
+132;HALC1687;--;zr6gt;ZR6 GT;VIP;
+133;GYNE5125;--;issi3;Issi Classic;Compactos;
+134;ZWEK6694;--;asterope2;Asterope GZ;Sedans;
+135;RPN209;150;--;Vehículo policial;--;
+136;STJB7120;--;previon;Previon;Coupes;
+137;JKJ513;433;--;Vehículo policial;--;
+138;OSV018;149;--;Vehículo policial;--;
+139;VDTP4273;--;asbo;Asbo;Compactos;
+140;LBH535;465;--;Vehículo policial;--;SAPD
+141;FMVK3063;--;zr6gt;ZR6 GT;VIP;
+142;PVVG9534;--;akuma;Akuma;Motos;
+143;VKQ299;454;--;Vehículo policial;--;SAPD
+144;VSW032;450;--;Vehículo policial;--;
+145;QOEG6990;--;sultanrs;Sultan RS;Deportivo;
+146;ZUM788;112;--;Vehículo policial;--;
+147;PPAF1721;--;akuma;Akuma;Motos;
+148;TRV825;118;--;Vehículo policial;--;
+149;NIFN4614;--;l35;Walton L35;Todoterrenos;
+150;IVLW9719;--;gbmogulrs;Mogul RS;VIP;
+151;AUS618;434;--;Vehículo policial;--;
+152;OQRN4365;--;gbcomets2r;Comet S2R;VIP;
+153;BSKG9363;--;gbstarlight;Starlight;VIP;
+154;IGSS8180;--;elegy;Elegy Retro Custom;Deportivo;
+155;EOYE8652;--;g4m82;G4 M82;VIP;
+156;WLIZ4628;--;620gts;620 GTS;VIP;
+157;TIXB4965;--;shinobi;Shinobi;Motos;
+158;QFYR6146;--;slamvan;Slam Van;Muscle;
+159;GJRN8387;--;asterope;Asterope;Sedans;
+160;PMTZ3603;--;issi3;Issi Classic;Compactos;
+161;XOVP8482;--;elegy;Elegy Retro Custom;Deportivo;
+162;FCUE0464;--;primo;Primo;Sedans;
+163;QPWS8994;--;asea;Asea;Sedans;
+164;EVHG6881;--;issi3;Issi Classic;Compactos;
+165;BBLT1589;--;l35;Walton L35;Todoterrenos;
+166;DSML5445;--;primo2;Primo Custom;Sedans;
+167;AMCR2383;--;terminus;Terminus;Todoterrenos;
+168;SOFW4173;--;brioso2;Brioso 300;Compactos;
+169;LSU668;452;--;Vehículo policial;--;
+170;RWO005;150;--;Vehículo policial;--;
+171;FXU223;433;--;Vehículo policial;--;
+172;QZUT8797;--;gargoyle;Gargoyle;Motos;
+173;WOUQ2130;--;weevil;Weevil;Compactos;
+174;SWV850;433;--;Vehículo policial;--;
+175;LXP701;427;--;Vehículo policial;--;
+176;UDNM6493;--;akuma;Akuma;Motos;
+177;CPKT5136;--;previon;Previon;Coupes;
+178;OTF047;118;--;Vehículo policial;--;
+179;HDK998;130;--;Vehículo policial;--;
+180;VEH913;137;--;Vehículo policial;--;
+181;RNOJ5174;--;manana;Manana;Muscle;
+182;HUBW9003;--;s790anim;S790 Animated;VIP;
+183;QRYZ2584;--;previon;Previon;Coupes;
+184;UZS050;465;--;Vehículo policial;--;
+185;JFF604;--;shinobi;Shinobi;Motos;
+186;YYM604;433;--;Vehículo policial;--;
+187;TKX593;--;stanier;Stanier;Sedans;
+188;XXUY7850;--;thrust;Thrust;Motos;
+189;LAM711;406;--;Vehículo policial;--;
+190;IFOQ7209;--;primo;Primo;Sedans;
+191;FVGB9634;--;obeysport;Obey Sport GT;VIP;
+192;FAA546;167;--;Vehículo policial;--;
+193;SIZU7624;--;previon;Previon;Coupes;
+194;UIW555;--;akuma;Akuma;Motos;SAPD
+195;AOIW3653;--;asterope2;Asterope GZ;Sedans;BENNY's Original Motor Works
+196;LRVF1991;--;cogcabrio;Cognoscenti Cabrio;Coupes;BENNY's Original Motor Works
+197;IBYL4068;--;faggio3;Faggio Mod;Motos;
+198;IWRG0023;--;zr6gt;ZR6 GT;VIP;
+199;OVBP1408;--;omnis;Omnis;Deportivo;
+200;ATN605;442;--;Vehículo policial;--;
+201;IJEI0809;--;faggio3;Faggio Mod;Motos;
+202;EET259;178;--;Vehículo policial;--;SAPD
+203;HXQG1998;--;akuma;Akuma;Motos;
+204;OFXB1336;--;mesa;Mesa;Todoterrenos;
+205;LUC403;180;--;Vehículo policial;--;
+206;TTDJ5330;--;elegy;Elegy Retro Custom;Deportivo;
+207;INXD1289;--;draugur;Draugur;Todoterrenos;
+208;FRFF8392;--;asbo;Asbo;Compactos;
+209;HOTX7723;--;hellion;Hellion;Todoterrenos;
+210;NNR784;426;--;Vehículo policial;--;
+211;MYY335;469;--;Vehículo policial;--;
+212;VVT740;426;--;Vehículo policial;--;
+213;CAYD7630;--;gbmojave;Mojave;VIP;Departamento de Justicia
+214;ZITA0080;--;asterope;Asterope;Sedans;
+215;UMWE6564;--;nightblade;Nightblade;Motos;
+216;JTOK7325;--;obeysport;Obey Sport GT;VIP;
+217;VSHM7213;--;dominator9;Dominator GT;Muscle;
+218;VOUH5013;--;eudora;Eudora;Sedans;
+219;DHHS3727;--;vorschlaghammer;Vorschlaghammer;Deportivo;
+220;CPD370;119;--;Vehículo policial;--;
+221;WXT112;449;--;Vehículo policial;--;SAPD
+222;QYHC1998;--;gauntlet4;Gauntlet Hellfire;Muscle;
+223;XUA976;163;--;Vehículo policial;--;SAPD
+224;QWUR0699;--;akuma;Akuma;Motos;
+225;HVK328;118;--;Vehículo policial;--;SAPD
+226;EZL440;438;--;Vehículo policial;--;
+227;PXY141;438;--;Vehículo policial;--;
+228;DKZS0828;--;previon;Previon;Coupes;
+229;YKCW6090;--;envisage;Envisage;Deportivo clasico;
+230;IPH473;438;--;Vehículo policial;--;
+231;RCYB5877;--;ratbike;Rat Bike;Motos;
+232;RCD764;440;--;Vehículo policial;--;
+233;NQPP8816;--;akuma;Akuma;Motos;
+234;ONOC9976;--;asbo;Asbo;Compactos;
+235;IEGC0527;--;hakuchou;Hakuchou;Motos;
+236;HKES9090;--;omnis;Omnis;Deportivo;
+237;RRK997;452;--;Vehículo policial;--;
+238;JJNR6111;--;blista;Blista;Compactos;
+239;HYTI9159;--;banshee;Banshee;Deportivo;
+240;FBPQ7516;--;cognoscenti;Cognoscenti;Coupes;
+241;GSJ807;866;--;Vehículo SAED;--;
+242;QYTJ4510;--;previon;Previon;Coupes;
+243;OPM806;136;--;Vehículo policial;--;
+244;KMZ467;457;--;Vehículo policial;--;
+245;GQDZ6482;--;issi3;Issi Classic;Compactos;
+246;GXUG1280;--;gargoyle;Gargoyle;Motos;
+247;GEC707;136;--;Vehículo policial;--;
+248;TIZG0428;--;asbo;Asbo;Compactos;
+249;KNXE9430;--;gbprospero;Prospero;VIP;Sushi Bar
+250;CWT271;444;--;Vehículo policial;--;
+251;UYU871;833;--;Vehículo SAED;--;
+252;NIK892;837;--;Vehículo SAED;--;
+253;FUF J2345;--;weevil;Weevil;Compactos;
+254;IGVE3641;--;akuma;Akuma;Motos;
+255;MLTC1731;--;asterope;Asterope;Sedans;
+256;52965;823;--;Vehículo SAED;--;
+257;ATWE2080;--;journey;Journey;Furgonetas;
+258;TZFO4657;--;gbcomets2r;Comet S2R;VIP;
+259;HJMB3584;--;elegy;Elegy Retro Custom;Deportivo;
+260;KULH5718;--;asterope2;Asterope GZ;Sedans;
+261;UVAA7837;--;astron;Astron;SUVs;BENNY's Original Motor Works
+262;SQXZ4696;--;italigo;Itali GTO;Deportivo;SAPD
+263;RHAP0265;--;gbcomets2rc;Comet S2RC;VIP;Helmut´s
+264;WAIB7966;--;pizzaboy;Pizza Boy;Motos;
+265;TFKE9443;--;akuma;Akuma;Motos;
+266;AQWS6934;--;asterope;Asterope;Sedans;
+267;NBUI1458;--;caracara2;Caracara 4x4;Todoterrenos;
+268;KYUY8931;--;ratbike;Rat Bike;Motos;
+269;PPWU1412;--;buffalo4;Buffalo STX;Muscle;
+270;BBEX3961;--;previon;Previon;Coupes;
+271;UVAX6665;--;dominator7;Dominator ASP;Muscle;
+272;SZE371;149;--;Vehículo policial;--;
+273;JOR890;833;--;Vehículo SAED;--;
+274;ADS300;107;--;Vehículo policial;--;SAPD
+275;8777;855;--;Vehículo SAED;--;
+276;FFM998;823;--;Vehículo SAED;--;
+277;QLTM0934;--;gbprospero;Prospero;VIP;
+278;UDQY1391;--;double;Double-T;Motos;
+279;ZIEU7805;--;tailgater2;Tailgater S;Sedans;Weedland
+280;THU912;120;--;Vehículo policial;--;
+281;HVUL2081;--;tulip;Tulip;Muscle;
+282;BLLD7521;--;dominator3;Dominator GTX;Muscle;
+283;NFBG0490;--;gbprospero;Prospero;VIP;
+284;KQII8843;--;weevil;Weevil;Compactos;
+285;YRY435;401;--;Vehículo policial;--;
+286;FELF1370;--;akuma;Akuma;Motos;
+287;AZLZ0394;--;bf400;BF400;Motos;
+288;IZNL4623;--;gbsultanrsx;Sultan RSX;VIP;
+289;ZFS009;--;Vehículo policial;;;
+290;OKZ516;403;--;Vehículo policial;--;
+291;WMQ736;403;--;Vehículo policial;--;
+292;BW0024;403;--;Vehículo policial;--;
+293;UIU731;403;--;Vehículo policial;--;
+294;EVVP0878;--;picador;Picador;Muscle;
+295;LYE045;774;--;Vehículo SAED;--;
+296;RUKQ6023;--;s790anim;S790 Animated;VIP;
+297;MCD180;123;--;Vehículo policial;--;
+298;OZYV0251;--;gbronin;Ronin;VIP;Sushi Bar
+299;VOAR3507;--;caracara2;Caracara 4x4;Todoterrenos;
+300;TQPS8117;--;gbmilano;Milano;VIP;
+301;UGWO0303;--;elegy;Elegy Retro Custom;Deportivo;Bohem Beach
+302;WLU355;855;--;Vehículo SAED;--;
+303;DKQ371;103;--;Vehículo policial;--;
+304;LXW269;--;;;;
+305;LNNG6777;--;offzenith;Zenith Offroad;VIP;
+306;AUL917;119;--;Vehículo policial;--;
+307;OUKW2470;--;outlaw;Outlaw;Todoterrenos;
+308;OEMR2849;--;blista;Blista;Compactos;
+309;UHX598;102;--;Vehículo policial;--;
+310;UYW806;103;--;Vehículo policial;--;
+311;PLGS6756;--;offzenith;Zenith Offroad;VIP;
+312;JPGO4005;--;sanchez;Sanchez Livery;Motos;
+313;NFRR6929;--;zr6gt;ZR6 GT;VIP;
+314;ACJ653;110;--;Vehículo policial;--;
+315;AUHJ2038;--;komoda;Komoda;Deportivo;
+316;TFJA4086;--;blista;Blista;Compactos;
+317;RIH991;114;--;Vehículo policial;--;
+318;TEF106;454;--;Vehículo policial;--;SAPD
+319;OAF882;400;--;Vehículo policial;--;
+320;LODN6618;--;asbo;Asbo;Compactos;
+321;UKPJ1871;--;komoda;Komoda;Deportivo;
+322;SKGV3650;--;rhinehart;Rhinehart;Sedans;
+323;MEWX6095;--;s790anim;S790 Animated;VIP;BENNY's Original Motor Works
+324;JVGD1291;--;terminator;Terminator;VIP;Departamento de Justicia
+325;VLU885;446;--;Vehículo policial;--;
+326;USL183;905;--;Vehículo policial;--;SAPD
+327;EJX188;444;--;Vehículo policial;--;SAPD
+328;RVQA5030;--;slamvan;Slam Van;Muscle;
+329;XOET9532;--;gbbisonhf;Bison HF;VIP;
+330;ORQC1420;--;gbprospero;Prospero;VIP;
+331;HVT755;888;--;Vehículo SAED;--;
+332;TWGU8630;--;primo2;Primo Custom;Sedans;
+333;KSQU9409;--;weevil;Weevil;Compactos;
+334;WFQC2370;--;elegy;Elegy Retro Custom;Deportivo;Sushi Bar
+335;HEXM1927;--;issi2;Issi;Compactos;
+336;BXKK728;855;--;Vehículo SAED;--;
+337;AZY813;476;--;Vehículo policial;--;
+338;VCGC3841;--;gbprospero;Prospero;VIP;
+339;UTT084;465;--;Vehículo policial;--;
+340;IETD5927;--;weevil;Weevil;Compactos;
+341;EIUF4620;--;obeysport;Obey Sport GT;VIP;
+342;XWW059;--;shinobi;Shinobi;Motos;
+343;CNZT0189;--;previon;Previon;Coupes;
+344;YJMQ3848;--;penumbra2;Penumbra FF;Deportivo;
+345;EFVF1065;--;sultan;Sultan;Deportivo;
+346;SRCU7848;--;sovereign;Sovereign;Motos;
+347;RKQY3284;--;akuma;Akuma;Motos;
+348;QINS1865;--;ratbike;Rat Bike;Motos;
+349;TGME1787;--;obeysport;Obey Sport GT;VIP;
+350;MFJT2534;--;620gts;620 GTS;VIP;
+351;AIFC1142;--;pfister811;s811;Superdeportivo;
+352;TSWZ2203;--;asbo;Asbo;Compactos;
+353;WLXQ5347;--;previon;Previon;Coupes;
+354;MUWK8191;--;sentinel2;Sentinel XS;Coupes;
+355;JWVW1367;--;blista;Blista;Compactos;
+356;JLNN1962;--;issi2;Issi;Compactos;
+357;ELL004;--;akuma;Akuma;Motos;SAPD
+358;GALN5878;--;rumpo3;Rumpo Custom;Furgonetas;
+359;ZBCR2816;--;asterope;Asterope;Sedans;
+360;CMCN4145;--;gbbisonhf;Bison HF;VIP;
+361;PFYY6751;--;rhinehart;Rhinehart;Sedans;
+362;LBE326;118;--;Vehículo policial;--;
+363;EUT046;120;--;Vehículo SAED;--;
+364;GOWK4862;--;akuma;Akuma;Motos;
+365;DYRQ1887;--;rhinehart;Rhinehart;Sedans;
+366;JRUJ9468;--;draugur;Draugur;Todoterrenos;
+367;YNWV0442;--;sanchez;Sanchez Livery;Motos;
+368;AVSV0534;--;asbo;Asbo;Compactos;
+369;EIHN1855;--;comet2;Comet;Deportivo;
+370;LBJV4343;--;shinobi;Shinobi;Motos;
+371;TXI211;442;--;Vehículo policial;--;
+372;RJPZ8680;--;asterope;Asterope;Sedans;
+373;YKYL7902;--;l35;Walton L35;Todoterrenos;
+374;HSXM1846;--;kanjo;Blista Kanjo;Compactos;
+375;IQVV4454;--;asea;Asea;Sedans;
+376;UHYD7532;--;previon;Previon;Coupes;
+377;GGGE2704;--;stinger;Stinger;Deportivo clasico;
+378;EQVN3034;--;kanjo;Blista Kanjo;Compactos;
+379;EWY319;--;trophytruck;Trophy Truck;Todoterrenos;
+380;YCOD4041;--;asterope;Asterope;Sedans;
+381;ATET0993;--;rocoto;Rocoto;SUVs;
+382;EUGI5698;--;terminus;Terminus;Todoterrenos;
+383;ZXTG2482;--;akuma;Akuma;Motos;
+384;OVRG4656;--;imorgon;Imorgon;Deportivo;
+385;RVQF2058;--;prototipo;X80 Proto;Superdeportivo;
+386;KATAT0971;--;penumbra;Penumbra;Deportivo;
+387;KWYQ5073;--;asbo;Asbo;Compactos;
+388;YGE816;118;--;Vehículo policial;--;
+389;FQR434;116;--;Vehículo policial;--;
+390;KSY187;116;--;Vehículo policial;--;
+391;GJMC2512;--;asbo;Asbo;Compactos;
+392;DPA622;855;--;Vehículo policial;--;
+393;SOAS6792;--;asbo;Asbo;Compactos;
+394;OOXT2796;--;asbo;Asbo;Compactos;
+395;AFJ309;135;--;Vehículo policial;--;
+396;COIC4470;--;l35;Walton L35;Todoterrenos;
+397;XWHX6678;--;virgo;Virgo;Muscle;
+398;TARS8172;--;jugular;Jugular;Deportivo;
+399;YESY1226;--;comet2;Comet;Deportivo;
+400;GEO373;425;--;Vehículo policial;--;
+401;XHHU7442;--;rhinehart;Rhinehart;Sedans;
+402;AEMF2807;--;s790;s790;VIP;
+403;NSVH2025;--;warrener2;Warrener HKR;Sedans;
+404;WCD180;118;--;Vehículo policial;--;
+405;THDDN5096;--;bati;Bati 801;Motos;
+406;9IQ863XY;--;sultan;Sultan;Deportivo;
+407;IKNQ0466;--;rhinehart;Rhinehart;Sedans;
+408;JFQJ6273;--;ratbike;Rat Bike;Motos;
+409;LUWP3464;--;terminus;Terminus;Todoterrenos;
+410;EFWH8141;--;gbemerussb1;Emerus SB1;VIP;
+411;ZLOM4007;--;impaler;Impaler;Muscle;
+412;FUMQ8471;--;bati;Bati 801;Motos;
+413;BPGA4593;--;hexer;Hexer;Motos;
+414;BASF1031;--;asbo;Asbo;Compactos;
+415;SZEC2978;--;rhinehart;Rhinehart;Sedans;
+416;NLLI1321;--;shinobi;Shinobi;Motos;
+417;BFYV;--;faggio;Faggio Sport;Motos;
+418;KKXV5548;--;picador;Picador;Muscle;
+419;OELU4832;--;sultan;Sultan;Deportivo;
+420;QCG508IW;--;sultan;Sultan;Deportivo;
+421;GMNL8772;--;gbsultanrsx;Sultan RSX;VIP;
+422;QYZ257;180;--;Vehículo policial;--;
+423;AJHX1290;--;asterope;Asterope;Sedans;
+424;EXWT3117;--;bf400;BF400;Motos;
+425;TJVU9101;--;issi3;Issi Classic;Compactos;
+426;TIOB8067;--;youga3;Youga Classic 4x4;Furgonetas;
+427;FNLZ9606;--;ratbike;Rat Bike;Motos;
+428;QNNR2735;--;dominator7;Dominator ASP;Muscle;
+429;FILR4959;--;akuma;Akuma;Motos;Badulaque central
+430;KRQP3286;--;comet5;Comet SR;Deportivo;
+431;MAFK7572;--;faggio2;Faggio;Motos;
+432;ZPH173;428;--;Vehículo policial;--;SAPD
+433;KEAX7756;--;vstr;V-STR;Deportivo;
+434;BHIG2423;--;tailgater;Tailgater;Sedans;
+435;YNDC6156;--;turismo3;Turismo Omaggio;Superdeportivo;
+436;VDLR5142;--;l35;Walton L35;Todoterrenos;
+437;GLIF3046;--;akuma;Akuma;Motos;
+438;THU812;110;--;Vehículo policial;--;
+439;JEZK3556;--;akuma;Akuma;Motos;
+440;AZCB1824;--;obeysport;Obey Sport GT;VIP;
+441;VBMT8232;--;asbo;Asbo;Compactos;
+442;ERBT0438;--;corsita;Corsita;Deportivo;
+443;TGRJ2895;--;dominator4;Dominator Arena;Muscle;
+444;SLPZ3162;--;habanero;Habanero;SUVs;
+445;YYRS1006;--;asterope2;Asterope GZ;Sedans;
+446;9GE54OPP;--;sultan;Sultan;Deportivo;
+447;TIB03162;--;gblod4;LOD4;VIP;
+448;KTAT0971;--;penumbra2;Penumbra FF;Deportivo;
+449;LYJV7580;--;dc500l;DC500 Limousine;VIP;
+450;HKNH2626;--;paragon;Paragon;Deportivo;
+451;FRJY6243;--;carbonrs;Carbon RS;Motos;
+452;LUWT6264;--;asbo;Asbo;Compactos;
+453;PAGU7044;--;rapidgt;Rapid GT;Deportivo;
+454;VGM934;446;--;Vehículo policial;--;
+455;FNYD8673;--;avarus;Avarus;Motos;
+456;QBA162;167;--;Vehículo policial;--;
+457;MLDM7155;--;buccaneer;Buccaneer;Muscle;
+458;FWBZ1688;--;terminator;Terminator;VIP;
+459;ASFE0558;--;asbo;Asbo;Compactos;
+460;JKCK2443;--;buffalo4;Buffalo STX;Muscle;SAPD
+461;COL276;142;--;Vehículo policial;--;
+462;EOBC0337;--;windsor2;Windsor Drop;Coupes;
+463;ZUU468;899;--;Vehículo SAED;--;
+464;VEQ400;--;akuma;Akuma;Motos;SAED
+465;JTOR2638;--;previon;Previon;Coupes;
+466;TIBO3162;--;gblod4;LOD4;VIP;
+467;VGDR1701;--;komoda;Komoda;Deportivo;Badulaque central
+468;VAXQ1576;--;sanchez2;Sanchez;Motos;
+469;WWYU0778;--;cliffhanger;Cliffhanger;Motos;
+470;LXLL4792;--;manana2;Manana Custom;Muscle;
+471;CKNQ0354;--;previon;Previon;Coupes;
+472;HYM645;701;--;Vehículo SAED;--;
+473;EOG554;706;--;Vehículo SAED;--;
+474;MYNM6469;--;asea;Asea;Sedans;
+475;TLVP6643;--;asbo;Asbo;Compactos;
+476;USPX7335;--;asterope;Asterope;Sedans;
+477;TXCG2222;--;kanjo;Blista Kanjo;Compactos;
+478;DVDV7704;--;blista;Blista;Compactos;
+479;HNRH3308;--;kanjosj;Kanjo SJ;Coupes;
+480;GITC2253;--;patriot3;Patriot Military;SUVs;
+481;PGA832;201;--;Vehículo policial;--;
+482;CIBF8578;--;sadler;Sadler;Furgonetas;
+483;QBWU1732;--;blista;Blista;Compactos;
+484;PAR802;--;akuma;Akuma;Motos;
+485;XTHT4431;--;faggio;Faggio Sport;Motos;
+486;ZNS373;459;--;Vehículo policial;--;
+487;IKF052;138;--;Vehículo policial;--;
+488;PXD649;436;--;Vehículo policial;--;
+489;TZWU5135;--;blista;Blista;Compactos;
+490;APUF4526;--;comet5;Comet SR;Deportivo;
+491;SLZP3162;--;habanero;Habanero;SUVs;
+492;AGC518;167;--;Vehículo policial;--;
+493;DVMU1853;--;bestiagts;Bestia GTS;Deportivo;
+494;JBMM8263;--;akuma;Akuma;Motos;Bohem Beach
+495;DZEO2335;--;offzenith;Zenith Offroad;VIP;
+496;YBQ055;405;--;Vehículo policial;--;
+497;ZGPZ0096;--;asea;Asea;Sedans;
+498;RGQO3156;--;daemon2;Daemon Custom;Motos;
+499;BDO616;818;--;Vehículo SAED;--;
+500;ZOUN5453;--;asterope2;Asterope GZ;Sedans;
+501;JDRU9086;--;gbbisonhf;Bison HF;VIP;
+502;DBZH3971;--;blista2;Blista Compact;Compactos;
+503;IBOD7087;--;sanchez2;Sanchez;Motos;
+504;RNRE9343;--;asterope2;Asterope GZ;Sedans;
+505;WKUQ4626;--;asea;Asea;Sedans;
+506;HNXW1825;--;manchez;Manchez;Motos;Weedland
+507;CZGI3801;--;jugular;Jugular;Deportivo;
+508;ZWNM0162;--;blazer4;Blazer Sport;Todoterrenos;
+509;VMIL6558;--;terminus;Terminus;Todoterrenos;BENNY's Original Motor Works
+510;FJY578;137;--;Vehículo policial;--;SAPD
+511;PRY496;121;--;Vehículo policial;--;
+512;ANO999;121;--;Vehículo policial;--;
+513;RFNB6391;--;futo2;Futo GTX;Deportivo;
+514;WYYB7670;--;obeysport;Obey Sport GT;VIP;
+515;RKQY3284;--;primo;Primo;Sedans;
+516;ASD123;121;--;Vehículo policial;--;
+517;AKSN0471;--;obeysport;Obey Sport GT;VIP;
+518;MESL7363;--;asterope;Asterope;Sedans;
+519;BXZK0082;--;sultan3;Sultan Classic Custom;Deportivo;
+520;UJJF5650;--;nightblade;Nightblade;Motos;
+521;MKUP0070;--;asbo;Asbo;Compactos;
+522;FJCS6893;--;blista;Blista;Compactos;
+523;SK;--;daemon2;Daemon Custom;Motos;
+524;TIRL4959;--;akuma;Akuma;Motos;
+525;CUEV1057;--;asterope;Asterope;Sedans;
+526;VIBF6000;--;akuma;Akuma;Motos;
+527;NYRJ7636;--;akuma;Akuma;Motos;
+528;RIKJ5160;--;ratbike;Rat Bike;Motos;
+529;DLL479;137;--;Vehículo policial;--;SAPD
+530;PDIG6343;--;sultanrs;Sultan RS;Deportivo;
+531;ZNXT7025;--;sultan;Sultan;Deportivo;
+532;ZHLD3293;--;primo;Primo;Sedans;
+533;XGSK4001;--;gbmilano;Milano;VIP;
+534;GMNL8722;--;sultan3;Sultan Classic Custom;Deportivo;
+535;VQPA9897;--;gbnexusrr;Nexus RR;VIP;
+536;OWVP6625;--;asterope;Asterope;Sedans;
+537;XHGF9515;--;terminus;Terminus;Todoterrenos;
+538;INQE3712;--;retinue2;Retinue MKII;Deportivo clasico;
+539;QSSQ0713;--;sultanrs;Sultan RS;Deportivo;
+540;ASUC5548;--;cognoscenti;Cognoscenti;Coupes;
+541;VFKW4498;--;bf400;BF400;Motos;SAED
+542;LPEF2185;--;comet5;Comet SR;Deportivo;
+543;FCL890;815;--;Vehículo SAED;--;
+544;SPL550;108;--;Vehículo policial;--;SAPD
+545;QVRP8745;--;zr6gt;ZR6 GT;VIP;
+546;QITA4153;--;iwagen;I-wagen;SUVs;
+547;SQR566;811;--;Vehículo SAED;--;
+548;MNZ268;--;akuma;Akuma;Motos;
+549;QIP707;810;--;Vehículo SAED;--;
+550;YIXI7914;--;furia;Furia;Superdeportivo;
+551;SKWN5474;--;daemon2;Daemon Custom;Motos;
+552;DDBV0963;--;tailgater;Tailgater;Sedans;
+553;RAS240;141;--;Vehículo policial;--;
+554;XPLZ2752;--;asbo;Asbo;Compactos;
+555;WBP966;163;--;Vehículo SAED;--;
+556;DILP6617;--;zenith;Benefactor Zenith;VIP;
+557;FTNT7759;--;dorado;Dorado;SUVs;
+558;RQAU0925;--;akuma;Akuma;Motos;
+559;HIPS2985;--;620gts;620 GTS;VIP;
+560;NNC317;462;--;Vehículo policial;--;SAPD
+561;VKJK6485;--;rhinehart;Rhinehart;Sedans;Sushi Bar
+562;SFX301;123;--;Vehículo policial;--;
+563;TBU189;123;--;Vehículo policial;--;
+564;TLZ240;144;--;Vehículo policial;--;
+565;XBUY3286;--;asbo;Asbo;Compactos;
+566;VCQ682;111;--;Vehículo policial;--;
+567;VOBN5712;--;primo;Primo;Sedans;
+568;NJOV5337;--;s790anim;S790 Animated;VIP;
+569;HXL903;138;--;Vehículo policial;--;
+570;JAGU6776;--;draugur;Draugur;Todoterrenos;SAED
+571;01PQH719;--;bati;Bati 801;Motos;
+572;FUWQ8471;--;bati;Bati 801;Motos;
+573;IUK292;899;--;Vehículo SAED;--;
+574;GELG5289;--;penumbra2;Penumbra FF;Deportivo;
+575;PZRF6893;--;draugur;Draugur;Todoterrenos;BENNY's Original Motor Works
+576;VRIB3519;--;akuma;Akuma;Motos;
+577;ZRPR5499;--;zr6gt;ZR6 GT;VIP;
+578;SVM770;123;--;Vehículo policial;--;
+579;JIKY0500;--;brioso2;Brioso 300;Compactos;
+580;EVYU6070;--;rhinehart;Rhinehart;Sedans;
+581;RZZC8984;--;penumbra2;Penumbra FF;Deportivo;BENNY's Original Motor Works
+582;QZP749;438;--;Vehículo policial;--;
+583;TQM724;144;--;Vehículo policial;--;SAPD
+584;KCPT5866;--;zion2;Zion Cabrio;Coupes;
+585;BPFL9761;--;asea;Asea;Sedans;
+586;RVWW6067;--;sanchez;Sanchez Livery;Motos;
+587;UVNV5378;--;asterope2;Asterope GZ;Sedans;
+588;WEJO1531;--;sandking;Sandking XL;Todoterrenos;
+589;SKXU8024;--;asbo;Asbo;Compactos;
+590;YMN506;--;akuma;Akuma;Motos;SAPD
+591;AYRR8701;--;asterope2;Asterope GZ;Sedans;
+592;ZHVK7985;--;cliffhanger;Cliffhanger;Motos;
+593;AXQD7217;--;previon;Previon;Coupes;Megamall
+594;QMEK1529;--;sultanrs;Sultan RS;Deportivo;
+595;NNI930;431;--;Vehículo policial;--;
+596;SGL198;123;--;Vehículo policial;--;
+597;BIK185;438;--;Vehículo policial;--;
+598;BBFH2423;--;thrust;Thrust;Motos;
+599;ABKC7949;--;bmx;BMX;Bicicletas;
+600;FOHV2172;--;tribike;Whippet Race Bike;Bicicletas;
+601;VFKR7431;--;issi2;Issi;Compactos;
+602;URP383;918;--;Vehículo policial;--;
+603;TQM909;462;--;Vehículo policial;--;SAPD
+604;PHN130;138;--;Vehículo policial;--;SAPD
+605;UOJL6318;--;akuma;Akuma;Motos;
+606;OPK060;143;--;Vehículo policial;--;SAPD
+607;CVU116;108;--;Vehículo policial;--;
+608;JIIK7095;--;slamvan;Slam Van;Muscle;
+609;IVZ062;--;elegy;Elegy Retro Custom;Deportivo;
+610;FYWJ0221;--;rapidgt2;Rapid GT Convertible;Deportivo;
+611;AQBW1053;--;sentinel3;Sentinel Classic;Coupes;
+612;SEH860;121;--;Vehículo policial;--;
+613;FNNJ1275;--;ruffian;Ruffian;Motos;
+614;KLE618;823;--;Vehículo SAED;--;
+615;XXDQ5419;--;zr6gt;ZR6 GT;VIP;
+616;FLHJ5892;--;elegy;Elegy Retro Custom;Deportivo;BENNY's Original Motor Works
+617;IQB838;139;--;Vehículo policial;--;SAPD
+618;UOK803;--;--;Vehículo policial;--;
+619;FUEF4006;--;dominator8;Dominator GTT;Muscle;
+620;OWA363;121;--;Vehículo policial;--;SAPD
+621;QHJQ6143;--;elegy;Elegy Retro Custom;Deportivo;
+622;DZBY9751;--;g4m82;G4 M82;VIP;
+623;KKL878;140;--;Vehículo policial;--;
+624;VQYJ5797;--;620gts;620 GTS;VIP;
+625;GCBV8279;--;trophytruck2;Desert Raid;Todoterrenos;
+626;ZHPW1839;--;asterope;Asterope;Sedans;
+627;MUPD0741;--;previon;Previon;Coupes;
+628;HHBK9949;--;zombiea;Zombie Bobber;Motos;
+629;EHVR3327;--;stanier;Stanier;Sedans;
+630;VFYR7431;--;issi2;Issi;Compactos;
+631;TDCQ7821;--;asterope;Asterope;Sedans;
+632;RCLK9478;--;comet5;Comet SR;Deportivo;
+633;PMUD7012;--;paragon3;Paragon S;Deportivo;
+634;XLPW7852;--;furia;Furia;Superdeportivo;
+635;HCWM7019;--;gbemerussb1;Emerus SB1;VIP;
+636;YMQ96303;--;sultan3;Sultan Classic Custom;Deportivo;
+637;JTCX9548;--;sultan3;Sultan Classic Custom;Deportivo;
+638;ANLJ9436;--;sultan3;Sultan Classic Custom;Deportivo;
+639;CFQ620;855;--;Vehículo SAED;--;
+640;IHNQT476;--;ratbike;Rat Bike;Motos;
+641;IOJM4125;--;kanjo;Blista Kanjo;Compactos;
+642;RXUH9908;--;previon;Previon;Coupes;
+643;FHBJ8344;--;daemon;Daemon;Motos;
+644;WNE4162;--;daemon;Daemon;Motos;
+645;YQR112;--;--;Vehículo policial;--;
+646;UYTM04428;--;buffalo4;Buffalo STX;Muscle;
+647;AMBC8793;--;primo;Primo;Sedans;
+648;BASC0335;--;manchez;Manchez;Motos;
+649;ZCK4931;139;--;Vehículo policial;--;SAPD
+650;GXZ9627;140;--;Vehículo policial;--;SAPD
+651;OOXF7341;--;manchez2;Manchez Scout;Motos;
+652;QAB1617;--;akuma;Akuma;Motos;
+653;SIWFB2065;--;issi3;Issi Classic;Compactos;
+654;KILK6190;--;italigto;Itali GTO;Deportivo;
+655;GOZD2810;--;asea;Asea;Sedans;N/A
+656;SRJR8408;--;euros;Euros;Deportivo;Sushi Bar
+657;PITL5909;--;penumbra;Penumbra;Deportivo;
+658;DGZ¿?445;--;--;Vehículo policial;--;
+659;DCEW6672;--;rebla;Rebla GTS;SUVs;
+660;PHHW64¿?;130;--;Vehículo policial;--;SAPD
+661;OQWM5829;--;dominator;Dominator;Muscle;
+662;NSDJ488¿?;--;issi7;Issi Sport;Compactos;
+663;ANX773;837;--;Vehículo SAED;--;
+664;CFC42299;--;paragon;Paragon;Deportivo;
+665;OMOA9064;--;bf400;BF400;Motos;
+666;RPY8099;--;emperor;Emperor;Sedans;
+667;ZGJ4182;302;--;Vehículo policial;--;
+668;BCON5682;--;elegy2;Elegy RH8;Deportivo;Sushi Bar
+669;GXNJ6093;--;primo;Primo;Muscle;
+670;JTL10989;--;gbcomets2r;Comet S2R;VIP;
+671;ILHKE9533;--;ratloader2;Ratloader 2;Muscle;
+672;MFEW1290;--;blista;Blista;Compactos;
+673;HYK850;132;--;Vehículo policial;--;
+674;IDFW4784;--;youga3;Youga Classic 4x4;Furgonetas;
+675;BMDO841;--;ratbike;Rat Bike;Motos;
+676;QGOS081;814;--;Vehículo SAED;--;SAED
+677;HZX4290;--;--;Vehículo policial;--;
+678;PEWV950;--;buffalo4;Buffalo STX;Muscle;
+679;MFSV2313;--;blazer3;Blazer Hot Rod;Todoterrenos;
+680;IBUV302¿?;--;ixr;IXR;VIP;
+681;TDOR5493;--;asbo;Asbo;Compactos;N/A
+682;IOE6233;817;--;Vehículo SAED;--;SAED
+683;XMIXY561;--;vortex;Vortex;Motos;
+684;ZXZ5853;100;--;Vehículo policial;--;SAPD
+685;KDID6873;--;previon;Previon;Coupes;
+686;GIGM6653;--;blista;Blista;Compactos;
+687;GVIM2635;--;asbo;Asbo;Compactos;
+688;PVWM2245;--;hexer;Hexer;Motos;
+689;WEC0558;117;--;Vehículo policial;--;
+690;LLFX8069;--;buffalo4;Buffalo STX;Muscle;
+691;HZXA2466;--;asbo;Asbo;Compactos;
+692;XTNH9576;--;elegy;Elegy Retro Custom;Deportivo;
+693;CJQ364;146;--;Vehículo policial;--;
+694;CEF414;810;--;Vehículo SAED;--;
+695;MKRB6994;--;blista;Blista;Compactos;N/A
+696;XMJX1120;--;nightblade;Nightblade;Motos;
+697;GZT0675;--;620gts;620 GTS;VIP;
+698;JAGP7189;--;gbcomets2rc;Comet S2RC;VIP;
+699;NXUL8443;--;N/A;N/A;--;
+700;QNNX1051;--;dominator;Dominator;Muscle;
+701;MZOT7951;--;buffalo;Buffalo;Muscle;SAED
+702;WJUI777;811;--;Vehículo SAED;--;
+703;YUJF2786;--;nightblade;Nightblade;Motos;
+704;WPQL4041;--;buffalo4;Buffalo STX;Muscle;
+705;AJZV6079;--;vagrant;Vagrant;Todoterrenos;
+706;HQC7695;--;caracara2;Caracara 4x4;Todoterrenos;
+707;JLT281;801;--;Vehículo SAED;--;
+708;NKVF7569;--;asterope2;Asterope GZ;Sedans;
+709;CIPX3355;--;tropos;Tropos Rallye;Deportivo;Sushi Bar
+710;YGT8426;146;--;Vehículo policial;--;
+711;AHAL74765;--;daemon;Daemon;Motos;
+712;EFAG76;--;N/A;N/A;;
+713;SLG9930;--;elegy;Elegy Retro Custom;Deportivo;Black Woods Saloon
+714;CWXC9820;--;elegy;Elegy Retro Custom;Deportivo;
+715;9BB1812N;--;sultan;Sultan;Deportivo;
+716;YUF2706;--;nightblade;Nightblade;Motos;
+717;PATG0771;--;primo2;Primo Custom;Sedans;BENNY's Original Motor Works
+718;INKQ1324;--;dominator8;Dominator GTT;Muscle;
+719;ZBGY0398;--;draugur;Draugur;Todoterrenos;
+720;OEMK7059;--;daemon2;Daemon Custom;Motos;
+721;BZBH3941;--;dominator7;Dominator ASP;Muscle;
+722;TFBB??87;300;--;Vehículo policial;--;
+723;SROUTB??;--;buffalo;Buffalo;Muscle;
+724;BCR3383;102;--;Vehículo policial;--;
+725;DJCP2240;--;daemon;Daemon;Motos;
+726;AIYG0349;--;gargoyle;Gargoyle;Motos;
+727;AEPS4296;--;previon;Previon;Coupes;Weedland
+728;KPCY1175;--;asbo;Asbo;Compactos;N/A
+729;MLCY6725;--;previon;Previon;Coupes;
+730;XPECT084;--;elegy;Elegy Retro Custom;Deportivo;BENNY's Original Motor Works
+731;JMM399;848;--;Vehículo SAED;--;
+732;KILK6190;--;akuma;Akuma;Motos;Sushi Bar
+733;FEF80280;--;s790anim;S790 Animated;VIP;
+734;UWK821;--;--;Vehículo SAED;--;SAED
+735;OCXB1599;--;iwagen;I-Wagen;SUVs;
+736;ODJ4897;--;--;Vehículo policial;--;
+737;FJY568;137;--;Vehículo policial;--;
+738;OLDP3201;301;--;Vehículo policial;--;SAPD
+739;HQDR4393;927;--;Vehículo policial;--;
+740;IZJG1826;--;remus;Remus;Muscle;N/A
+741;KYNDB094;--;asbo;Asbo;Compactos;Vanilla Unicorn
+742;LLY9288;--;gbprospero;Prospero;VIP;Megamall
+743;ZUI252;465;--;Vehículo policial;--;
+744;WPG6250;--;akuma;Akuma;Motos;
+745;QSV171;428;--;Vehículo policial;--;SAPD
+746;CZOZ6795;--;dominator;Dominator;Muscle;Megamall
+747;JITK7302;--;gbsidedwinder;Sidewinder;VIP;Vanilla Unicorn
+748;CVH400;111;--;Vehículo policial;--;SAPD
+749;NARH4789;--;akuma;Akuma;Motos;Weedland
+750;KRG5082;303;--;Vehículo policial;--;SAPD
+751;CV¿?428;428;--;Vehículo policial;--;
+752;BJHFE7224;--;previon;Previon;Coupes;Import Garaje
+753;YSDC06256;--;rapidgt2;Rapid GT Convertible;Deportivo;
+754;OIN067FA;--;sultan;Sultan;Deportivo;N/A
+755;EFE8903;--;s790;s790;VIP;
+756;BDXC702;449;--;Vehículo policial;--;SAPD
+757;FIJDY2930;--;shinobi;Shinobi;Motos;SAED
+758;VATU3943;--;blista;Blista;Compactos;
+759;CCJ4923;--;club;Club;Compactos;Badulaque central
+760;AJOT3892;--;tailgater2;Tailgater S;Sedans;
+761;HDFJ5491;--;asbo;Asbo;Compactos;Skyline Vibes
+762;ZPFDS9072;--;rapidgt;Rapid GT;Deportivo;
+763;TLES9027;--;briso2;Briso 300;Compactos;BENNY's Original Motor Works
+764;GGC4602;--;akuma;Akuma;Motos;Pizzería Venecia
+765;ROFHD5055;--;akuma;Akuma;Motos;
+766;OHYDJ7322;--;dominator7;Dominator ASP;Muscle;
+767;TQRP0874;--;calico;Calico GTF;Deportivo;Sushi Bar
+768;GGEY5529;--;akuma;Akuma;Motos;
+769;PYAH1429;100;--;Vehículo policial;--;
+770;SVWHE949;--;akuma;Akuma;Motos;
+771;IUW5555;125;--;Vehículo policial;--;
+772;GXQR4047;--;primo;Primo;Sedans;
+773;JUE543;455;--;Vehículo policial;--;
+774;UDTA2219;--;tailgater2;Tailgater S;Sedans;Badulaque central
+775;KZQY9245;--;s790;s790;VIP;Weedland
+776;ARFW8703;--;omnisegt;Omnis e-GT;Deportivo;BurgerShot
+777;WJET4225;--;trophytruck2;Desert Raid;Todoterrenos;L.S. Airlines
+778;ISJK7763;--;contender;Contender;SUVs;
+779;MXRIZ787;--;elegy;Elegy Retro Custom;Deportivo;SAED
+780;YFXG5012;--;blazer3;Blazer Hot Rod;Todoterrenos;Weedland
+781;FXGDT7522;--;primo;Primo;Sedans;
+782;DWNP6962;--;issi3;Issi Classic;Compactos;
+783;GVOA7213;--;pipistrello;Pipistrello;Motos;
+784;ZSRG7252;--;akuma;Akuma;Motos;
+785;CDEF3449;--;blista2;Blista Compact;Compactos;Weazel News
+786;TXZNA6749;--;avarus;Avarus;Motos;Taller Pabeto
+787;WZVH1553;--;rapidgt;Rapid GT;Deportivo;Pizzería Venecia
+788;PFIY1126;146;--;Vehículo policial;--;SAPD
+789;MZKZ4948;--;primo;Primo;Sedans;Weedland
+790;LTLV9687;--;akuma;Akuma;Motos;N/A
+791;DJRN9053;--;akuma;Akuma;Motos;SAPD
+792;QFSES93;303;--;Vehículo policial;--;
+793;IVZ6559;--;akuma;Akuma;Motos;SAPD
+794;YZRK1853;--;akuma;Akuma;Motos;
+795;TORI01;--;l35;Walton L35;Todoterrenos;
+796;PKF1270;449;--;Vehículo policial;--;SAPD
+797;SFCE1809;--;l35;Walton L35;Todoterrentos;Helmut's
+798;MDSZ6099;--;obejsport;Obey Sport GT;VIP;
+799;XOP4969;--;warrener2;Warrener HKR;Sedans;N/A
+800;VMIP7167;--;cypher;Cypher;Deportivo;
+801;URYHI4630;--;dc500l;DC500 Limousine;VIP;Skyline Vibes
+802;LHVSG1797;--;rapidgt;Rapid GT;Deportivo;SAED
+803;3HH9155X;--;sultan;Sultan;Deportivo;Weedland
+804;RYTAQ8844;--;kanjo;Blista Kanjo;Compactos;
+805;PNTC9473;--;620gts;620 GTS;VIP;Pizzería Venecia
+806;FMWV4168;--;terminus;Terminus;Todoterrenos;
+807;LG0TI557;--;blista;Blista;Compactos;Megamall
+808;OBXET7749;--;calico;Calico GTF;Deportivo;
+809;PSDC4503;--;jugular;Jugular;Deportivo;SAPD
+810;QDFE5150;--;asterope;Asterope;Sedans;N/A
+811;UXL734;118;--;Vehículo policial;--;SAPD

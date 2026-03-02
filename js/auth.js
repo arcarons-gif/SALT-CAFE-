@@ -7,12 +7,14 @@ const AUTH_STORAGE = 'benny_users';
 const SESSION_STORAGE = 'benny_session';
 const PASSWORD_PREDETERMINADA = '1234';
 const ADMIN_RESET_FLAG = 'benny_admin_reset_1234';
+/** Al migrar a v2, se sustituye la lista de usuarios por solo estos tres. */
+const USUARIOS_PREDEFINIDOS_MIGRATION = 'benny_usuarios_predefinidos_v2';
 
-/** Usuarios de prueba que se crean automáticamente si no existen (contraseña: 1234) */
+/** Únicos usuarios predefinidos. Cualquier otro usuario se elimina en la migración. */
 const SEED_USERS = [
-  { username: 'juan', nombre: 'Juan', password: '1234' },
-  { username: 'tyrone', nombre: 'Tyrone Carter', password: '1234' },
-  { username: 'pepa', nombre: 'Pepa Pig', password: '1234' },
+  { username: 'admin', nombre: 'Administrador', password: '7264', rol: 'admin' },
+  { username: 'Savannah', nombre: 'Savannah', password: '7264', rol: 'admin' },
+  { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
 ];
 
 // Permisos disponibles
@@ -33,6 +35,23 @@ const PERMISOS = {
   exentoTestNormativas: 'Exento del test de normativas (no obligatorio hacer el test de comprensión)',
 };
 
+var ADMIN_PERMISOS_FULL = {
+  verCalculadora: true,
+  verPresupuesto: true,
+  registrarTuneo: true,
+  registrarReparacion: true,
+  verRegistroServicios: true,
+  limpiarRegistro: true,
+  verOrganigrama: true,
+  gestionarUsuarios: true,
+  gestionarEquipo: true,
+  noRequiereAprobacionAdmin: true,
+  gestionarRegistroClientes: true,
+  verConveniosPrivados: true,
+  gestionarCompras: true,
+  exentoTestNormativas: false,
+};
+
 function createDefaultAdmin(passwordHash, salt) {
   return {
     id: 'admin-default',
@@ -41,29 +60,39 @@ function createDefaultAdmin(passwordHash, salt) {
     salt,
     nombre: 'Administrador',
     rol: 'admin',
-    permisos: {
-      verCalculadora: true,
-      verPresupuesto: true,
-      registrarTuneo: true,
-      registrarReparacion: true,
-      verRegistroServicios: true,
-      limpiarRegistro: true,
-      verOrganigrama: true,
-    gestionarUsuarios: true,
-    gestionarEquipo: true,
-    noRequiereAprobacionAdmin: true,
-    gestionarRegistroClientes: true,
-    verConveniosPrivados: true,
-    gestionarCompras: true,
-    exentoTestNormativas: false,
-    },
+    permisos: Object.assign({}, ADMIN_PERMISOS_FULL),
     activo: true,
-    cambiarPasswordObligatorio: true,
+    cambiarPasswordObligatorio: false,
     creadoPor: 'system',
     fechaCreacion: new Date().toISOString(),
     fechaAlta: new Date().toISOString().slice(0, 10),
     responsable: null,
     puesto: 'Administrador',
+    salario: null,
+    fotoPerfil: null,
+    equipo: [],
+    fotosFicha: [],
+    fondoFichaIndex: null,
+  };
+}
+
+function buildSeedAdminUser(seed, passwordHash, salt) {
+  const id = seed.username.toLowerCase() === 'admin' ? 'admin-default' : 'u-seed-' + (seed.username || '').replace(/\s+/g, '-');
+  return {
+    id,
+    username: seed.username,
+    passwordHash,
+    salt,
+    nombre: seed.nombre || seed.username,
+    rol: seed.rol || 'admin',
+    permisos: seed.rol === 'admin' ? Object.assign({}, ADMIN_PERMISOS_FULL) : {},
+    activo: true,
+    cambiarPasswordObligatorio: false,
+    creadoPor: 'system',
+    fechaCreacion: new Date().toISOString(),
+    fechaAlta: new Date().toISOString().slice(0, 10),
+    responsable: null,
+    puesto: seed.username === 'admin' ? 'Administrador' : '',
     salario: null,
     fotoPerfil: null,
     equipo: [],
@@ -98,38 +127,31 @@ function getUsers() {
 }
 
 /**
- * Crea los usuarios de prueba (Juan, Tyrone, Pepa Pig) si no existen.
- * Contraseña para los tres: 1234
+ * Migración: deja solo los usuarios predefinidos (admin, Savannah, Tyrone) y elimina el resto.
+ * Luego asegura que existan los tres con sus contraseñas.
  */
 async function ensureSeedUsers() {
+  if (!localStorage.getItem(USUARIOS_PREDEFINIDOS_MIGRATION)) {
+    const users = [];
+    for (const seed of SEED_USERS) {
+      const salt = crypto.randomUUID() + Date.now();
+      const passwordHash = await hashPassword(seed.password, salt);
+      users.push(buildSeedAdminUser(seed, passwordHash, salt));
+    }
+    saveUsers(users);
+    localStorage.setItem(USUARIOS_PREDEFINIDOS_MIGRATION, '1');
+    return;
+  }
   let users = getUsers();
   let changed = false;
   for (const seed of SEED_USERS) {
     const exists = users.some(function (u) {
-      return (u.username || '').toString().trim().toLowerCase() === seed.username.toLowerCase();
+      return (u.username || '').toString().trim().toLowerCase() === (seed.username || '').toString().trim().toLowerCase();
     });
     if (exists) continue;
     const salt = crypto.randomUUID() + Date.now();
     const passwordHash = await hashPassword(seed.password, salt);
-    users.push({
-      id: 'u-seed-' + seed.username,
-      username: seed.username,
-      passwordHash: passwordHash,
-      salt: salt,
-      nombre: seed.nombre,
-      rol: 'mecanico',
-      permisos: {},
-      activo: true,
-      cambiarPasswordObligatorio: true,
-      creadoPor: 'system',
-      fechaCreacion: new Date().toISOString(),
-      fechaAlta: new Date().toISOString().slice(0, 10),
-      responsable: null,
-      puesto: '',
-      salario: null,
-      fotoPerfil: null,
-      equipo: [],
-    });
+    users.push(buildSeedAdminUser(seed, passwordHash, salt));
     changed = true;
   }
   if (changed) saveUsers(users);
@@ -161,51 +183,18 @@ function clearSession() {
 async function login(username, password) {
   const userTrim = (username || '').toString().trim().toLowerCase();
   const passTrim = (password || '').toString().trim();
-  const esAdminDefault = userTrim === 'admin' && passTrim === PASSWORD_PREDETERMINADA;
 
   let users = getUsers();
   const saltBootstrap = 'benny-genesis-v3';
 
-  // Reseteo único: forzar contraseña del admin a 1234 para que el acceso funcione
-  if (!localStorage.getItem(ADMIN_RESET_FLAG)) {
-    var adminUser = users.find(function (u) { return (u.username || '').toString().trim().toLowerCase() === 'admin'; });
-    if (adminUser) {
-      adminUser.passwordHash = await hashPassword(PASSWORD_PREDETERMINADA, adminUser.salt || saltBootstrap);
-      adminUser.salt = adminUser.salt || saltBootstrap;
-      adminUser.activo = true;
-      saveUsers(users);
-    }
-    localStorage.setItem(ADMIN_RESET_FLAG, '1');
-  }
-
-  // Bootstrap: primera vez, crear admin (admin / 1234)
-  if (users.length === 0 && esAdminDefault) {
+  // Bootstrap: primera vez sin usuarios (p. ej. sin migración), crear admin con la contraseña introducida
+  if (users.length === 0 && userTrim === 'admin' && passTrim.length >= 4) {
     const passwordHash = await hashPassword(passTrim, saltBootstrap);
     const admin = createDefaultAdmin(passwordHash, saltBootstrap);
     users = [admin];
     saveUsers(users);
     setSession(admin);
     return { id: admin.id, username: admin.username, nombre: admin.nombre, rol: admin.rol, permisos: admin.permisos, cambiarPasswordObligatorio: true };
-  }
-
-  // Siempre que pongas admin / 7264: crear o resetear admin y permitir entrada
-  if (esAdminDefault) {
-    let adminExistente = users.find(u => (u.username || '').toString().trim().toLowerCase() === 'admin');
-    if (!adminExistente) {
-      const passwordHash = await hashPassword(passTrim, saltBootstrap);
-      adminExistente = createDefaultAdmin(passwordHash, saltBootstrap);
-      users.push(adminExistente);
-      saveUsers(users);
-    } else {
-      const passwordHash = await hashPassword(passTrim, adminExistente.salt || saltBootstrap);
-      adminExistente.passwordHash = passwordHash;
-      adminExistente.salt = adminExistente.salt || saltBootstrap;
-      adminExistente.activo = true;
-      saveUsers(users);
-    }
-    setSession(adminExistente);
-    const { passwordHash: _, salt: __, ...safeUser } = adminExistente;
-    return { ...safeUser, cambiarPasswordObligatorio: !!adminExistente.cambiarPasswordObligatorio };
   }
 
   const user = users.find(u => (u.username || '').toString().trim().toLowerCase() === userTrim && u.activo !== false);

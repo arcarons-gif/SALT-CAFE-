@@ -1029,6 +1029,25 @@ button.login-recovery-link {
   color: var(--text-muted);
 }
 
+.normativas-formulario-mecanicos-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.normativas-formulario-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+.normativas-formulario-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.normativas-formulario-actions .btn { text-decoration: none; }
+
 .normativas-list-desc {
   font-size: 0.9rem;
   color: var(--text-muted);
@@ -1710,29 +1729,41 @@ button.login-recovery-link {
   border-bottom-color: var(--accent);
 }
 
-/* Gestión: menú de 5 botones grandes, mismo tamaño, formas según icono */
+/* Gestión: cuerpo (menú + banner de vídeo) */
+.gestion-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Gestión: menú a toda la pantalla, sin scroll, botones grandes sin fondo */
 .gestion-menu {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: 1fr 1fr;
-  aspect-ratio: 3/2;
-  gap: 1.25rem;
-  padding: 1.5rem 1.25rem;
-  max-width: 720px;
-  width: 100%;
-  margin: 0 auto;
   min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(1rem, 3vw, 2rem);
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  overflow: hidden;
   align-content: center;
+  justify-content: center;
+  align-items: center;
+  justify-items: center;
 }
 
 .gestion-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 1.5rem 1rem;
+  gap: 0;
+  padding: 0;
   border: none;
   font-family: var(--font);
   font-size: 1rem;
@@ -1740,15 +1771,19 @@ button.login-recovery-link {
   color: #fff;
   cursor: pointer;
   text-align: center;
-  aspect-ratio: 1;
-  min-height: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  min-height: clamp(80px, 12vmin, 140px);
+  min-width: clamp(80px, 12vmin, 140px);
+  width: 100%;
+  max-width: 160px;
+  height: 100%;
+  max-height: 160px;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: transform 0.15s ease;
 }
 
 .gestion-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-3px) scale(1.05);
 }
 
 .gestion-card:focus {
@@ -1763,13 +1798,43 @@ button.login-recovery-link {
   opacity: 0.95;
 }
 
+.gestion-card-icon {
+  flex-shrink: 0;
+}
+
 .gestion-card-icon svg {
-  width: 42px;
-  height: 42px;
+  width: clamp(40px, 8vmin, 64px);
+  height: clamp(40px, 8vmin, 64px);
 }
 
 .gestion-card-label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding: 0.4em 0.75em;
+  font-size: 0.8rem;
   line-height: 1.2;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 6px;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.gestion-card-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
 }
 
 /* Formas inspiradas en el icono: círculo (personas / moneda), documento, marco, cuadrícula */
@@ -1789,28 +1854,113 @@ button.login-recovery-link {
   border-radius: 14px;
 }
 
-.gestion-card-usuarios {
-  background: linear-gradient(145deg, #d4a017 0%, #b8860b 100%);
+/* Todas las tarjetas: fondo transparente, icono blanco con neón del color, nombre debajo al hover */
+.gestion-card-usuarios,
+.gestion-card-convenios,
+.gestion-card-economia,
+.gestion-card-solicitudes,
+.gestion-card-organigrama,
+.gestion-card-reset,
+.gestion-card-nav,
+.gestion-card-nav.gestion-card-admin {
+  background: transparent;
+  color: #fff;
 }
 
-.gestion-card-convenios {
-  background: linear-gradient(145deg, #2563eb 0%, #1d4ed8 100%);
+.gestion-card-usuarios .gestion-card-icon { filter: drop-shadow(0 0 6px #eab308) drop-shadow(0 0 12px #ca8a04) drop-shadow(0 0 20px #a16207); }
+.gestion-card-usuarios .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #eab308, 0 0 14px #ca8a04, 0 0 22px #a16207; }
+.gestion-card-usuarios .gestion-card-label::after { display: none; }
+
+.gestion-card-convenios .gestion-card-icon { filter: drop-shadow(0 0 6px #3b82f6) drop-shadow(0 0 12px #2563eb) drop-shadow(0 0 20px #1d4ed8); }
+.gestion-card-convenios .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #3b82f6, 0 0 14px #2563eb, 0 0 22px #1d4ed8; }
+.gestion-card-convenios .gestion-card-label::after { display: none; }
+
+.gestion-card-economia .gestion-card-icon { filter: drop-shadow(0 0 6px #22c55e) drop-shadow(0 0 12px #22c55e) drop-shadow(0 0 20px #16a34a); }
+.gestion-card-economia .gestion-card-icon svg { color: #fff; }
+.gestion-card-economia .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; text-shadow: 0 0 8px #22c55e, 0 0 14px #22c55e, 0 0 22px #16a34a; box-shadow: none; }
+.gestion-card-economia .gestion-card-label::after { display: none; }
+
+.gestion-card-solicitudes .gestion-card-icon { filter: drop-shadow(0 0 6px #a78bfa) drop-shadow(0 0 12px #7c3aed) drop-shadow(0 0 20px #6d28d9); }
+.gestion-card-solicitudes .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #a78bfa, 0 0 14px #7c3aed, 0 0 22px #6d28d9; }
+.gestion-card-solicitudes .gestion-card-label::after { display: none; }
+
+.gestion-card-organigrama .gestion-card-icon { filter: drop-shadow(0 0 6px #2dd4bf) drop-shadow(0 0 12px #0d9488) drop-shadow(0 0 20px #0f766e); }
+.gestion-card-organigrama .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #2dd4bf, 0 0 14px #0d9488, 0 0 22px #0f766e; }
+.gestion-card-organigrama .gestion-card-label::after { display: none; }
+
+.gestion-card-reset .gestion-card-icon { filter: drop-shadow(0 0 6px #94a3b8) drop-shadow(0 0 12px #64748b) drop-shadow(0 0 20px #475569); }
+.gestion-card-reset .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #94a3b8, 0 0 14px #64748b, 0 0 22px #475569; }
+.gestion-card-reset .gestion-card-label::after { display: none; }
+
+.gestion-card-usuarios-tabla .gestion-card-icon { filter: drop-shadow(0 0 6px #0ea5e9) drop-shadow(0 0 12px #0284c7) drop-shadow(0 0 20px #0369a1); }
+.gestion-card-usuarios-tabla .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #0ea5e9, 0 0 14px #0284c7, 0 0 22px #0369a1; }
+.gestion-card-usuarios-tabla .gestion-card-label::after { display: none; }
+
+.gestion-card-indicadores .gestion-card-icon { filter: drop-shadow(0 0 6px #f59e0b) drop-shadow(0 0 12px #d97706) drop-shadow(0 0 20px #b45309); }
+.gestion-card-indicadores .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #f59e0b, 0 0 14px #d97706, 0 0 22px #b45309; }
+.gestion-card-indicadores .gestion-card-label::after { display: none; }
+
+/* Color por defecto para nav (por si falta clase específica) */
+.gestion-card-nav .gestion-card-icon { filter: drop-shadow(0 0 6px #94a3b8) drop-shadow(0 0 12px #64748b) drop-shadow(0 0 20px #475569); }
+.gestion-card-nav .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #94a3b8, 0 0 14px #64748b, 0 0 22px #475569; }
+.gestion-card-nav .gestion-card-label::after { display: none; }
+
+/* Colores por botón nav (misma paleta que admin; usuarios no admin ven estos) */
+.gestion-card-nav-ficha .gestion-card-icon { filter: drop-shadow(0 0 6px #eab308) drop-shadow(0 0 12px #ca8a04) drop-shadow(0 0 20px #a16207); }
+.gestion-card-nav-ficha .gestion-card-label { text-shadow: 0 0 8px #eab308, 0 0 14px #ca8a04, 0 0 22px #a16207; }
+
+.gestion-card-nav-historial .gestion-card-icon { filter: drop-shadow(0 0 6px #3b82f6) drop-shadow(0 0 12px #2563eb) drop-shadow(0 0 20px #1d4ed8); }
+.gestion-card-nav-historial .gestion-card-label { text-shadow: 0 0 8px #3b82f6, 0 0 14px #2563eb, 0 0 22px #1d4ed8; }
+
+.gestion-card-nav-normativas .gestion-card-icon { filter: drop-shadow(0 0 6px #a78bfa) drop-shadow(0 0 12px #7c3aed) drop-shadow(0 0 20px #6d28d9); }
+.gestion-card-nav-normativas .gestion-card-label { text-shadow: 0 0 8px #a78bfa, 0 0 14px #7c3aed, 0 0 22px #6d28d9; }
+
+.gestion-card-nav-clientes .gestion-card-icon { filter: drop-shadow(0 0 6px #2dd4bf) drop-shadow(0 0 12px #0d9488) drop-shadow(0 0 20px #0f766e); }
+.gestion-card-nav-clientes .gestion-card-label { text-shadow: 0 0 8px #2dd4bf, 0 0 14px #0d9488, 0 0 22px #0f766e; }
+
+.gestion-card-nav-vacantes .gestion-card-icon,
+.gestion-card-nav.gestion-card-admin .gestion-card-icon { filter: drop-shadow(0 0 6px #a78bfa) drop-shadow(0 0 12px #7c3aed) drop-shadow(0 0 20px #6d28d9); }
+.gestion-card-nav-vacantes .gestion-card-label,
+.gestion-card-nav.gestion-card-admin .gestion-card-label { text-shadow: 0 0 8px #a78bfa, 0 0 14px #7c3aed, 0 0 22px #6d28d9; }
+
+.gestion-card-nav-tunnings .gestion-card-icon { filter: drop-shadow(0 0 6px #22c55e) drop-shadow(0 0 12px #22c55e) drop-shadow(0 0 20px #16a34a); }
+.gestion-card-nav-tunnings .gestion-card-label { text-shadow: 0 0 8px #22c55e, 0 0 14px #22c55e, 0 0 22px #16a34a; }
+
+.gestion-card-nav-personalizacion .gestion-card-icon { filter: drop-shadow(0 0 6px #94a3b8) drop-shadow(0 0 12px #64748b) drop-shadow(0 0 20px #475569); }
+.gestion-card-nav-personalizacion .gestion-card-label { text-shadow: 0 0 8px #94a3b8, 0 0 14px #64748b, 0 0 22px #475569; }
+
+/* Banner de vídeo en bucle (zona inferior Gestión) */
+.gestion-banner-wrap {
+  flex: 0 0 auto;
+  height: 200px;
+  min-height: 120px;
+  max-height: 28vh;
+  width: 100%;
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+  border-top: 1px solid var(--border);
 }
 
-.gestion-card-economia {
-  background: linear-gradient(145deg, #059669 0%, #047857 100%);
+.gestion-banner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.gestion-card-solicitudes {
-  background: linear-gradient(145deg, #7c3aed 0%, #6d28d9 100%);
-}
-
-.gestion-card-organigrama {
-  background: linear-gradient(145deg, #0d9488 0%, #0f766e 100%);
-}
-
-.gestion-menu .gestion-card-organigrama {
-  grid-column: 2;
+.gestion-banner-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .gestion-contenido {
@@ -1862,27 +2012,39 @@ button.login-recovery-link {
 
 @media (max-width: 520px) {
   .gestion-menu {
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
-    aspect-ratio: auto;
-    max-width: 100%;
-  }
-  .gestion-menu .gestion-card-organigrama {
-    grid-column: auto;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    padding: 0.75rem;
   }
   .gestion-card {
-    min-height: 140px;
-    padding: 1.5rem 1rem;
-    font-size: 1rem;
+    min-height: clamp(64px, 10vmin, 100px);
+    max-height: none;
+    max-width: none;
   }
   .gestion-card-icon svg {
-    width: 40px;
-    height: 40px;
+    width: clamp(32px, 6vmin, 48px);
+    height: clamp(32px, 6vmin, 48px);
   }
 }
 
 .admin-panel {
   padding: 1rem 1.25rem;
+}
+
+.gestion-usuarios-tabla-desc {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #999);
+}
+
+.usuarios-tabla-wrap {
+  margin-top: 1rem;
+}
+
+.modal-cambiar-password-user {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--text, #eee);
 }
 
 .panel-reset-datos .panel-reset-desc {
@@ -1895,6 +2057,131 @@ button.login-recovery-link {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+/* Panel Indicadores (admin) */
+.indicadores-panel {
+  padding: 1rem 1.25rem;
+  max-width: 100%;
+}
+
+.indicadores-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.indicadores-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-elevated, rgba(255,255,255,0.05));
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.indicadores-filtro-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.indicadores-filtro-row label:first-child,
+.indicadores-filtro-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  min-width: 4rem;
+}
+
+.indicadores-checkboxes {
+  flex-wrap: wrap;
+}
+
+.indicadores-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+.indicadores-select {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.indicadores-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.indicadores-kpi {
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.indicadores-kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.indicadores-kpi-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.indicadores-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.indicadores-chart-wrap {
+  padding: 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.indicadores-chart-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--benny-gold-light, #d4af37);
+}
+
+.indicadores-chart-container {
+  min-height: 200px;
+  width: 100%;
+}
+
+.indicadores-chart-empty {
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.indicadores-bar {
+  transition: opacity 0.15s;
 }
 
 .panel-reset-buttons .btn-reset-section {
@@ -1941,6 +2228,219 @@ button.login-recovery-link {
 .convenios-table .btn-sm {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+}
+
+.convenios-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--benny-border, #333);
+  padding-bottom: 0.5rem;
+}
+.convenios-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-muted, #999);
+  cursor: pointer;
+}
+.convenios-tab:hover {
+  color: var(--benny-gold-light, #d4af37);
+}
+.convenios-tab.active {
+  color: var(--benny-gold-light, #d4af37);
+  border-color: var(--benny-gold-light, #d4af37);
+}
+.convenios-panel-tab {
+  margin-top: 0.5rem;
+}
+
+.convenios-fichas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* La ficha ES el logo: el logo llena la tarjeta y los títulos van sobreimpresos encima */
+.convenio-ficha {
+  position: relative;
+  border-radius: 12px;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  transition: filter 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.convenio-ficha:hover {
+  filter: brightness(1.05);
+}
+
+.convenio-ficha:focus {
+  outline: 2px solid rgba(212, 175, 55, 0.5);
+  outline-offset: 4px;
+}
+
+.convenio-ficha-inner {
+  position: relative;
+  width: 100%;
+  min-height: 260px;
+  aspect-ratio: 4 / 5;
+  background: transparent;
+}
+
+.convenio-ficha-logo-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.convenio-ficha-logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.convenio-ficha-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--benny-gold-light, #d4af37);
+  font-family: 'Oswald', 'Bebas Neue', var(--font);
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+/* Cuerpo: título y datos con estilo “insignia” (tipografía tipo logo) */
+/* Sobreimpresión: título, descuento, fecha y botón encima del logo */
+.convenio-ficha-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1rem 1rem 1.1rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.convenio-ficha-nombre {
+  margin: 0;
+  font-family: 'Oswald', 'Bebas Neue', var(--font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.convenio-ficha-descuento,
+.convenio-ficha-fecha,
+.convenio-ficha-acordado,
+.convenio-ficha-privado {
+  margin: 0;
+  font-family: 'Oswald', var(--font);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.convenio-ficha-descuento strong {
+  color: var(--benny-gold-light, #d4af37);
+  font-weight: 700;
+}
+
+.convenio-ficha-privado {
+  color: var(--benny-gold-light, #d4af37);
+  font-size: 0.7rem;
+}
+
+.convenio-ficha-acuerdo {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.convenio-ficha-acuerdo-link {
+  color: var(--benny-gold-light, #d4af37);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.convenio-ficha-acuerdo-link:hover {
+  color: #fff;
+}
+
+.convenio-acuerdo-field { margin-top: 1rem; }
+.convenio-acuerdo-desc { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 0.5rem; }
+.convenio-acuerdo-desc code { font-size: 0.8rem; background: rgba(255,255,255,0.08); padding: 0.15rem 0.35rem; border-radius: 4px; }
+.convenio-acuerdo-inputs { display: flex; flex-direction: column; gap: 0.5rem; }
+.convenio-acuerdo-file { font-size: 0.9rem; }
+.convenio-acuerdo-actual { font-size: 0.85rem; color: var(--benny-gold-light); margin: 0.35rem 0 0; }
+.convenio-acuerdo-quitar { margin-top: 0.35rem; }
+
+.convenios-detalle-wrap {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--benny-border, #333);
+}
+.convenios-detalle-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  color: var(--benny-gold-light, #d4af37);
+}
+.convenios-detalle-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.convenios-detalle-table {
+  margin-bottom: 1.5rem;
+}
+.convenios-placas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+@media (max-width: 768px) {
+  .convenios-placas-grid { grid-template-columns: 1fr; }
+}
+.convenios-placas-block {
+  background: var(--benny-gray, rgba(255,255,255,0.05));
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+}
+.convenios-placas-subtitulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
 }
 
 /* Solicitudes gráficas (bandeja admin) */
@@ -2894,21 +3394,18 @@ button.login-recovery-link {
   transform: scale(0.98);
 }
 
-/* Paso matrícula: ocupa todo el espacio disponible y centra el bloque; si no cabe, hace scroll */
+/* Paso matrícula: altura por contenido para que matrícula + botones salgan siempre; la página hace scroll si hace falta */
 .paso-matricula {
   position: relative;
-  flex: 1;
   width: 100%;
-  min-height: 0;
-  padding: 1.5rem 0 2rem;
+  padding: 1.5rem 0 2.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .paso-matricula-conjunto {
-  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2938,11 +3435,42 @@ button.login-recovery-link {
     0 6px 24px rgba(0,0,0,0.45),
     inset 0 1px 0 rgba(255,255,255,0.15);
   position: relative;
+  isolation: isolate;
 }
 
-/* Estilo Yankton: banda roja superior */
+/* Placa con imagen del repo: cuerpo siempre opaco para que no se vea el rojo del banner */
+.matricula-plate-from-repo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* Sin franja blanca: el fondo es la imagen del repo; solo el texto de la matrícula encima */
+.matricula-plate-from-repo .matricula-plate-banner {
+  background: transparent !important;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.matricula-plate-from-repo .matricula-plate-body {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.matricula-plate-from-repo .matricula-plate-body::before,
+.matricula-plate-from-repo .matricula-plate-body::after {
+  display: none;
+}
+.matricula-plate-from-repo .matricula-plate-display,
+.matricula-plate-from-repo .matricula-plate-input {
+  color: #1a1a1a;
+  text-shadow: 0 0 2px #fff, 0 1px 3px rgba(255,255,255,0.9);
+}
+.matricula-plate-from-repo .matricula-plate-input::placeholder {
+  color: rgba(0,0,0,0.5);
+}
+
+/* Estilo Yankton: placa roja completa, sin franja blanca; el número va sobre el mismo fondo */
 .matricula-plate-yankton .matricula-plate-banner {
-  background: linear-gradient(180deg, #9b1f1f 0%, #b82424 30%, #a01c1c 100%);
+  background: linear-gradient(180deg, #9b1f1f 0%, #b82424 30%, #a01c1c 100%) !important;
   color: #fff;
   padding: 0.5rem 1rem 0.6rem;
   text-align: center;
@@ -2951,13 +3479,32 @@ button.login-recovery-link {
   font-size: 1.35rem;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  border-bottom: 3px solid #fff;
+  border-bottom: 2px solid rgba(255,255,255,0.3);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   position: relative;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.matricula-plate-yankton .matricula-plate-body {
+  background: linear-gradient(180deg, #a01c1c 0%, #8b1919 50%, #7a1515 100%) !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  color: #fff;
+}
+.matricula-plate-yankton .matricula-plate-input,
+.matricula-plate-yankton .matricula-plate-display {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.matricula-plate-yankton .matricula-plate-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+.matricula-plate-yankton .matricula-plate-logo-fallback.visible {
+  color: #fff;
 }
 
 .matricula-plate-banner-left {
@@ -2973,18 +3520,62 @@ button.login-recovery-link {
   flex: 1;
 }
 
-/* Cuerpo crema/blanco roto (zona de matrícula) */
+/* Estilo Europa: placa azul completa, sin franja blanca */
+.matricula-plate-europe .matricula-plate-banner {
+  background: linear-gradient(180deg, #003399 0%, #0044bb 50%, #002d80 100%);
+  color: #fff;
+  border-bottom: 2px solid rgba(255,204,0,0.4);
+}
+.matricula-plate-europe .matricula-plate-body {
+  background: linear-gradient(180deg, #002d80 0%, #002060 50%, #001a50 100%);
+  border-top: none;
+  box-shadow: none;
+  color: #fff;
+}
+.matricula-plate-europe .matricula-plate-input,
+.matricula-plate-europe .matricula-plate-display {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.matricula-plate-europe .matricula-plate-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+/* Estilo Sport: banda negra, texto amarillo */
+.matricula-plate-sport .matricula-plate-banner {
+  background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+  color: #ffcc00;
+  border-bottom: 2px solid #ffcc00;
+}
+.matricula-plate-sport .matricula-plate-body {
+  background: linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 100%);
+}
+.matricula-plate-sport .matricula-plate-input,
+.matricula-plate-sport .matricula-plate-display {
+  color: #ffcc00;
+}
+.matricula-plate-sport .matricula-plate-input::placeholder {
+  color: rgba(255, 204, 0, 0.5);
+}
+.matricula-plate-sport .matricula-plate-modelo {
+  color: #ccc;
+}
+.matricula-plate-sport .matricula-plate-logo-fallback.visible {
+  color: #ffcc00;
+}
+
+/* Cuerpo (zona de matrícula): sin franja blanca; cada estilo define su propio fondo */
 .matricula-plate-body {
-  background: linear-gradient(180deg, #f5f0e6 0%, #e8e2d5 50%, #ddd6c8 100%);
   min-height: 140px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  border-top: 2px solid #fff;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), inset 0 2px 4px rgba(0,0,0,0.04);
+  border-top: none;
+  box-shadow: none;
   position: relative;
+  z-index: 2;
 }
 
 /* Detalle tipo tornillos en las esquinas */
@@ -3094,11 +3685,108 @@ button.login-recovery-link {
   margin-left: 0.25rem;
 }
 
+/* Placa en miniatura: proporción fija para que no se alargue y número centrado */
+.matricula-plate-mini {
+  width: 140px;
+  max-width: 140px;
+  margin: 0 auto;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.matricula-plate-mini .matricula-plate-banner {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+.matricula-plate-mini .matricula-plate-banner-center {
+  flex: 0 1 auto;
+}
+.matricula-plate-mini .matricula-plate-body,
+.matricula-plate-mini .matricula-plate-body-readonly {
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.matricula-plate-mini .matricula-plate-body::before,
+.matricula-plate-mini .matricula-plate-body::after {
+  width: 4px;
+  height: 8px;
+}
+.matricula-plate-mini .matricula-plate-body::before { left: 4px; }
+.matricula-plate-mini .matricula-plate-body::after { right: 4px; left: auto; }
+.matricula-plate-mini .matricula-plate-display {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+.ficha-cliente-card .matricula-plate-mini {
+  width: 140px;
+  max-width: 140px;
+  margin: 0 auto 0.35rem;
+}
+.ficha-vehiculo-block .matricula-plate-mini {
+  width: 160px;
+  max-width: 160px;
+  margin: 0 0 0.5rem 0;
+}
+.col-matricula-cell .matricula-plate-mini {
+  width: 120px;
+  max-width: 120px;
+  margin: 0;
+}
+
+/* Tabla BBDD: placa completa visible (banner LSCM/LOS SANTOS + número), sin recortes */
+.clientes-bbdd-table .col-matricula-cell {
+  overflow: visible;
+  vertical-align: middle;
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini {
+  width: 112px;
+  max-width: 112px;
+  min-width: 112px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-banner {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: visible;
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body,
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body-readonly {
+  min-height: 26px;
+  padding: 0.2rem 0.4rem;
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body::before,
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body::after {
+  width: 4px;
+  height: 6px;
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body::before { left: 3px; }
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-body::after { right: 3px; left: auto; }
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini .matricula-plate-display {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
 .paso-matricula-actions {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (max-width: 600px) {
@@ -3274,7 +3962,21 @@ button.login-recovery-link {
   gap: 0.5rem;
 }
 .ultimas-reparaciones-list li:last-child { border-bottom: none; }
-.ultimas-reparaciones-list .ultimas-rep-fecha { color: var(--text-muted); font-size: 0.75rem; }
+.ultimas-reparaciones-list .ultimas-rep-placa {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.ultimas-reparaciones-list .ultimas-rep-placa .matricula-plate-mini {
+  max-width: 100px;
+  margin: 0;
+}
+.ultimas-reparaciones-list .ultimas-rep-info {
+  flex: 1;
+  min-width: 0;
+  padding: 0 0.5rem;
+}
+.ultimas-reparaciones-list .ultimas-rep-fecha { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; }
 .ultimas-reparaciones-list .no-ultimas { color: var(--text-muted); font-style: italic; }
 .ultimas-reparaciones-list .ultimas-rep-item-clickable { cursor: pointer; transition: background 0.15s, color 0.15s; }
 .ultimas-reparaciones-list .ultimas-rep-item-clickable:hover { background: var(--accent-soft); color: var(--accent); }
@@ -3524,15 +4226,17 @@ button.login-recovery-link {
   min-height: min-content;
 }
 
-/* Paso matrícula e inicio: una sola columna, usa todo el alto para que matrícula y botones salgan enteros */
+/* Paso matrícula: una columna; la altura la marca el contenido para que los botones no se corten (scroll de página) */
 .pantalla-principal-layout.layout-paso-centro {
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
+  grid-template-rows: auto;
   gap: 0;
-  align-items: stretch;
-  flex: 1 1 0;
+  align-items: start;
+  padding: 0 1rem 2rem;
   min-height: 0;
-  padding: 0 1rem 1.5rem;
+}
+.pantalla-principal-layout.layout-paso-centro .calculator {
+  min-height: auto;
 }
 
 /* Modo calculadora: una sola columna para usar todo el ancho de pantalla */
@@ -4144,6 +4848,171 @@ button.login-recovery-link {
   max-width: 200px;
 }
 
+/* Bandeja de entrada (avisos al registrar reparación; solo no admin) */
+.bandeja-entrada-desc {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+.lista-bandeja-entrada {
+  padding: 0.5rem 0;
+}
+.bandeja-entrada-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 1rem;
+}
+.bandeja-entrada-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.bandeja-entrada-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.bandeja-entrada-item-tipo {
+  font-weight: 600;
+  color: var(--accent);
+}
+.bandeja-entrada-item-fecha {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.bandeja-entrada-item-body {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.bandeja-entrada-item-clickable {
+  cursor: pointer;
+}
+.bandeja-entrada-item-clickable:hover {
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.bandeja-entrada-completado {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success, #2e7d32);
+  background: rgba(46, 125, 50, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.aviso-fotos-resumen {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.aviso-fotos-resumen p {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+}
+.aviso-fotos-hint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Modal fotos tuneo (antes/después) */
+.tuneo-fotos-nota {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.tuneo-foto-preview {
+  margin-top: 0.5rem;
+  min-height: 60px;
+}
+.tuneo-foto-preview-img {
+  max-width: 100%;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: block;
+}
+.modal-fotos-tuneo-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* Pantalla TUNNINGS (galería antes/después) */
+.tunnings-desc {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.lista-tunnings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+.no-tunnings {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 1rem;
+}
+.tunning-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  overflow: hidden;
+}
+.tunning-card-header {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tunning-card-matricula { font-weight: 700; color: var(--text); }
+.tunning-card-fotos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.tunning-foto-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.tunning-foto-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tunning-foto-img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .tunning-card-fotos { grid-template-columns: 1fr; }
+}
+
 .pantalla-secundaria .admin-tabs {
   flex-shrink: 0;
 }
@@ -4151,27 +5020,90 @@ button.login-recovery-link {
 /* Registro de clientes */
 .registro-clientes-tabs {
   display: flex;
-  gap: 0.25rem;
-  padding: 0 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
   background: rgba(0,0,0,0.2);
   flex-shrink: 0;
 }
 
 .registro-clientes-tab {
-  padding: 0.5rem 1rem;
-  background: transparent;
+  --tab-color: var(--accent);
+  padding: 0.65rem 1.25rem;
+  min-height: 2.75rem;
+  font-size: 1rem;
+  font-weight: 600;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  color: rgba(255,255,255,0.85);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.25) 100%);
+  box-shadow:
+    0 3px 0 rgba(0,0,0,0.4),
+    0 4px 6px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  border: 1px solid rgba(0,0,0,0.35);
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.registro-clientes-tab:hover,
+.registro-clientes-tab:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.2) 100%);
+  box-shadow:
+    0 4px 0 rgba(0,0,0,0.35),
+    0 6px 10px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
 .registro-clientes-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: #fff;
+  background: linear-gradient(180deg, var(--tab-color) 0%, rgba(0,0,0,0.25) 100%);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.5),
+    inset 0 2px 4px rgba(0,0,0,0.25),
+    inset 0 -1px 0 rgba(255,255,255,0.12);
+  border-color: rgba(0,0,0,0.4);
+  transform: translateY(2px);
+}
+
+.registro-clientes-tab:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.4),
+    inset 0 2px 6px rgba(0,0,0,0.35);
+}
+
+/* Colores distintos por pestaña */
+.registro-clientes-tab[data-tab="mificha"]   { --tab-color: #f59e0b; }
+.registro-clientes-tab[data-tab="fichas"]   { --tab-color: #0d9488; }
+.registro-clientes-tab[data-tab="bbdd"]     { --tab-color: #3b82f6; }
+.registro-clientes-tab[data-tab="vetados"]  { --tab-color: #b91c1c; }
+.registro-clientes-tab[data-tab="pendientes"] { --tab-color: #ca8a04; }
+
+.registro-clientes-tab-badge {
+  display: none;
+  margin-left: 0.4rem;
+  padding: 0.2em 0.5em;
+  min-width: 1.35em;
+  height: 1.35em;
+  line-height: 1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: #dc2626;
+  border-radius: 999px;
+  vertical-align: middle;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.registro-clientes-tabs .registro-clientes-tab[data-tab="pendientes"] {
+  display: inline-flex;
+  align-items: center;
 }
 
 .registro-clientes-panel {
@@ -4187,6 +5119,18 @@ button.login-recovery-link {
 
 .registro-clientes-filtro {
   margin-bottom: 1rem;
+}
+
+.registro-clientes-filtro-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.registro-clientes-filtro-row .input-buscar-registro {
+  flex: 1;
+  min-width: 12rem;
 }
 
 .registro-clientes-filtro .input-buscar-registro {
@@ -4210,6 +5154,49 @@ button.login-recovery-link {
 .registro-clientes-filtro .input-buscar-registro::placeholder {
   color: var(--text-muted);
 }
+
+/* Vacantes (solicitudes de trabajo) */
+.vacantes-desc {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.vacantes-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.vacantes-filtro select { min-width: 140px; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); }
+.vacantes-filtro .input-buscar-registro { flex: 1; min-width: 200px; }
+.vacantes-lista { display: flex; flex-direction: column; gap: 0.5rem; }
+.vacante-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.vacante-card .vacante-card-info { flex: 1; min-width: 0; }
+.vacante-card .vacante-card-nombre { font-weight: 600; margin-bottom: 0.25rem; }
+.vacante-card .vacante-card-meta { font-size: 0.85rem; color: var(--text-muted); }
+.vacante-card .vacante-card-badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
+.vacante-card .vacante-card-badge.pendiente { background: var(--accent-soft); color: var(--accent); }
+.vacante-card .vacante-card-badge.aprobada { background: rgba(45, 122, 79, 0.25); color: var(--success); }
+.vacante-card .vacante-card-badge.denegada { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
+.vacantes-empty { color: var(--text-muted); font-style: italic; padding: 1rem 0; }
+.vacante-solicitud-contenido { margin-bottom: 1.25rem; max-height: 50vh; overflow-y: auto; }
+.vacante-solicitud-contenido .vacante-seccion { margin-bottom: 1rem; }
+.vacante-solicitud-contenido .vacante-seccion h4 { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+.vacante-solicitud-contenido .vacante-seccion p { margin: 0; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; }
+.vacante-solicitud-revisado-wrap { margin: 1rem 0; padding: 0.75rem 0; border-top: 1px solid var(--border); }
+.vacante-revisado-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; }
+.vacante-solicitud-acciones { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; }
+.vacante-solicitud-estado { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-muted); }
 
 .sr-only {
   position: absolute;
@@ -4271,10 +5258,17 @@ button.login-recovery-link {
   background: rgba(212, 175, 55, 0.08);
 }
 
+.ficha-cliente-card-nombre,
+.ficha-cliente-card-placa {
+  margin-bottom: 0.35rem;
+}
+.ficha-cliente-card-placa {
+  display: flex;
+  justify-content: center;
+}
 .ficha-cliente-card-nombre {
   font-weight: 600;
   font-size: 1rem;
-  margin-bottom: 0.35rem;
 }
 
 .ficha-cliente-card-meta {
@@ -4286,6 +5280,26 @@ button.login-recovery-link {
 .ficha-cliente-card-vehiculos {
   font-size: 0.75rem;
   color: var(--text-dim);
+}
+
+/* Ficha en estado pendiente de aprobación (gris, inactiva) */
+.ficha-cliente-card-pendiente {
+  opacity: 0.75;
+  background: var(--bg);
+  border-color: var(--border);
+  filter: grayscale(0.4);
+}
+.ficha-cliente-card-pendiente:hover {
+  border-color: var(--border);
+  background: var(--bg);
+  filter: grayscale(0.3);
+}
+.ficha-cliente-pendiente-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 0.35rem;
+  font-style: italic;
 }
 
 .no-fichas { color: var(--text-muted); font-style: italic; padding: 1rem 0; }
@@ -4312,6 +5326,8 @@ button.login-recovery-link {
 .lista-vetados { list-style: none; padding: 0; margin: 0; }
 .lista-vetados-item { padding: 0.5rem 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 .lista-vetados-item:last-child { border-bottom: none; }
+.lista-vetados-placa { display: inline-block; vertical-align: middle; }
+.lista-vetados-placa .matricula-plate-mini { max-width: 120px; }
 .lista-vetados-empty { color: var(--text-muted); font-style: italic; padding: 0.5rem 0; }
 .ficha-header-estado .badge { margin-right: 0.25rem; }
 .ficha-header-prepago { margin-top: 0.5rem; }
@@ -4327,7 +5343,10 @@ button.login-recovery-link {
   border-radius: var(--radius-sm);
   padding: 1rem;
 }
-.ficha-vehiculo-mat { font-size: 1rem; margin: 0 0 0.5rem; }
+.ficha-vehiculo-mat,
+.ficha-vehiculo-mat-wrap { font-size: 1rem; margin: 0 0 0.5rem; }
+.ficha-vehiculo-mat-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.ficha-vehiculo-mat-label { font-weight: 600; color: var(--text); }
 .ficha-vehiculo-reparaciones { margin-bottom: 0.75rem; }
 .ficha-servicios-list { margin: 0.35rem 0 0; padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
 .ficha-vehiculo-fotos { margin-bottom: 0.5rem; }
@@ -4339,16 +5358,194 @@ button.login-recovery-link {
 .ficha-foto-input { width: 0; height: 0; opacity: 0; position: absolute; }
 .ficha-cliente-actions { margin-top: 1rem; }
 
+/* Tabla BBDD: compacta para ver todas las columnas sin scroll horizontal */
 .clientes-bbdd-table-wrap {
-  overflow-x: auto;
-  contain: layout paint;
-  content-visibility: auto;
+  overflow: visible;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.clientes-bbdd-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.7rem;
 }
 
 .clientes-bbdd-table th,
 .clientes-bbdd-table td {
+  padding: 0.25rem 0.35rem;
   white-space: nowrap;
-  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Anchuras fijas en % para que todas las columnas quepan sin scroll (suma 100%) */
+.clientes-bbdd-table th[data-col="idCliente"],
+.clientes-bbdd-table td[data-col="idCliente"] { width: 5%; }
+.clientes-bbdd-table th[data-col="matricula"],
+.clientes-bbdd-table td[data-col="matricula"] { width: 8%; min-width: 118px; overflow: visible; }
+.clientes-bbdd-table th[data-col="nombreRegistrador"],
+.clientes-bbdd-table td[data-col="nombreRegistrador"] { width: 6%; }
+.clientes-bbdd-table th[data-col="telefonoCliente"],
+.clientes-bbdd-table td[data-col="telefonoCliente"] { width: 5%; }
+.clientes-bbdd-table th[data-col="nombrePropietario"],
+.clientes-bbdd-table td[data-col="nombrePropietario"] { width: 6%; }
+.clientes-bbdd-table th[data-col="numeroSocioLSCM"],
+.clientes-bbdd-table td[data-col="numeroSocioLSCM"] { width: 4%; }
+.clientes-bbdd-table th[data-col="placaPolicial"],
+.clientes-bbdd-table td[data-col="placaPolicial"] { width: 3%; }
+.clientes-bbdd-table th[data-col="codigoVehiculo"],
+.clientes-bbdd-table td[data-col="codigoVehiculo"] { width: 5%; }
+.clientes-bbdd-table th[data-col="nombreVehiculo"],
+.clientes-bbdd-table td[data-col="nombreVehiculo"] { width: 6%; }
+.clientes-bbdd-table th[data-col="categoria"],
+.clientes-bbdd-table td[data-col="categoria"] { width: 5%; }
+.clientes-bbdd-table th[data-col="convenio"],
+.clientes-bbdd-table td[data-col="convenio"] { width: 8%; }
+.clientes-bbdd-table th[data-col="estado"],
+.clientes-bbdd-table td[data-col="estado"] { width: 4%; }
+.clientes-bbdd-table th[data-col="fechaPrimera"],
+.clientes-bbdd-table td[data-col="fechaPrimera"] { width: 5%; }
+.clientes-bbdd-table th[data-col="fechaUltima"],
+.clientes-bbdd-table td[data-col="fechaUltima"] { width: 5%; }
+.clientes-bbdd-table th[data-col="interacciones"],
+.clientes-bbdd-table td[data-col="interacciones"] { width: 3%; }
+.clientes-bbdd-table th[data-col="totalInvertido"],
+.clientes-bbdd-table td[data-col="totalInvertido"] { width: 5%; }
+.clientes-bbdd-table th[data-col="acciones"],
+.clientes-bbdd-table td[data-col="acciones"] { width: 9%; }
+
+/* Ocultar columnas según preferencia usuario */
+.clientes-bbdd-table.bbdd-hide-col-idCliente th[data-col="idCliente"],
+.clientes-bbdd-table.bbdd-hide-col-idCliente td[data-col="idCliente"],
+.clientes-bbdd-table.bbdd-hide-col-matricula th[data-col="matricula"],
+.clientes-bbdd-table.bbdd-hide-col-matricula td[data-col="matricula"],
+.clientes-bbdd-table.bbdd-hide-col-nombreRegistrador th[data-col="nombreRegistrador"],
+.clientes-bbdd-table.bbdd-hide-col-nombreRegistrador td[data-col="nombreRegistrador"],
+.clientes-bbdd-table.bbdd-hide-col-telefonoCliente th[data-col="telefonoCliente"],
+.clientes-bbdd-table.bbdd-hide-col-telefonoCliente td[data-col="telefonoCliente"],
+.clientes-bbdd-table.bbdd-hide-col-nombrePropietario th[data-col="nombrePropietario"],
+.clientes-bbdd-table.bbdd-hide-col-nombrePropietario td[data-col="nombrePropietario"],
+.clientes-bbdd-table.bbdd-hide-col-numeroSocioLSCM th[data-col="numeroSocioLSCM"],
+.clientes-bbdd-table.bbdd-hide-col-numeroSocioLSCM td[data-col="numeroSocioLSCM"],
+.clientes-bbdd-table.bbdd-hide-col-placaPolicial th[data-col="placaPolicial"],
+.clientes-bbdd-table.bbdd-hide-col-placaPolicial td[data-col="placaPolicial"],
+.clientes-bbdd-table.bbdd-hide-col-codigoVehiculo th[data-col="codigoVehiculo"],
+.clientes-bbdd-table.bbdd-hide-col-codigoVehiculo td[data-col="codigoVehiculo"],
+.clientes-bbdd-table.bbdd-hide-col-nombreVehiculo th[data-col="nombreVehiculo"],
+.clientes-bbdd-table.bbdd-hide-col-nombreVehiculo td[data-col="nombreVehiculo"],
+.clientes-bbdd-table.bbdd-hide-col-categoria th[data-col="categoria"],
+.clientes-bbdd-table.bbdd-hide-col-categoria td[data-col="categoria"],
+.clientes-bbdd-table.bbdd-hide-col-convenio th[data-col="convenio"],
+.clientes-bbdd-table.bbdd-hide-col-convenio td[data-col="convenio"],
+.clientes-bbdd-table.bbdd-hide-col-estado th[data-col="estado"],
+.clientes-bbdd-table.bbdd-hide-col-estado td[data-col="estado"],
+.clientes-bbdd-table.bbdd-hide-col-fechaPrimera th[data-col="fechaPrimera"],
+.clientes-bbdd-table.bbdd-hide-col-fechaPrimera td[data-col="fechaPrimera"],
+.clientes-bbdd-table.bbdd-hide-col-fechaUltima th[data-col="fechaUltima"],
+.clientes-bbdd-table.bbdd-hide-col-fechaUltima td[data-col="fechaUltima"],
+.clientes-bbdd-table.bbdd-hide-col-interacciones th[data-col="interacciones"],
+.clientes-bbdd-table.bbdd-hide-col-interacciones td[data-col="interacciones"],
+.clientes-bbdd-table.bbdd-hide-col-totalInvertido th[data-col="totalInvertido"],
+.clientes-bbdd-table.bbdd-hide-col-totalInvertido td[data-col="totalInvertido"],
+.clientes-bbdd-table.bbdd-hide-col-acciones th[data-col="acciones"],
+.clientes-bbdd-table.bbdd-hide-col-acciones td[data-col="acciones"] {
+  display: none !important;
+}
+
+/* Toolbar BBDD: filtros y columnas */
+.bbdd-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bbdd-toolbar-extra {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.bbdd-dropdown-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.bbdd-toolbar-extra {
+  overflow: visible;
+}
+
+.bbdd-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 12rem;
+  padding: 0.75rem;
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 1100;
+  display: none;
+}
+
+.bbdd-dropdown-panel.open,
+.bbdd-dropdown-panel[aria-hidden="false"] {
+  display: block !important;
+}
+
+.bbdd-filtro-field {
+  margin-bottom: 0.5rem;
+}
+
+.bbdd-filtro-field label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.bbdd-filtro-select {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  background: var(--bg, #1a1a1a);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.bbdd-filtro-limpiar {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.bbdd-columnas-desc {
+  font-size: 0.8rem;
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.bbdd-columnas-lista {
+  max-height: 14rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.bbdd-columnas-lista label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.bbdd-columnas-lista input[type="checkbox"] {
+  margin: 0;
 }
 
 .lista-pendientes-registro {

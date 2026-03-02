@@ -1,0 +1,33 @@
+# Logos de convenios: un nombre de archivo por línea.
+# Si el nombre del convenio (sin extensión) coincide con el nombre del convenio en la app, se muestra este logo en la ficha.
+# Ejemplos: SAPD.png, BurgerShot.png, Departamento de Justicia.png
+# Los logos que no tengan un convenio registrado con ese nombre no se usan.
+
+- Badulaque central.png
+- BENNY's Original Motor Works.png
+- Burger Shot.png
+- Café de madera.png
+- Departamento de Justicia.png
+- L.S. Airlines.png
+- LSCM member.png
+- LSCM.png
+- Megamall.png
+- Pizzería Venecia.png
+- Ruta 68.png
+- SAED.png
+- SAFD.png
+- SAPD.png
+- SAMS.png
+- SKYLINE VIBES.png
+- SUSHI BAR.png
+- VANILLA UNICORN.png
+- WEAZEL NEWS.png
+- WEEDLAND.png
+- SALTLAB CAFÉ.png
+- NA.png
+- BLACK WOODS SALOON.png
+- BOHEM BEACH.png
+- CAFÉ ROJO DE MADERA.png
+- HELMUT'S.png
+- IMPORT GARAGE.png
+- TALLER PALETO.png

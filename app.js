@@ -36,6 +36,55 @@ function saveRegistroServicios(arr) {
     console.warn('saveRegistroServicios', e);
   }
 }
+
+const BANDEJA_ENTRADA_STORAGE = 'benny_bandeja_entrada';
+function getBandejaEntradaAll() {
+  try {
+    const raw = localStorage.getItem(BANDEJA_ENTRADA_STORAGE);
+    const data = raw ? JSON.parse(raw) : {};
+    return typeof data === 'object' && data !== null ? data : {};
+  } catch (e) {
+    return {};
+  }
+}
+function getBandejaEntrada(username) {
+  const all = getBandejaEntradaAll();
+  const list = all[username];
+  return Array.isArray(list) ? list : [];
+}
+function addAvisoBandejaEntrada(username, aviso) {
+  if (!username) return;
+  const all = getBandejaEntradaAll();
+  const list = getBandejaEntrada(username);
+  list.unshift({
+    id: 'aviso_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    fecha: new Date().toISOString(),
+    completado: false,
+    ...aviso,
+  });
+  all[username] = list;
+  try {
+    localStorage.setItem(BANDEJA_ENTRADA_STORAGE, JSON.stringify(all));
+  } catch (e) {
+    console.warn('addAvisoBandejaEntrada', e);
+  }
+}
+
+function updateAvisoBandejaEntrada(username, avisoId, updates) {
+  if (!username || !avisoId) return;
+  const all = getBandejaEntradaAll();
+  const list = getBandejaEntrada(username);
+  const idx = list.findIndex(function (a) { return a.id === avisoId; });
+  if (idx === -1) return;
+  list[idx] = Object.assign({}, list[idx], updates);
+  all[username] = list;
+  try {
+    localStorage.setItem(BANDEJA_ENTRADA_STORAGE, JSON.stringify(all));
+  } catch (e) {
+    console.warn('updateAvisoBandejaEntrada', e);
+  }
+}
+
 let registroServicios = getRegistroServicios();
 const CREDENTIALS_STORAGE = 'benny_remember_credentials';
 const LOGIN_USUARIOS_STORAGE = 'benny_login_usuarios';
@@ -139,7 +188,7 @@ function applyPreferencias(prefs) {
   }
 }
 
-const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaResultadosCalculadora', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion'];
+const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaVacantes', 'pantallaBandejaEntrada', 'pantallaResultadosCalculadora', 'pantallaTunnings', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion'];
 
 const MEDIA_PENDING_STORAGE = 'benny_media_pending';
 const MEDIA_APPROVED_STORAGE = 'benny_media_approved';
@@ -384,6 +433,7 @@ function removePendingUserUpdate(id) {
 }
 let tipoServicio = null;   // 'reparacion' | 'tuneo' | 'tuneoReparacion'
 let matriculaActual = '';
+var _plateStyleIndex = 0;
 
 // Elementos DOM (matricula = paso 1; matriculaCalc = paso 2 readonly)
 const el = {
@@ -433,22 +483,30 @@ function aplicarPermisos(user) {
     if (!hasPermission(user, perm)) el.classList.add('sin-permiso');
     else el.classList.remove('sin-permiso');
   });
+  const btnFichajes = document.getElementById('btnFichajes');
+  if (btnFichajes) btnFichajes.style.display = user ? '' : 'none';
   const btnAdmin = document.getElementById('btnAdminPanel');
-  if (btnAdmin) btnAdmin.style.display = (hasPermission(user, 'gestionarUsuarios') || hasPermission(user, 'gestionarEquipo') || hasPermission(user, 'gestionarCompras')) ? '' : 'none';
-  const btnRegistroClientes = document.getElementById('btnRegistroClientes');
-  if (btnRegistroClientes) btnRegistroClientes.style.display = '';
+  if (btnAdmin) btnAdmin.style.display = user ? '' : 'none';
+  const btnSubirVideo = document.getElementById('btnSubirVideo');
+  if (btnSubirVideo) btnSubirVideo.style.display = user ? '' : 'none';
+  const btnResultados = document.getElementById('btnResultadosCalculadora');
+  if (btnResultados) btnResultados.style.display = user ? '' : 'none';
+  const btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) btnLogout.style.display = user ? '' : 'none';
+  const btnBandejaEntrada = document.getElementById('btnBandejaEntrada');
+  const esAdminBandeja = user && hasPermission(user, 'gestionarUsuarios');
+  if (btnBandejaEntrada) btnBandejaEntrada.style.display = user && !esAdminBandeja ? '' : 'none';
   var puedeGestionarClientes = hasPermission(user, 'gestionarRegistroClientes');
   document.querySelectorAll('.registro-clientes-tab[data-tab="bbdd"], .registro-clientes-tab[data-tab="vetados"], .registro-clientes-tab[data-tab="pendientes"]').forEach(function (t) {
     t.style.display = puedeGestionarClientes ? '' : 'none';
   });
-  const btnFichaTrabajador = document.getElementById('btnFichaTrabajador');
-  if (btnFichaTrabajador) btnFichaTrabajador.style.display = hasPermission(user, 'gestionarUsuarios') ? 'none' : '';
-  const btnMiHistorial = document.getElementById('btnMiHistorial');
-  if (btnMiHistorial) btnMiHistorial.style.display = hasPermission(user, 'gestionarUsuarios') ? 'none' : '';
-  const btnSubirVideo = document.getElementById('btnSubirVideo');
-  if (btnSubirVideo) btnSubirVideo.style.display = user ? '' : 'none';
-  const btnNormativas = document.getElementById('btnNormativas');
-  if (btnNormativas) btnNormativas.style.display = user ? '' : 'none';
+  var esAdmin = hasPermission(user, 'gestionarUsuarios');
+  document.querySelectorAll('.gestion-card-nav').forEach(function (card) {
+    var nav = card.getAttribute('data-gestion-nav');
+    if (nav === 'ficha' || nav === 'historial') card.style.display = esAdmin ? 'none' : '';
+    else if (nav === 'vacantes') card.style.display = esAdmin ? '' : 'none';
+    else card.style.display = '';
+  });
   const cambiarUsuarioWrap = document.getElementById('cambiarUsuarioWrap');
   if (cambiarUsuarioWrap) cambiarUsuarioWrap.style.display = hasPermission(user, 'gestionarUsuarios') ? '' : 'none';
   actualizarDescuentoSuperior();
@@ -683,9 +741,9 @@ function renderUltimasReparaciones() {
     const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
     const tipo = (s.tipo || '').toLowerCase();
     const label = tipo === 'reparación' ? 'Rep.' : tipo === 'tuneo' ? 'Tuneo' : (s.tipo || '—');
-    const mat = (s.matricula || '—').toString();
+    const placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(s.matricula || '—') : '<span>' + escapeHtml((s.matricula || '—').toString()) + '</span>';
     const imp = s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—';
-    return '<li class="ultimas-rep-item-clickable" data-ultimas-index="' + i + '" role="button" tabindex="0" title="Clic para ver resumen"><span>' + escapeHtml(mat) + ' · ' + escapeHtml(label) + ' · ' + imp + '</span><span class="ultimas-rep-fecha">' + escapeHtml(fecha) + '</span></li>';
+    return '<li class="ultimas-rep-item-clickable" data-ultimas-index="' + i + '" role="button" tabindex="0" title="Clic para ver resumen"><span class="ultimas-rep-placa">' + placaHtml + '</span><span class="ultimas-rep-info">' + escapeHtml(label) + ' · ' + imp + '</span><span class="ultimas-rep-fecha">' + escapeHtml(fecha) + '</span></li>';
   }).join('');
   if (!list.dataset.ultimasBound) {
     list.dataset.ultimasBound = '1';
@@ -1193,8 +1251,8 @@ function arranqueAuthContinuar() {
 // ========== PANEL ADMIN (pantalla completa) ==========
 function vincularAdmin() {
   const session = getSession();
-  if (!hasPermission(session, 'gestionarUsuarios') && !hasPermission(session, 'gestionarEquipo') && !hasPermission(session, 'gestionarCompras')) return;
   const btnAdmin = document.getElementById('btnAdminPanel');
+  if (!btnAdmin) return;
   const pantallaPrincipal = document.getElementById('pantallaPrincipal');
   const pantallaGestion = document.getElementById('pantallaGestion');
   const btnGestionHome = document.getElementById('btnGestionHome');
@@ -1217,8 +1275,9 @@ function vincularAdmin() {
       tab.style.display = visible ? '' : 'none';
     });
     document.querySelectorAll('.gestion-card').forEach(function (card) {
+      if (card.getAttribute('data-gestion-nav')) return;
       var t = card.dataset.tab;
-      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset);
+      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'usuarios-tabla' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset) || (t === 'indicadores' && puedeUsuarios);
       card.style.display = visible ? '' : 'none';
     });
     document.querySelectorAll('.economia-tab').forEach(function (tab) {
@@ -1231,7 +1290,7 @@ function vincularAdmin() {
   var gestionMenuEl = document.getElementById('gestionMenu');
   var gestionContenidoEl = document.getElementById('gestionContenido');
   var gestionContenidoTituloEl = document.getElementById('gestionContenidoTitulo');
-  var titulosGestion = { usuarios: 'Empleados', convenios: 'Convenios', economia: 'Economía', 'solicitudes-graficas': 'Solicitudes', reset: 'Reset / Limpiar datos' };
+  var titulosGestion = { usuarios: 'Empleados', 'usuarios-tabla': 'Usuarios', convenios: 'Convenios', economia: 'Economía', 'solicitudes-graficas': 'Solicitudes', organigrama: 'Organigrama', reset: 'Reset / Limpiar datos', indicadores: 'Indicadores' };
 
   function abrirPantallaGestion() {
     cerrarTodasPantallasSecundarias();
@@ -1272,8 +1331,19 @@ function vincularAdmin() {
     irAGestionMenu();
   });
 
+  var gestionNavToBtn = { ficha: 'btnFichaTrabajador', historial: 'btnMiHistorial', normativas: 'btnNormativas', clientes: 'btnRegistroClientes', tunnings: 'btnTunnings', personalizacion: 'btnPersonalizacion' };
   document.querySelectorAll('.gestion-card').forEach(function(card) {
     card.addEventListener('click', function() {
+      var nav = card.getAttribute('data-gestion-nav');
+      if (nav === 'vacantes') {
+        if (typeof abrirPantallaVacantes === 'function') abrirPantallaVacantes();
+        return;
+      }
+      if (nav && gestionNavToBtn[nav]) {
+        var btn = document.getElementById(gestionNavToBtn[nav]);
+        if (btn) btn.click();
+        return;
+      }
       var t = card.getAttribute('data-tab');
       if (!t) return;
       if (t === 'organigrama') {
@@ -1293,11 +1363,87 @@ function vincularAdmin() {
   });
 
   btnNuevoUsuario?.addEventListener('click', () => abrirFormUsuario());
+  document.getElementById('btnAnadirUsuarioTabla')?.addEventListener('click', function () {
+    if (typeof abrirFormUsuario === 'function') abrirFormUsuario();
+  });
   document.getElementById('btnNuevoConvenio')?.addEventListener('click', () => abrirFormConvenio());
+  (function vincularConveniosTabs() {
+    var tabEmpresas = document.getElementById('conveniosTabEmpresas');
+    var tabEmpleadosPlacas = document.getElementById('conveniosTabEmpleadosPlacas');
+    var panelEmpresas = document.getElementById('conveniosPanelEmpresas');
+    var panelEmpleadosPlacas = document.getElementById('conveniosPanelEmpleadosPlacas');
+    function showConveniosTab(which) {
+      document.querySelectorAll('.convenios-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-convenios-tab') === which); });
+      if (panelEmpresas) panelEmpresas.style.display = which === 'empresas' ? '' : 'none';
+      if (panelEmpleadosPlacas) panelEmpleadosPlacas.style.display = which === 'empleados-placas' ? '' : 'none';
+      if (which === 'empleados-placas' && typeof renderConveniosEmpleadosYPlacas === 'function') renderConveniosEmpleadosYPlacas();
+    }
+    if (tabEmpresas) tabEmpresas.addEventListener('click', function () { showConveniosTab('empresas'); });
+    if (tabEmpleadosPlacas) tabEmpleadosPlacas.addEventListener('click', function () { showConveniosTab('empleados-placas'); });
+  })();
+  if (typeof vincularIndicadoresPanel === 'function') vincularIndicadoresPanel();
+  (function () {
+    var modalPw = document.getElementById('modalCambiarPassword');
+    if (!modalPw) return;
+    document.getElementById('modalCambiarPasswordClose')?.addEventListener('click', cerrarModalCambiarPassword);
+    document.getElementById('modalCambiarPasswordBackdrop')?.addEventListener('click', cerrarModalCambiarPassword);
+    document.getElementById('modalCambiarPasswordCancelar')?.addEventListener('click', cerrarModalCambiarPassword);
+    document.getElementById('modalCambiarPasswordAceptar')?.addEventListener('click', function () {
+      var userId = (document.getElementById('cambiarPasswordUserId') && document.getElementById('cambiarPasswordUserId').value) || '';
+      var nueva = (document.getElementById('cambiarPasswordNueva') && document.getElementById('cambiarPasswordNueva').value) || '';
+      var confirmar = (document.getElementById('cambiarPasswordConfirmar') && document.getElementById('cambiarPasswordConfirmar').value) || '';
+      var errEl = document.getElementById('modalCambiarPasswordError');
+      if (!userId) { if (errEl) { errEl.textContent = 'Usuario no indicado.'; errEl.style.display = 'block'; } return; }
+      if (nueva.length < 4) { if (errEl) { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; } return; }
+      if (nueva !== confirmar) { if (errEl) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.style.display = 'block'; } return; }
+      if (typeof cambiarPassword !== 'function') { if (errEl) { errEl.textContent = 'No disponible.'; errEl.style.display = 'block'; } return; }
+      cambiarPassword(userId, nueva).then(function (result) {
+        if (result && result.error) {
+          if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+          return;
+        }
+        cerrarModalCambiarPassword();
+        if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
+      }).catch(function (e) {
+        if (errEl) { errEl.textContent = (e && e.message) || 'Error al cambiar la contraseña.'; errEl.style.display = 'block'; }
+      });
+    });
+  })();
 
   document.getElementById('modalConvenioClose')?.addEventListener('click', () => document.getElementById('modalConvenio').classList.remove('active'));
   document.getElementById('modalConvenio')?.addEventListener('click', e => { if (e.target === document.getElementById('modalConvenio')) document.getElementById('modalConvenio').classList.remove('active'); });
   document.getElementById('formConvenio')?.addEventListener('submit', guardarConvenio);
+  (function () {
+    var fileInput = document.getElementById('convenioAcuerdoArchivoFile');
+    var nombreInput = document.getElementById('convenioAcuerdoArchivoNombre');
+    var actualEl = document.getElementById('convenioAcuerdoActual');
+    var quitarBtn = document.getElementById('convenioAcuerdoQuitar');
+    var maxSize = 1024 * 1024;
+    if (fileInput) fileInput.addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > maxSize) { alert('El archivo no debe superar 1 MB.'); this.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        _convenioPendingAcuerdoDataUrl = reader.result;
+        _convenioPendingAcuerdoNombre = f.name;
+        if (actualEl) { actualEl.textContent = 'Nuevo archivo: ' + f.name; actualEl.style.display = 'block'; }
+        if (quitarBtn) quitarBtn.style.display = 'inline-block';
+        if (nombreInput) nombreInput.value = '';
+      };
+      reader.readAsDataURL(f);
+    });
+    if (quitarBtn) quitarBtn.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      _convenioAcuerdoQuitado = true;
+      _convenioPendingAcuerdoDataUrl = null;
+      _convenioPendingAcuerdoNombre = null;
+      if (fileInput) fileInput.value = '';
+      if (nombreInput) nombreInput.value = '';
+      if (actualEl) { actualEl.style.display = 'none'; actualEl.textContent = ''; }
+      quitarBtn.style.display = 'none';
+    });
+  })();
   modalUsuarioClose?.addEventListener('click', () => modalUsuario.classList.remove('active'));
   modalUsuario?.addEventListener('click', e => { if (e.target === modalUsuario) modalUsuario.classList.remove('active'); });
   document.getElementById('btnFichaEmpleadoHome')?.addEventListener('click', function () { cerrarTodasPantallasSecundarias(); });
@@ -1383,6 +1529,9 @@ function ejecutarReset(seccion) {
       localStorage.setItem(MEDIA_PENDING_STORAGE, '[]');
       localStorage.setItem(MEDIA_APPROVED_STORAGE, '[]');
     } catch (e) {}
+  }
+  if (seccion === 'todo') {
+    try { localStorage.setItem('benny_tunnings', '[]'); } catch (e) {}
   }
   if (typeof renderMainDashboard === 'function') renderMainDashboard();
   if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
@@ -1475,6 +1624,260 @@ function getGastosPorMesesUltimos12() {
     datos.push({ anio: anio, mes: mes, total: total, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) });
   }
   return datos;
+}
+
+function getGastosPorMesesUltimosN(n) {
+  n = Math.max(1, parseInt(n, 10) || 12);
+  var now = new Date();
+  var datos = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var anio = d.getFullYear();
+    var mes = d.getMonth() + 1;
+    var total = typeof getTotalGastosPorMes === 'function' ? getTotalGastosPorMes(anio, mes) : 0;
+    datos.push({ anio: anio, mes: mes, total: total, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) });
+  }
+  return datos;
+}
+
+// ——— Indicadores (panel admin) ———
+function getServiciosEnPeriodo(periodoMeses) {
+  var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+  var n = Math.max(1, parseInt(periodoMeses, 10) || 12);
+  var cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - n);
+  cutoff.setHours(0, 0, 0, 0);
+  return servicios.filter(function (s) {
+    if (!s.fecha) return false;
+    var d = new Date(s.fecha);
+    return d >= cutoff;
+  });
+}
+
+function getIngresosPorMesFromServicios(servicios, periodoMeses) {
+  var byMonth = {};
+  servicios.forEach(function (s) {
+    if (!s.fecha) return;
+    var d = new Date(s.fecha);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    if (!byMonth[key]) byMonth[key] = { total: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
+    byMonth[key].total += parseFloat(s.importe) || 0;
+  });
+  var n = Math.max(1, parseInt(periodoMeses, 10) || 12);
+  var now = new Date();
+  var result = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    result.push({ key: key, total: byMonth[key] ? byMonth[key].total : 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) });
+  }
+  return result;
+}
+
+function getRepTuneoPorMesFromServicios(servicios, periodoMeses) {
+  var byMonth = {};
+  servicios.forEach(function (s) {
+    if (!s.fecha) return;
+    var d = new Date(s.fecha);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    if (!byMonth[key]) byMonth[key] = { rep: 0, tuneo: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
+    var t = (s.tipo || '').toLowerCase();
+    if (t.indexOf('reparac') !== -1) byMonth[key].rep++;
+    else if (t.indexOf('tuneo') !== -1) byMonth[key].tuneo++;
+  });
+  var n = Math.max(1, parseInt(periodoMeses, 10) || 12);
+  var now = new Date();
+  var result = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var m = byMonth[key] || { rep: 0, tuneo: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
+    result.push({ key: key, rep: m.rep, tuneo: m.tuneo, label: m.label });
+  }
+  return result;
+}
+
+function getServiciosPorEmpleadoFromServicios(servicios) {
+  var byEmp = {};
+  servicios.forEach(function (s) {
+    var emp = (s.empleado || s.userId || '—').toString().trim() || '—';
+    if (!byEmp[emp]) byEmp[emp] = { count: 0, ingresos: 0 };
+    byEmp[emp].count++;
+    byEmp[emp].ingresos += parseFloat(s.importe) || 0;
+  });
+  return Object.keys(byEmp).map(function (e) { return { empleado: e, count: byEmp[e].count, ingresos: byEmp[e].ingresos }; }).sort(function (a, b) { return b.count - a.count; });
+}
+
+function renderIndicadoresChartLine(containerId, datos, valueKey, color) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!datos || datos.length === 0) {
+    container.innerHTML = '<p class="indicadores-chart-empty">Sin datos para el periodo seleccionado.</p>';
+    return;
+  }
+  var values = datos.map(function (d) { return d[valueKey] != null ? Number(d[valueKey]) : 0; });
+  var maxVal = Math.max(1, Math.max.apply(null, values));
+  var padding = { top: 20, right: 20, bottom: 32, left: 48 };
+  var w = Math.max(280, (container.parentElement && container.parentElement.offsetWidth) || 400) - padding.left - padding.right;
+  var h = 180;
+  var xs = datos.length > 1 ? w / (datos.length - 1) : w;
+  var scaleY = maxVal > 0 ? h / maxVal : 1;
+  var points = datos.map(function (d, i) {
+    var x = padding.left + i * xs;
+    var y = padding.top + h - (d[valueKey] != null ? Number(d[valueKey]) : 0) * scaleY;
+    return x + ',' + y;
+  }).join(' ');
+  var pathLine = 'M ' + points.replace(/ /g, ' L ');
+  var pathArea = pathLine + ' L ' + (padding.left + (datos.length - 1) * xs) + ',' + (padding.top + h) + ' L ' + padding.left + ',' + (padding.top + h) + ' Z';
+  var gridLines = [];
+  for (var g = 0; g <= 5; g++) {
+    var gy = padding.top + h - (h * g / 5);
+    gridLines.push('<line x1="' + padding.left + '" y1="' + gy + '" x2="' + (padding.left + w) + '" y2="' + gy + '" class="economia-chart-grid"/>');
+  }
+  var yLabels = [];
+  for (var l = 0; l <= 5; l++) {
+    var val = Math.round(maxVal * (5 - l) / 5);
+    var ly = padding.top + h * l / 5;
+    yLabels.push('<text x="' + (padding.left - 6) + '" y="' + (ly + 4) + '" class="economia-chart-axis">' + val.toLocaleString('es-ES') + '</text>');
+  }
+  var xLabels = datos.map(function (d, i) {
+    var x = padding.left + i * xs;
+    return '<text x="' + x + '" y="' + (padding.top + h + 22) + '" class="economia-chart-axis economia-chart-axis-x">' + (d.label || '') + '</text>';
+  }).join('');
+  var circles = datos.map(function (d, i) {
+    var x = padding.left + i * xs;
+    var y = padding.top + h - (d[valueKey] != null ? Number(d[valueKey]) : 0) * scaleY;
+    return '<circle cx="' + x + '" cy="' + y + '" r="4" class="economia-chart-dot"/>';
+  }).join('');
+  var fillColor = color || 'var(--accent, #d4af37)';
+  container.innerHTML = '<svg class="economia-chart-svg indicadores-chart-svg" viewBox="0 0 ' + (padding.left + w + padding.right) + ' ' + (padding.top + h + padding.bottom) + '" preserveAspectRatio="xMidYMid meet">' +
+    '<path d="' + pathArea + '" class="economia-chart-area" style="fill:' + fillColor + ';opacity:0.2"/>' +
+    gridLines.join('') +
+    '<path d="' + pathLine + '" class="economia-chart-line" style="stroke:' + fillColor + '" fill="none"/>' +
+    circles +
+    yLabels.join('') + xLabels +
+    '</svg>';
+}
+
+function renderIndicadoresChartRepTuneo(containerId, datos) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!datos || datos.length === 0) {
+    container.innerHTML = '<p class="indicadores-chart-empty">Sin datos para el periodo seleccionado.</p>';
+    return;
+  }
+  var maxVal = Math.max(1, Math.max.apply(null, datos.map(function (d) { return d.rep + d.tuneo; })));
+  var padding = { top: 20, right: 20, bottom: 32, left: 48 };
+  var w = Math.max(280, (container.parentElement && container.parentElement.offsetWidth) || 400) - padding.left - padding.right;
+  var h = 180;
+  var barW = Math.max(4, (w / datos.length) * 0.35);
+  var gap = (w / datos.length - barW) / 2;
+  var scaleY = maxVal > 0 ? h / maxVal : 1;
+  var bars = [];
+  datos.forEach(function (d, i) {
+    var x0 = padding.left + i * (w / datos.length) + gap;
+    var hRep = d.rep * scaleY;
+    var hTuneo = d.tuneo * scaleY;
+    bars.push('<rect x="' + x0 + '" y="' + (padding.top + h - hRep) + '" width="' + (barW / 2) + '" height="' + hRep + '" class="indicadores-bar" style="fill:#e11d48"/>');
+    bars.push('<rect x="' + (x0 + barW / 2) + '" y="' + (padding.top + h - hTuneo) + '" width="' + (barW / 2) + '" height="' + hTuneo + '" class="indicadores-bar" style="fill:#22c55e"/>');
+  });
+  var xLabels = datos.map(function (d, i) {
+    var x = padding.left + (i + 0.5) * (w / datos.length);
+    return '<text x="' + x + '" y="' + (padding.top + h + 22) + '" class="economia-chart-axis economia-chart-axis-x">' + (d.label || '') + '</text>';
+  }).join('');
+  container.innerHTML = '<svg class="economia-chart-svg indicadores-chart-svg" viewBox="0 0 ' + (padding.left + w + padding.right) + ' ' + (padding.top + h + padding.bottom) + '" preserveAspectRatio="xMidYMid meet">' +
+    bars.join('') + xLabels +
+    '<text x="' + (padding.left + w + 8) + '" y="' + (padding.top + 12) + '" class="economia-chart-axis" style="fill:#e11d48">Rep.</text>' +
+    '<text x="' + (padding.left + w + 8) + '" y="' + (padding.top + 28) + '" class="economia-chart-axis" style="fill:#22c55e">Tuneo</text>' +
+    '</svg>';
+}
+
+function renderIndicadoresChartBarras(containerId, items, labelKey, valueKey, color) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!items || items.length === 0) {
+    container.innerHTML = '<p class="indicadores-chart-empty">Sin datos para el periodo seleccionado.</p>';
+    return;
+  }
+  var maxVal = Math.max(1, Math.max.apply(null, items.map(function (d) { return Number(d[valueKey]) || 0; })));
+  var padding = { top: 20, right: 20, bottom: 40, left: 80 };
+  var w = Math.max(280, (container.parentElement && container.parentElement.offsetWidth) || 400) - padding.left - padding.right;
+  var h = 180;
+  var barH = Math.max(8, (h / items.length) * 0.7);
+  var gap = (h / items.length - barH) / 2;
+  var scaleX = maxVal > 0 ? (w / maxVal) : 1;
+  var bars = [];
+  var labels = [];
+  items.forEach(function (d, i) {
+    var val = Number(d[valueKey]) || 0;
+    var barW = val * scaleX;
+    var y0 = padding.top + i * (h / items.length) + gap;
+    bars.push('<rect x="' + padding.left + '" y="' + y0 + '" width="' + barW + '" height="' + barH + '" class="indicadores-bar" style="fill:' + (color || 'var(--accent)') + '"/>');
+    labels.push('<text x="' + (padding.left - 6) + '" y="' + (y0 + barH / 2 + 4) + '" class="economia-chart-axis" text-anchor="end">' + escapeHtml(String(d[labelKey] || '—').substring(0, 12)) + '</text>');
+  });
+  container.innerHTML = '<svg class="economia-chart-svg indicadores-chart-svg" viewBox="0 0 ' + (padding.left + w + padding.right) + ' ' + (padding.top + h + padding.bottom) + '" preserveAspectRatio="xMidYMid meet">' +
+    bars.join('') + labels.join('') +
+    '</svg>';
+}
+
+function renderIndicadoresPanel() {
+  var periodo = (document.getElementById('indicadoresPeriodo') && document.getElementById('indicadoresPeriodo').value) || '12';
+  var incluirRep = document.getElementById('indicadoresIncluirRep');
+  var incluirTuneo = document.getElementById('indicadoresIncluirTuneo');
+  var incluirIngresos = document.getElementById('indicadoresIncluirIngresos');
+  var incluirEmpleados = document.getElementById('indicadoresIncluirEmpleados');
+  var chkIngresos = document.getElementById('indicadoresChartIngresos');
+  var chkRepTuneo = document.getElementById('indicadoresChartRepTuneo');
+  var chkEmpleados = document.getElementById('indicadoresChartEmpleados');
+  var chkGastos = document.getElementById('indicadoresChartGastos');
+
+  var servicios = getServiciosEnPeriodo(periodo);
+  var incluirRepVal = incluirRep && incluirRep.checked;
+  var incluirTuneoVal = incluirTuneo && incluirTuneo.checked;
+  var serviciosFiltrados = servicios.filter(function (s) {
+    var t = (s.tipo || '').toLowerCase();
+    if (t.indexOf('reparac') !== -1) return incluirRepVal;
+    if (t.indexOf('tuneo') !== -1) return incluirTuneoVal;
+    return true;
+  });
+
+  var totalIngresos = serviciosFiltrados.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
+  var totalRep = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('reparac') !== -1; }).length;
+  var totalTuneo = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('tuneo') !== -1; }).length;
+  var porEmpleado = getServiciosPorEmpleadoFromServicios(serviciosFiltrados);
+  var empleadoTop = porEmpleado.length > 0 ? porEmpleado[0].empleado : '—';
+
+  var kpisEl = document.getElementById('indicadoresKpis');
+  if (kpisEl) {
+    kpisEl.innerHTML = '<div class="indicadores-kpi"><span class="indicadores-kpi-label">Total ingresos</span><span class="indicadores-kpi-value">' + totalIngresos.toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €</span></div>' +
+      '<div class="indicadores-kpi"><span class="indicadores-kpi-label">Reparaciones</span><span class="indicadores-kpi-value">' + totalRep + '</span></div>' +
+      '<div class="indicadores-kpi"><span class="indicadores-kpi-label">Tuneos</span><span class="indicadores-kpi-value">' + totalTuneo + '</span></div>' +
+      '<div class="indicadores-kpi"><span class="indicadores-kpi-label">Empleado con más servicios</span><span class="indicadores-kpi-value">' + escapeHtml(empleadoTop) + '</span></div>';
+  }
+
+  var ingresosPorMes = incluirIngresos && incluirIngresos.checked ? getIngresosPorMesFromServicios(serviciosFiltrados, periodo) : [];
+  var repTuneoPorMes = getRepTuneoPorMesFromServicios(serviciosFiltrados, periodo);
+  var gastosDatos = getGastosPorMesesUltimosN(periodo);
+
+  var wrapIngresos = document.getElementById('indicadoresChartIngresosWrap');
+  var wrapRepTuneo = document.getElementById('indicadoresChartRepTuneoWrap');
+  var wrapEmpleados = document.getElementById('indicadoresChartEmpleadosWrap');
+  var wrapGastos = document.getElementById('indicadoresChartGastosWrap');
+
+  if (wrapIngresos) wrapIngresos.style.display = (chkIngresos && chkIngresos.checked) ? '' : 'none';
+  if (wrapRepTuneo) wrapRepTuneo.style.display = (chkRepTuneo && chkRepTuneo.checked) ? '' : 'none';
+  if (wrapEmpleados) wrapEmpleados.style.display = (chkEmpleados && chkEmpleados.checked && incluirEmpleados && incluirEmpleados.checked) ? '' : 'none';
+  if (wrapGastos) wrapGastos.style.display = (chkGastos && chkGastos.checked) ? '' : 'none';
+
+  if (chkIngresos && chkIngresos.checked) renderIndicadoresChartLine('indicadoresChartIngresosContainer', ingresosPorMes, 'total', '#22c55e');
+  if (chkRepTuneo && chkRepTuneo.checked) renderIndicadoresChartRepTuneo('indicadoresChartRepTuneoContainer', repTuneoPorMes);
+  if (chkEmpleados && chkEmpleados.checked && incluirEmpleados && incluirEmpleados.checked) renderIndicadoresChartBarras('indicadoresChartEmpleadosContainer', porEmpleado.slice(0, 10), 'empleado', 'count', '#3b82f6');
+  if (chkGastos && chkGastos.checked) renderIndicadoresChartLine('indicadoresChartGastosContainer', gastosDatos, 'total', '#e11d48');
+}
+
+function vincularIndicadoresPanel() {
+  var btn = document.getElementById('indicadoresGenerar');
+  if (btn) btn.addEventListener('click', function () { if (typeof renderIndicadoresPanel === 'function') renderIndicadoresPanel(); });
 }
 
 function renderEconomiaChartInto(containerId) {
@@ -2720,6 +3123,26 @@ function escapeHtmlAttr(s) {
   return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+/** Genera HTML de una placa en miniatura. Usa una imagen aleatoria del repo PLATES si hay listado-placas.txt con imágenes; si no, un estilo aleatorio (Yankton/Europe/Sport). */
+function buildMatriculaPlateHtml(matricula) {
+  var mat = (matricula || '—').toString().trim();
+  var useImage = typeof hasPlateImagesFromRepo === 'function' && hasPlateImagesFromRepo();
+  var imgUrl = useImage && typeof getPlateImageAleatorio === 'function' ? getPlateImageAleatorio() : null;
+  var style = typeof getPlateStyleAleatorio === 'function' ? getPlateStyleAleatorio() : 'matricula-plate-yankton';
+  var wrapClass = 'matricula-plate-wrap matricula-plate-mini ' + (imgUrl ? 'matricula-plate-from-repo' : escapeHtmlAttr(style));
+  var wrapStyle = imgUrl ? 'background-image: url("' + String(imgUrl).replace(/"/g, '%22').replace(/\\/g, '/') + '"); background-size: cover; background-position: center;' : '';
+  var wrapAttr = wrapStyle ? ' style="' + escapeHtmlAttr(wrapStyle) + '"' : '';
+  return '<div class="' + wrapClass + '"' + wrapAttr + '>' +
+    '<div class="matricula-plate-banner">' +
+    '<span class="matricula-plate-banner-left">LSCM</span>' +
+    '<span class="matricula-plate-banner-center">LOS SANTOS</span>' +
+    '</div>' +
+    '<div class="matricula-plate-body matricula-plate-body-readonly">' +
+    '<span class="matricula-plate-display">' + escapeHtml(mat) + '</span>' +
+    '</div>' +
+    '</div>';
+}
+
 // ========== NORMATIVAS (lectura obligatoria / consulta) ==========
 var _normativasUserId = null;
 var _normativasObligatorio = false;
@@ -2733,15 +3156,30 @@ function initNormativasPantalla(userId, obligatorio) {
   var footer = document.getElementById('normativasFooter');
   var subtitle = document.getElementById('normativasSubtitle');
   var btnCerrar = document.getElementById('normativasBtnCerrar');
+  var formularioWrap = document.querySelector('.normativas-formulario-mecanicos-wrap');
   if (progressWrap) progressWrap.style.display = obligatorio ? 'block' : 'none';
   if (footer) footer.style.display = 'none';
   if (subtitle) subtitle.textContent = obligatorio ? 'Es obligatorio leer todas las páginas de cada documento antes de acceder al taller.' : 'Consulta las normativas del taller.';
   if (btnCerrar) btnCerrar.style.display = obligatorio ? 'none' : 'block';
+  if (formularioWrap) formularioWrap.style.display = obligatorio ? 'none' : '';
   renderNormativasList();
   showNormativasList();
   if (!window._normativasUiBound) {
     bindNormativasContinuar();
     if (btnCerrar) btnCerrar.addEventListener('click', cerrarNormativasConsulta);
+    var linkForm = document.getElementById('normativasFormularioLink');
+    var btnCopiarForm = document.getElementById('normativasFormularioCopiar');
+    if (linkForm) linkForm.href = (window.location.href.replace(/\/[^/]*$/, '/') || window.location.origin + '/') + 'formulario-mecanicos.html';
+    if (btnCopiarForm) {
+      btnCopiarForm.addEventListener('click', function () {
+        var url = (linkForm && linkForm.href) ? linkForm.href : (window.location.href.replace(/\/[^/]*$/, '/') || window.location.origin + '/') + 'formulario-mecanicos.html';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () { if (typeof alert === 'function') alert('Enlace copiado al portapapeles. Puedes compartirlo.'); }).catch(function () { window.prompt('Copia este enlace:', url); });
+        } else {
+          window.prompt('Copia este enlace:', url);
+        }
+      });
+    }
     window._normativasUiBound = true;
   }
 }
@@ -2978,6 +3416,182 @@ function cerrarNormativasConsulta() {
   }
 }
 
+// ========== VACANTES (solicitudes de trabajo, solo administradores) ==========
+var VACANTES_STORAGE = 'benny_vacantes_solicitudes';
+
+function getSolicitudesVacantes() {
+  try {
+    var list = JSON.parse(localStorage.getItem(VACANTES_STORAGE) || '[]');
+    var legacy = JSON.parse(localStorage.getItem('benny_formulario_mecanicos') || '[]');
+    if (legacy.length > 0) {
+      legacy.forEach(function (s) {
+        if (!s.id) { s.id = (s.fecha || Date.now()) + '-' + Math.random().toString(36).slice(2, 10); s.estado = 'pendiente'; }
+        list.push(s);
+      });
+      localStorage.removeItem('benny_formulario_mecanicos');
+      saveSolicitudesVacantes(list);
+    }
+    return list;
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveSolicitudesVacantes(list) {
+  try {
+    localStorage.setItem(VACANTES_STORAGE, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function updateSolicitudVacante(id, updates) {
+  var list = getSolicitudesVacantes();
+  var idx = list.findIndex(function (s) { return s.id === id; });
+  if (idx < 0) return;
+  list[idx] = Object.assign({}, list[idx], updates);
+  saveSolicitudesVacantes(list);
+}
+
+function renderListaVacantes() {
+  var listEl = document.getElementById('listaVacantes');
+  var emptyEl = document.getElementById('vacantesEmpty');
+  if (!listEl) return;
+  var list = getSolicitudesVacantes();
+  var filtroEstado = (document.getElementById('filtroVacantesEstado') && document.getElementById('filtroVacantesEstado').value) || '';
+  var filtroBuscar = (document.getElementById('filtroVacantesBuscar') && document.getElementById('filtroVacantesBuscar').value || '').trim().toLowerCase();
+  if (filtroEstado) list = list.filter(function (s) { return (s.estado || 'pendiente') === filtroEstado; });
+  if (filtroBuscar) list = list.filter(function (s) {
+    var texto = [(s.nombre || ''), (s.contacto || ''), (s.motivacion || '')].join(' ').toLowerCase();
+    return texto.indexOf(filtroBuscar) !== -1;
+  });
+  list.sort(function (a, b) { return new Date(b.fecha || 0) - new Date(a.fecha || 0); });
+  if (emptyEl) emptyEl.style.display = list.length === 0 ? 'block' : 'none';
+  listEl.innerHTML = '';
+  list.forEach(function (s) {
+    var card = document.createElement('div');
+    card.className = 'vacante-card';
+    card.setAttribute('data-vacante-id', (s.id || '').toString());
+    var estado = s.estado || 'pendiente';
+    var estadoLabel = estado === 'pendiente' ? 'Pendiente' : estado === 'aprobada' ? 'Aprobada' : 'Denegada';
+    var fechaStr = s.fecha ? new Date(s.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    card.innerHTML = '<div class="vacante-card-info">' +
+      '<div class="vacante-card-nombre">' + escapeHtml(s.nombre || '—') + '</div>' +
+      '<div class="vacante-card-meta">' + escapeHtml(s.contacto || '') + ' · ' + fechaStr + '</div>' +
+      '</div>' +
+      '<span class="vacante-card-badge ' + escapeHtmlAttr(estado) + '">' + escapeHtml(estadoLabel) + '</span>' +
+      '<button type="button" class="btn btn-outline btn-sm btn-ver-vacante" data-id="' + escapeHtmlAttr(s.id) + '">Ver solicitud</button>';
+    listEl.appendChild(card);
+  });
+  listEl.querySelectorAll('.btn-ver-vacante').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-id');
+      if (id && typeof openModalVacanteSolicitud === 'function') openModalVacanteSolicitud(id);
+    });
+  });
+}
+
+function openModalVacanteSolicitud(id) {
+  var list = getSolicitudesVacantes();
+  var s = list.find(function (x) { return x.id === id; });
+  if (!s) return;
+  var modal = document.getElementById('modalVacanteSolicitud');
+  var nombreEl = document.getElementById('modalVacanteNombre');
+  var contenidoEl = document.getElementById('modalVacanteContenido');
+  var checkRevisado = document.getElementById('modalVacanteHeRevisado');
+  var accionesWrap = document.getElementById('modalVacanteAcciones');
+  var estadoEl = document.getElementById('modalVacanteEstado');
+  if (!modal || !contenidoEl) return;
+  if (nombreEl) nombreEl.textContent = s.nombre || '—';
+  var estado = s.estado || 'pendiente';
+  var labels = {
+    experiencia_rp: { menos_1: 'Menos de 1 mes', '1_3': '1–3 meses', '3_6': '3–6 meses', '6_12': '6–12 meses', mas_1: 'Más de 1 año' },
+    experiencia_mecanico: { no: 'No, primera vez', otro_servidor: 'Sí, en otro servidor', este_servidor: 'Sí, en este servidor' },
+    normativas: { si: 'Sí, las he leído', parcial: 'Parcialmente', no: 'Aún no' }
+  };
+  var secciones = [
+    { titulo: 'Datos personaje (IC)', texto: s.nombre || '—' },
+    { titulo: 'Contacto (OOC)', texto: s.contacto || '—' },
+    { titulo: 'Experiencia en roleplay / vehículos', texto: (labels.experiencia_rp && labels.experiencia_rp[s.experiencia_rp]) || s.experiencia_rp || '—' },
+    { titulo: 'Experiencia como mecánico', texto: (labels.experiencia_mecanico && labels.experiencia_mecanico[s.experiencia_mecanico]) || s.experiencia_mecanico || '—' },
+    { titulo: 'Normativas del taller', texto: (labels.normativas && labels.normativas[s.normativas]) || s.normativas || '—' },
+    { titulo: 'Disponibilidad horaria', texto: s.disponibilidad || '—' },
+    { titulo: 'Motivación', texto: s.motivacion || '—' },
+    { titulo: 'Descripción del personaje', texto: s.descripcion || '—' },
+    { titulo: 'Convenios (SAPD, etc.)', texto: s.convenios || '—' },
+    { titulo: 'Otro', texto: s.otro || '—' }
+  ];
+  contenidoEl.innerHTML = secciones.map(function (sec) {
+    return '<div class="vacante-seccion"><h4>' + escapeHtml(sec.titulo) + '</h4><p>' + escapeHtml(sec.texto) + '</p></div>';
+  }).join('');
+  if (checkRevisado) { checkRevisado.checked = false; }
+  var revisadoWrap = modal.querySelector('.vacante-solicitud-revisado-wrap');
+  if (revisadoWrap) revisadoWrap.style.display = estado === 'pendiente' ? '' : 'none';
+  if (estado === 'pendiente') {
+    if (accionesWrap) { accionesWrap.style.display = 'none'; }
+    if (estadoEl) { estadoEl.textContent = ''; estadoEl.style.display = 'none'; }
+  } else {
+    if (accionesWrap) accionesWrap.style.display = 'none';
+    if (estadoEl) {
+      estadoEl.style.display = 'block';
+      estadoEl.textContent = 'Estado: ' + (estado === 'aprobada' ? 'Aprobada' : 'Denegada') + (s.fechaRevision ? ' · ' + new Date(s.fechaRevision).toLocaleString('es-ES') : '') + (s.revisadoPor ? ' · ' + s.revisadoPor : '');
+    }
+  }
+  function toggleAcciones() {
+    if (estado !== 'pendiente') return;
+    if (accionesWrap) accionesWrap.style.display = checkRevisado && checkRevisado.checked ? 'flex' : 'none';
+  }
+  if (checkRevisado) {
+    checkRevisado.onchange = toggleAcciones;
+    toggleAcciones();
+  }
+  modal.setAttribute('data-vacante-id', id);
+  modal.classList.add('active');
+  document.getElementById('modalVacanteSolicitudClose').onclick = function () { modal.classList.remove('active'); };
+  document.getElementById('modalVacanteSolicitudBackdrop').onclick = function () { modal.classList.remove('active'); };
+  var btnAprobar = document.getElementById('modalVacanteAprobar');
+  var btnDenegar = document.getElementById('modalVacanteDenegar');
+  var session = getSession();
+  var revisadoPor = session ? (session.nombre || session.username) : '';
+  if (btnAprobar && estado === 'pendiente') {
+    btnAprobar.onclick = function () {
+      if (!checkRevisado || !checkRevisado.checked) return;
+      updateSolicitudVacante(id, { estado: 'aprobada', fechaRevision: new Date().toISOString(), revisadoPor: revisadoPor });
+      modal.classList.remove('active');
+      renderListaVacantes();
+    };
+  }
+  if (btnDenegar && estado === 'pendiente') {
+    btnDenegar.onclick = function () {
+      if (!checkRevisado || !checkRevisado.checked) return;
+      updateSolicitudVacante(id, { estado: 'denegada', fechaRevision: new Date().toISOString(), revisadoPor: revisadoPor });
+      modal.classList.remove('active');
+      renderListaVacantes();
+    };
+  }
+}
+
+function abrirPantallaVacantes() {
+  if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+  if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaVacantes');
+  if (typeof renderListaVacantes === 'function') renderListaVacantes();
+}
+
+function vincularVacantes() {
+  var btnVacantes = document.getElementById('btnVacantes');
+  var pantalla = document.getElementById('pantallaVacantes');
+  var btnHome = document.getElementById('btnVacantesHome');
+  var filtroEstado = document.getElementById('filtroVacantesEstado');
+  var filtroBuscar = document.getElementById('filtroVacantesBuscar');
+  if (!pantalla) return;
+  window.abrirPantallaVacantes = abrirPantallaVacantes;
+  if (btnVacantes) btnVacantes.addEventListener('click', function (e) {
+    e.preventDefault();
+    abrirPantallaVacantes();
+  });
+  if (btnHome) btnHome.addEventListener('click', function () { if (typeof irAPantallaPrincipal === 'function') irAPantallaPrincipal(); });
+  if (filtroEstado) { filtroEstado.addEventListener('change', renderListaVacantes); filtroEstado.addEventListener('input', renderListaVacantes); }
+  if (filtroBuscar) { filtroBuscar.addEventListener('input', renderListaVacantes); filtroBuscar.addEventListener('change', renderListaVacantes); }
+}
+
 // ========== CHATBOT NORMATIVAS E INSTRUCCIONES ==========
 var _chatbotBound = false;
 
@@ -3117,7 +3731,18 @@ function vincularRegistroClientes() {
   }
   window.getIdClienteEmpleado = getIdClienteEmpleado;
 
+  function updateBadgePendientesRegistro() {
+    var badge = document.getElementById('badgePendientesRegistro');
+    if (!badge) return;
+    var n = typeof getPendientes === 'function' ? getPendientes().length : 0;
+    badge.textContent = n > 99 ? '99+' : String(n);
+    badge.style.display = n > 0 ? 'inline-flex' : 'none';
+    badge.setAttribute('aria-hidden', n === 0 ? 'true' : 'false');
+  }
+  window.updateBadgePendientesRegistro = updateBadgePendientesRegistro;
+
   function mostrarPanelRegistro(tab) {
+    updateBadgePendientesRegistro();
     document.querySelectorAll('.registro-clientes-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     var panelMificha = document.getElementById('panelRegistroClientesMificha');
     var panelFichas = document.getElementById('panelRegistroClientesFichas');
@@ -3131,7 +3756,11 @@ function vincularRegistroClientes() {
     if (panelPend) panelPend.style.display = tab === 'pendientes' ? '' : 'none';
     if (tab === 'mificha' && typeof renderMiFicha === 'function') renderMiFicha();
     if (tab === 'fichas' && typeof renderFichasClientes === 'function') renderFichasClientes();
-    if (tab === 'bbdd') renderTablaClientesBBDD();
+    if (tab === 'bbdd') {
+      fillFilterDropdownsBBDD();
+      renderColumnasPanelBBDD();
+      renderTablaClientesBBDD();
+    }
     if (tab === 'vetados') renderListaVetados();
     if (tab === 'pendientes') renderPendientesRegistro();
   }
@@ -3151,7 +3780,7 @@ function vincularRegistroClientes() {
       var card = document.createElement('div');
       card.className = 'ficha-cliente-card';
       var marcaModelo = [r.marca, r.nombreVehiculo || r.codigoVehiculo].filter(Boolean).join(' · ') || '—';
-      card.innerHTML = '<div class="ficha-cliente-card-nombre">' + escapeHtml(r.matricula || '—') + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(marcaModelo) + '</div><div class="ficha-cliente-card-vehiculos">Ver ficha</div>';
+      card.innerHTML = '<div class="ficha-cliente-card-placa">' + (typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(r.matricula || '—') : escapeHtml(r.matricula || '—')) + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(marcaModelo) + '</div><div class="ficha-cliente-card-vehiculos">Ver ficha</div>';
       card.addEventListener('click', function () {
         if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(idCliente);
       });
@@ -3184,10 +3813,12 @@ function vincularRegistroClientes() {
       }
     });
     listVet.innerHTML = vetados.length === 0 ? '<li class="lista-vetados-empty">Ningún cliente vetado.</li>' : vetados.map(function (c) {
-      return '<li class="lista-vetados-item">' + escapeHtml(c.nombrePropietario) + ' · ' + escapeHtml(c.matricula) + ' <button type="button" class="btn btn-outline btn-sm btn-ver-ficha-vetado" data-id="' + escapeHtmlAttr(c.idCliente) + '">Ver ficha</button></li>';
+      var placa = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(c.matricula) : escapeHtml(c.matricula);
+      return '<li class="lista-vetados-item">' + escapeHtml(c.nombrePropietario) + ' <span class="lista-vetados-placa">' + placa + '</span> <button type="button" class="btn btn-outline btn-sm btn-ver-ficha-vetado" data-id="' + escapeHtmlAttr(c.idCliente) + '">Ver ficha</button></li>';
     }).join('');
     listMor.innerHTML = morosos.length === 0 ? '<li class="lista-vetados-empty">Ningún cliente moroso.</li>' : morosos.map(function (c) {
-      return '<li class="lista-vetados-item">' + escapeHtml(c.nombrePropietario) + ' · ' + escapeHtml(c.matricula) + ' <button type="button" class="btn btn-outline btn-sm btn-ver-ficha-vetado" data-id="' + escapeHtmlAttr(c.idCliente) + '">Ver ficha</button></li>';
+      var placa = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(c.matricula) : escapeHtml(c.matricula);
+      return '<li class="lista-vetados-item">' + escapeHtml(c.nombrePropietario) + ' <span class="lista-vetados-placa">' + placa + '</span> <button type="button" class="btn btn-outline btn-sm btn-ver-ficha-vetado" data-id="' + escapeHtmlAttr(c.idCliente) + '">Ver ficha</button></li>';
     }).join('');
     listVet.querySelectorAll('.btn-ver-ficha-vetado').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -3211,6 +3842,119 @@ function vincularRegistroClientes() {
   function cumpleFiltroCliente(cli, q) {
     if (!q || !(q = (q + '').trim().toLowerCase())) return true;
     return textoClienteParaBusqueda(cli).indexOf(q) !== -1;
+  }
+
+  var BBDD_COLUMNS = [
+    { id: 'idCliente', label: 'ID cliente' },
+    { id: 'matricula', label: 'Matrícula' },
+    { id: 'nombreRegistrador', label: 'Nombre quien registró' },
+    { id: 'telefonoCliente', label: 'Teléfono cliente' },
+    { id: 'nombrePropietario', label: 'Nombre propietario' },
+    { id: 'numeroSocioLSCM', label: 'Nº socio LSCM' },
+    { id: 'placaPolicial', label: 'Placa policial' },
+    { id: 'codigoVehiculo', label: 'Código vehículo' },
+    { id: 'nombreVehiculo', label: 'Nombre vehículo' },
+    { id: 'categoria', label: 'Categoría' },
+    { id: 'convenio', label: 'Convenio' },
+    { id: 'estado', label: 'Estado' },
+    { id: 'fechaPrimera', label: '1ª interacción' },
+    { id: 'fechaUltima', label: 'Últ. actualización' },
+    { id: 'interacciones', label: 'Interacciones' },
+    { id: 'totalInvertido', label: 'Total invertido' },
+    { id: 'acciones', label: 'Acciones' }
+  ];
+  var BBDD_VISIBLE_STORAGE = 'benny_bbdd_visible_columns';
+
+  function getBBDDVisibleColumns() {
+    try {
+      var raw = localStorage.getItem(BBDD_VISIBLE_STORAGE);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length > 0) return arr;
+      }
+    } catch (e) {}
+    return BBDD_COLUMNS.map(function (c) { return c.id; });
+  }
+
+  function setBBDDVisibleColumns(ids) {
+    try {
+      localStorage.setItem(BBDD_VISIBLE_STORAGE, JSON.stringify(ids));
+    } catch (e) {}
+  }
+
+  function applyBBDDColumnVisibility(table) {
+    if (!table) return;
+    var visible = getBBDDVisibleColumns();
+    BBDD_COLUMNS.forEach(function (col) {
+      table.classList.toggle('bbdd-hide-col-' + col.id, visible.indexOf(col.id) === -1);
+    });
+  }
+
+  function getFiltrosBBDD() {
+    var convenio = (document.getElementById('filtroBBDDConvenio') && document.getElementById('filtroBBDDConvenio').value) || '';
+    var categoria = (document.getElementById('filtroBBDDCategoria') && document.getElementById('filtroBBDDCategoria').value) || '';
+    var estado = (document.getElementById('filtroBBDDEstado') && document.getElementById('filtroBBDDEstado').value) || '';
+    return { convenio: convenio, categoria: categoria, estado: estado };
+  }
+
+  function cumpleFiltrosAdicionales(cli, filtros) {
+    if (!filtros) return true;
+    if (filtros.convenio && (cli.convenio || '').trim() !== filtros.convenio) return false;
+    if (filtros.categoria && (cli.categoria || '').trim() !== filtros.categoria) return false;
+    if (filtros.estado === 'moroso' && !cli.moroso) return false;
+    if (filtros.estado === 'vetado' && !cli.vetado) return false;
+    if (filtros.estado === 'ok' && (cli.moroso || cli.vetado)) return false;
+    return true;
+  }
+
+  function fillFilterDropdownsBBDD() {
+    var list = typeof getClientesBBDD === 'function' ? getClientesBBDD() : [];
+    if (!Array.isArray(list)) list = [];
+    var convenios = {};
+    var categorias = {};
+    list.forEach(function (c) {
+      var conv = (c.convenio || '').trim();
+      if (conv) convenios[conv] = true;
+      var cat = (c.categoria || '').trim();
+      if (cat) categorias[cat] = true;
+    });
+    var selConv = document.getElementById('filtroBBDDConvenio');
+    var selCat = document.getElementById('filtroBBDDCategoria');
+    if (selConv) {
+      var opts = ['<option value="">Todos</option>'];
+      Object.keys(convenios).sort().forEach(function (c) { opts.push('<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'); });
+      selConv.innerHTML = opts.join('');
+      selConv.value = getFiltrosBBDD().convenio || '';
+    }
+    if (selCat) {
+      var optsCat = ['<option value="">Todas</option>'];
+      Object.keys(categorias).sort().forEach(function (c) { optsCat.push('<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'); });
+      selCat.innerHTML = optsCat.join('');
+      selCat.value = getFiltrosBBDD().categoria || '';
+    }
+  }
+
+  function renderColumnasPanelBBDD() {
+    var cont = document.getElementById('panelColumnasBBDDLista');
+    if (!cont) return;
+    var visible = getBBDDVisibleColumns();
+    cont.innerHTML = BBDD_COLUMNS.map(function (col) {
+      var checked = visible.indexOf(col.id) !== -1 ? ' checked' : '';
+      return '<label><input type="checkbox" data-col="' + escapeHtml(col.id) + '"' + checked + '> ' + escapeHtml(col.label) + '</label>';
+    }).join('');
+    cont.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var visible = getBBDDVisibleColumns();
+        if (cb.checked) {
+          if (visible.indexOf(cb.dataset.col) === -1) visible.push(cb.dataset.col);
+        } else {
+          visible = visible.filter(function (id) { return id !== cb.dataset.col; });
+        }
+        setBBDDVisibleColumns(visible);
+        var table = document.getElementById('tablaClientesBBDD');
+        if (table) applyBBDDColumnVisibility(table);
+      });
+    });
   }
 
   function renderTablaClientesBBDD() {
@@ -3245,7 +3989,8 @@ function vincularRegistroClientes() {
     }
     if (!Array.isArray(list)) list = [];
     var filtroBBDD = (document.getElementById('filtroTablaBBDD') && document.getElementById('filtroTablaBBDD').value) || '';
-    list = list.filter(function (c) { return cumpleFiltroCliente(c, filtroBBDD); });
+    var filtros = getFiltrosBBDD();
+    list = list.filter(function (c) { return cumpleFiltroCliente(c, filtroBBDD) && cumpleFiltrosAdicionales(c, filtros); });
     var fragment = document.createDocumentFragment();
     var normalizar = function (m) { return (m || '').trim().toUpperCase(); };
     for (var i = 0; i < list.length; i++) {
@@ -3257,13 +4002,17 @@ function vincularRegistroClientes() {
       if (cli.moroso) estadoBadges += '<span class="badge badge-moroso">Moroso</span> ';
       if (cli.vetado) estadoBadges += '<span class="badge badge-vetado">Vetado</span>';
       if (!estadoBadges) estadoBadges = '—';
+      var matriculaCell = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(cli.matricula || '') : escapeHtml(cli.matricula || '—');
+      var accionesCell = '<button type="button" class="btn btn-outline btn-sm btn-ver-ficha" data-id="' + escapeHtml(idCliente) + '" title="Ver ficha">Ficha</button> <button type="button" class="btn btn-outline btn-sm btn-editar-cliente" data-mat="' + escapeHtml(cli.matricula) + '">Editar</button>';
       var tr = document.createElement('tr');
       tr.setAttribute('data-mat', (cli.matricula || '').trim());
-      tr.innerHTML = '<td>' + escapeHtml(idCliente) + '</td><td>' + escapeHtml(cli.matricula) + '</td><td>' + escapeHtml(cli.nombreRegistrador || '—') + '</td><td>' + escapeHtml(cli.telefonoCliente || '—') + '</td><td>' + escapeHtml(cli.nombrePropietario || '—') + '</td><td>' + escapeHtml(cli.numeroSocioLSCM || '—') + '</td><td>' + escapeHtml(cli.placaPolicial || '—') + '</td><td>' + escapeHtml(cli.codigoVehiculo || '—') + '</td><td>' + escapeHtml(cli.nombreVehiculo || '—') + '</td><td>' + escapeHtml(cli.categoria || '—') + '</td><td>' + escapeHtml(cli.convenio || '—') + '</td><td class="col-estado">' + estadoBadges + '</td><td>' + f1 + '</td><td>' + f2 + '</td><td>' + (cli.interacciones ?? 0) + '</td><td>' + (cli.totalInvertido ?? 0).toLocaleString('es-ES') + ' €</td><td><button type="button" class="btn btn-outline btn-sm btn-ver-ficha" data-id="' + escapeHtml(idCliente) + '" title="Ver ficha">Ficha</button> <button type="button" class="btn btn-outline btn-sm btn-editar-cliente" data-mat="' + escapeHtml(cli.matricula) + '">Editar</button></td>';
+      tr.innerHTML = '<td data-col="idCliente">' + escapeHtml(idCliente) + '</td><td data-col="matricula" class="col-matricula-cell">' + matriculaCell + '</td><td data-col="nombreRegistrador">' + escapeHtml(cli.nombreRegistrador || '—') + '</td><td data-col="telefonoCliente">' + escapeHtml(cli.telefonoCliente || '—') + '</td><td data-col="nombrePropietario">' + escapeHtml(cli.nombrePropietario || '—') + '</td><td data-col="numeroSocioLSCM">' + escapeHtml(cli.numeroSocioLSCM || '—') + '</td><td data-col="placaPolicial">' + escapeHtml(cli.placaPolicial || '—') + '</td><td data-col="codigoVehiculo">' + escapeHtml(cli.codigoVehiculo || '—') + '</td><td data-col="nombreVehiculo">' + escapeHtml(cli.nombreVehiculo || '—') + '</td><td data-col="categoria">' + escapeHtml(cli.categoria || '—') + '</td><td data-col="convenio">' + escapeHtml(cli.convenio || '—') + '</td><td data-col="estado" class="col-estado">' + estadoBadges + '</td><td data-col="fechaPrimera">' + f1 + '</td><td data-col="fechaUltima">' + f2 + '</td><td data-col="interacciones">' + (cli.interacciones ?? 0) + '</td><td data-col="totalInvertido">' + (cli.totalInvertido ?? 0).toLocaleString('es-ES') + ' €</td><td data-col="acciones">' + accionesCell + '</td>';
       fragment.appendChild(tr);
     }
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
+    var table = document.getElementById('tablaClientesBBDD');
+    if (table) applyBBDDColumnVisibility(table);
     if (!tbody.dataset.delegationBound) {
       tbody.dataset.delegationBound = '1';
       tbody.addEventListener('click', function (e) {
@@ -3285,7 +4034,9 @@ function vincularRegistroClientes() {
   }
 
   function abrirModalEditarCliente(cli) {
-    if (!cli) return;
+    cli = cli || {};
+    var tituloEl = document.getElementById('modalEditarClienteTitulo');
+    if (tituloEl) tituloEl.textContent = (cli.idCliente && (cli.idCliente + '').trim()) || (cli.matricula && (cli.matricula + '').trim()) ? 'Editar cliente' : 'Añadir cliente';
     var setVal = function (id, val) { var el = document.getElementById(id); if (el) el.value = val != null ? val : ''; };
     setVal('editarClienteMatriculaOriginal', cli.matricula || '');
     setVal('editarClienteIdCliente', cli.idCliente || '');
@@ -3319,6 +4070,10 @@ function vincularRegistroClientes() {
     if (form) form.querySelectorAll('.field-admin-only').forEach(function (f) { f.style.display = isAdmin ? '' : 'none'; });
     var modal = document.getElementById('modalEditarCliente');
     if (modal) modal.classList.add('active');
+  }
+
+  function abrirModalNuevoCliente() {
+    abrirModalEditarCliente({});
   }
 
   function renderPendientesRegistro() {
@@ -3378,11 +4133,15 @@ function vincularRegistroClientes() {
         if (typeof aprobarPendiente === 'function') aprobarPendiente(id);
         renderPendientesRegistro();
         renderTablaClientesBBDD();
+        if (typeof renderFichasClientes === 'function') renderFichasClientes();
+        if (typeof updateBadgePendientesRegistro === 'function') updateBadgePendientesRegistro();
       });
       card.querySelector('.btn-rechazar-pendiente')?.addEventListener('click', function() {
         const id = this.dataset.pendId;
         if (typeof rechazarPendiente === 'function') { rechazarPendiente(id); }
         renderPendientesRegistro();
+        if (typeof renderFichasClientes === 'function') renderFichasClientes();
+        if (typeof updateBadgePendientesRegistro === 'function') updateBadgePendientesRegistro();
       });
       cont.appendChild(card);
     });
@@ -3413,17 +4172,45 @@ function vincularRegistroClientes() {
     ids.forEach(function (id) {
       const rows = byId[id];
       const first = rows[0];
-      const nombre = (first.nombrePropietario || '').trim() || (first.matricula || 'Sin nombre');
+      const matricula = (first.matricula || '').trim() || '—';
       const telefono = (first.telefonoCliente || '').trim() || '—';
+      const modeloCategoria = ((first.nombreVehiculo || first.codigoVehiculo || '').toString().trim() || '—') + ' - ' + ((first.categoria || '').toString().trim() || '—');
+      const placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(matricula) : escapeHtml(matricula);
       const card = document.createElement('div');
       card.className = 'ficha-cliente-card';
-      card.innerHTML = '<div class="ficha-cliente-card-nombre">' + escapeHtml(nombre) + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(telefono) + ' · ' + escapeHtml(id) + '</div><div class="ficha-cliente-card-vehiculos">' + rows.length + ' vehículo(s)</div>';
+      card.innerHTML = '<div class="ficha-cliente-card-placa">' + placaHtml + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(telefono) + ' · ' + escapeHtml(modeloCategoria) + '</div><div class="ficha-cliente-card-vehiculos">' + rows.length + ' vehículo(s)</div>';
       card.addEventListener('click', function () {
         if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(id);
       });
       cont.appendChild(card);
     });
-    if (ids.length === 0) cont.innerHTML = '<p class="no-fichas">' + (filtroFichas ? 'Ningún cliente coincide con la búsqueda.' : 'No hay clientes registrados.') + '</p>';
+
+    var pendientes = typeof getPendientes === 'function' ? getPendientes() : [];
+    if (filtroFichas && pendientes.length > 0) {
+      var q = filtroFichas.trim().toLowerCase();
+      pendientes = pendientes.filter(function (p) {
+        return ((p.matricula || '').toLowerCase().indexOf(q) !== -1) ||
+          ((p.nombrePropietario || '').toLowerCase().indexOf(q) !== -1) ||
+          ((p.telefonoCliente || '').toLowerCase().indexOf(q) !== -1) ||
+          ((p.id || '').toLowerCase().indexOf(q) !== -1);
+      });
+    }
+    pendientes.forEach(function (p) {
+      const matricula = (p.matricula || '').trim() || '—';
+      const telefono = (p.telefonoCliente || '').trim() || '—';
+      const modeloCategoriaP = ((p.nombreVehiculo || p.codigoVehiculo || '').toString().trim() || '—') + ' - ' + ((p.categoria || '').toString().trim() || '—');
+      const placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(matricula) : escapeHtml(matricula);
+      const card = document.createElement('div');
+      card.className = 'ficha-cliente-card ficha-cliente-card-pendiente';
+      card.setAttribute('data-pendiente-id', p.id || '');
+      card.innerHTML = '<div class="ficha-cliente-card-placa">' + placaHtml + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(telefono) + ' · ' + escapeHtml(modeloCategoriaP) + '</div><div class="ficha-cliente-card-vehiculos">1 vehículo(s) <span class="ficha-cliente-pendiente-badge">Pendiente de aprobación</span></div>';
+      card.addEventListener('click', function () {
+        alert('Solicitud pendiente de aprobación. Un administrador debe aprobarla para que el cliente quede registrado en la base de datos.');
+      });
+      cont.appendChild(card);
+    });
+
+    if (ids.length === 0 && pendientes.length === 0) cont.innerHTML = '<p class="no-fichas">' + (filtroFichas ? 'Ningún cliente coincide con la búsqueda.' : 'No hay clientes registrados.') + '</p>';
   }
   window.renderFichasClientes = renderFichasClientes;
 
@@ -3445,7 +4232,8 @@ function vincularRegistroClientes() {
     if (first.vetado) estadoFicha += '<span class="badge badge-vetado">Vetado</span>';
     if (!estadoFicha) estadoFicha = '—';
     var prepagoChecked = !!(first.prepago);
-    headerEl.innerHTML = '<div class="ficha-header-row"><strong>ID:</strong> ' + escapeHtml(idCliente) + '</div>' +
+    var modeloCategoria = ((first.nombreVehiculo || first.codigoVehiculo || '').toString().trim() || '—') + ' - ' + ((first.categoria || '').toString().trim() || '—');
+    headerEl.innerHTML = '<div class="ficha-header-row"><strong>Modelo - Categoría:</strong> ' + escapeHtml(modeloCategoria) + '</div>' +
       '<div class="ficha-header-row ficha-header-nombre-wrap"><strong>Nombre propietario:</strong> <span id="fichaNombrePropietario">' + escapeHtml(first.nombrePropietario || '—') + '</span>' +
       (puedeEditarNombre ? ' <button type="button" class="btn btn-outline btn-sm btn-editar-nombre-ficha" id="btnEditarNombreFicha">Editar</button>' : '') + '</div>' +
       '<div class="ficha-header-row"><strong>Teléfono:</strong> <span id="fichaTelefonoCliente">' + escapeHtml(first.telefonoCliente || '—') + '</span></div>' +
@@ -3480,7 +4268,8 @@ function vincularRegistroClientes() {
         return '<li>' + escapeHtml(tipo) + ' · ' + importe + ' · ' + escapeHtml(empleado) + ' · ' + escapeHtml(fecha) + '</li>';
       }).join('') + '</ul>';
       var marcaModeloLabel = (r.marca ? escapeHtml(r.marca) + ' · ' : '') + escapeHtml(r.nombreVehiculo || r.codigoVehiculo || '—');
-      div.innerHTML = '<h4 class="ficha-vehiculo-mat">' + escapeHtml(mat) + ' — ' + marcaModeloLabel + '</h4>' +
+      var placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(mat) : escapeHtml(mat);
+      div.innerHTML = '<div class="ficha-vehiculo-mat-wrap">' + placaHtml + ' <span class="ficha-vehiculo-mat-label">' + marcaModeloLabel + '</span></div>' +
         '<div class="ficha-vehiculo-reparaciones"><strong>Reparaciones / tuneos</strong>' + serviciosHtml + '</div>' +
         '<div class="ficha-vehiculo-fotos"><strong>Fotos del vehículo</strong><div class="ficha-fotos-list">' + fotosHtml + '</div></div>' +
         '<button type="button" class="btn btn-outline btn-sm btn-quitar-vehiculo-ficha" data-mat="' + escapeHtml(mat) + '">Quitar vehículo</button>';
@@ -3561,6 +4350,74 @@ function vincularRegistroClientes() {
   if (filtroFichasEl) filtroFichasEl.addEventListener('change', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
   if (filtroBBDDEl) filtroBBDDEl.addEventListener('input', function () { renderTablaClientesBBDD(); });
   if (filtroBBDDEl) filtroBBDDEl.addEventListener('change', function () { renderTablaClientesBBDD(); });
+  (function () {
+    var btnFiltros = document.getElementById('btnFiltrosBBDD');
+    var panelFiltros = document.getElementById('panelFiltrosBBDD');
+    var btnColumnas = document.getElementById('btnColumnasBBDD');
+    var panelColumnas = document.getElementById('panelColumnasBBDD');
+    function closeDropdowns() {
+      if (panelFiltros) { panelFiltros.setAttribute('aria-hidden', 'true'); panelFiltros.classList.remove('open'); }
+      if (panelColumnas) { panelColumnas.setAttribute('aria-hidden', 'true'); panelColumnas.classList.remove('open'); }
+    }
+    function openFiltros() {
+      closeDropdowns();
+      if (panelFiltros) { panelFiltros.setAttribute('aria-hidden', 'false'); panelFiltros.classList.add('open'); }
+    }
+    function openColumnas() {
+      closeDropdowns();
+      if (panelColumnas) {
+        if (typeof renderColumnasPanelBBDD === 'function') renderColumnasPanelBBDD();
+        panelColumnas.setAttribute('aria-hidden', 'false');
+        panelColumnas.classList.add('open');
+      }
+    }
+    if (btnFiltros && panelFiltros) {
+      btnFiltros.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var isOpen = panelFiltros.classList.contains('open') || panelFiltros.getAttribute('aria-hidden') === 'false';
+        if (isOpen) closeDropdowns(); else openFiltros();
+      });
+    }
+    if (btnColumnas && panelColumnas) {
+      btnColumnas.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var isOpen = panelColumnas.classList.contains('open') || panelColumnas.getAttribute('aria-hidden') === 'false';
+        if (isOpen) closeDropdowns(); else openColumnas();
+      });
+    }
+    if (panelFiltros) panelFiltros.addEventListener('click', function (e) { e.stopPropagation(); });
+    if (panelColumnas) panelColumnas.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function (e) {
+      if (!panelFiltros || !panelColumnas) return;
+      if (panelFiltros.contains(e.target) || panelColumnas.contains(e.target)) return;
+      if (btnFiltros && btnFiltros.contains(e.target)) return;
+      if (btnColumnas && btnColumnas.contains(e.target)) return;
+      closeDropdowns();
+    });
+    var selConv = document.getElementById('filtroBBDDConvenio');
+    var selCat = document.getElementById('filtroBBDDCategoria');
+    var selEst = document.getElementById('filtroBBDDEstado');
+    if (selConv) selConv.addEventListener('change', function () { renderTablaClientesBBDD(); });
+    if (selCat) selCat.addEventListener('change', function () { renderTablaClientesBBDD(); });
+    if (selEst) selEst.addEventListener('change', function () { renderTablaClientesBBDD(); });
+    var btnLimpiar = document.getElementById('btnLimpiarFiltrosBBDD');
+    if (btnLimpiar) btnLimpiar.addEventListener('click', function () {
+      if (selConv) selConv.value = '';
+      if (selCat) selCat.value = '';
+      if (selEst) selEst.value = '';
+      renderTablaClientesBBDD();
+      closeDropdowns();
+    });
+    var btnColumnasTodas = document.getElementById('btnColumnasBBDDTodas');
+    if (btnColumnasTodas) btnColumnasTodas.addEventListener('click', function () {
+      setBBDDVisibleColumns(BBDD_COLUMNS.map(function (c) { return c.id; }));
+      renderColumnasPanelBBDD();
+      var table = document.getElementById('tablaClientesBBDD');
+      if (table) applyBBDDColumnVisibility(table);
+    });
+  })();
   if (filtroPendEl) filtroPendEl.addEventListener('input', function () { renderPendientesRegistro(); });
   if (filtroPendEl) filtroPendEl.addEventListener('change', function () { renderPendientesRegistro(); });
 
@@ -3590,6 +4447,12 @@ function vincularRegistroClientes() {
     if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(idCliente);
   });
 
+  document.getElementById('btnAnadirClienteFichas')?.addEventListener('click', function () {
+    if (typeof abrirModalNuevoCliente === 'function') abrirModalNuevoCliente();
+  });
+  document.getElementById('btnAnadirClienteBBDD')?.addEventListener('click', function () {
+    if (typeof abrirModalNuevoCliente === 'function') abrirModalNuevoCliente();
+  });
   document.getElementById('btnAnadirMiVehiculo')?.addEventListener('click', function () {
     var modal = document.getElementById('modalAnadirMiVehiculo');
     if (modal) {
@@ -3644,12 +4507,17 @@ function vincularRegistroClientes() {
   });
   document.getElementById('formEditarCliente')?.addEventListener('submit', function(e) {
     e.preventDefault();
-    const matOriginal = document.getElementById('editarClienteMatriculaOriginal').value;
+    const matOriginal = (document.getElementById('editarClienteMatriculaOriginal') && document.getElementById('editarClienteMatriculaOriginal').value) || '';
+    const matricula = (document.getElementById('editarClienteMatricula') && document.getElementById('editarClienteMatricula').value || '').trim();
+    if (!matricula) {
+      alert('La matrícula es obligatoria para guardar el cliente.');
+      return;
+    }
     const session = typeof getSession === 'function' ? getSession() : null;
     const isAdmin = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarRegistroClientes');
     const data = {
       idCliente: document.getElementById('editarClienteIdCliente').value.trim(),
-      matricula: document.getElementById('editarClienteMatricula').value.trim(),
+      matricula: matricula,
       nombreRegistrador: document.getElementById('editarClienteNombreRegistrador').value.trim(),
       telefonoCliente: document.getElementById('editarClienteTelefono').value.trim(),
       nombrePropietario: document.getElementById('editarClienteNombrePropietario').value.trim(),
@@ -3670,14 +4538,32 @@ function vincularRegistroClientes() {
       data.fechaUltimaActualizacion = document.getElementById('editarClienteFechaUltima').value || null;
       data.interacciones = parseInt(document.getElementById('editarClienteInteracciones').value, 10) || 0;
       data.totalInvertido = parseFloat(document.getElementById('editarClienteTotal').value) || 0;
+    } else {
+      data.placaPolicial = (document.getElementById('editarClientePlaca') && document.getElementById('editarClientePlaca').value) ? document.getElementById('editarClientePlaca').value.trim() || '-' : '-';
+      data.codigoVehiculo = (document.getElementById('editarClienteCodigo') && document.getElementById('editarClienteCodigo').value) ? document.getElementById('editarClienteCodigo').value.trim() : '';
+      data.nombreVehiculo = (document.getElementById('editarClienteNombre') && document.getElementById('editarClienteNombre').value) ? document.getElementById('editarClienteNombre').value.trim() : '';
+      data.categoria = (document.getElementById('editarClienteCategoria') && document.getElementById('editarClienteCategoria').value) ? document.getElementById('editarClienteCategoria').value.trim() : '';
+      data.convenio = (document.getElementById('editarClienteConvenio') && document.getElementById('editarClienteConvenio').value) ? document.getElementById('editarClienteConvenio').value.trim() : '';
     }
+    const list = typeof getClientesBBDD === 'function' ? getClientesBBDD() : [];
+    const idx = list.findIndex(function (c) { return (c.matricula || '').trim().toUpperCase() === (matOriginal || '').trim().toUpperCase(); });
+    const existing = idx >= 0 ? list[idx] : null;
+    const isNewClient = !existing;
+
+    if (isNewClient && !isAdmin && typeof addPendiente === 'function') {
+      addPendiente(data, session ? (session.nombre || session.username || '') : '');
+      document.getElementById('modalEditarCliente').classList.remove('active');
+      alert('Su solicitud ha sido procesada y queda pendiente en la visualización de esta pantalla. Un administrador debe aprobarla para que el cliente quede registrado en la base de datos.');
+      if (typeof updateBadgePendientesRegistro === 'function') updateBadgePendientesRegistro();
+      if (typeof renderTablaClientesBBDD === 'function') renderTablaClientesBBDD();
+      if (typeof renderFichasClientes === 'function') renderFichasClientes();
+      return;
+    }
+
     if (typeof getClientesBBDD === 'function' && typeof addOrUpdateClienteBBDD === 'function') {
-      const list = getClientesBBDD();
-      const idx = list.findIndex(c => (c.matricula || '').trim().toUpperCase() === (matOriginal || '').trim().toUpperCase());
-      const existing = idx >= 0 ? list[idx] : null;
-      if (existing && data.matricula.toUpperCase() !== matOriginal.trim().toUpperCase()) {
+      if (existing && data.matricula.toUpperCase() !== (matOriginal || '').trim().toUpperCase()) {
         list.splice(idx, 1);
-        localStorage.setItem('benny_clientes_bbdd', JSON.stringify(list));
+        try { localStorage.setItem('benny_clientes_bbdd', JSON.stringify(list)); } catch (err) {}
       }
       addOrUpdateClienteBBDD({ ...existing, ...data });
     }
@@ -3763,7 +4649,10 @@ function vincularRegistroClientes() {
     }
     cerrarFichaEmpleadoSiAbierta();
     renderListaUsuarios();
+    if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
     renderAprobacionesPendientes();
+    if (typeof renderMainDashboard === 'function') renderMainDashboard();
+    if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
     if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama')?.style.display === 'flex') {
       renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
     }
@@ -4268,7 +5157,12 @@ function renderAprobacionesPendientes() {
       if (!p) return;
       const res = await updateUser(p.targetId, p.data, session.username);
       if (res.error) alert(res.error);
-      else { removePendingUserUpdate(pid); renderListaUsuarios(); }
+      else {
+        removePendingUserUpdate(pid);
+        renderListaUsuarios();
+        if (typeof renderMainDashboard === 'function') renderMainDashboard();
+        if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      }
     });
   });
   cont.querySelectorAll('.btn-rechazar-pend').forEach(btn => {
@@ -4389,6 +5283,7 @@ function renderListaUsuarios() {
       var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
       if (res && res.error) { alert(res.error); return; }
       renderListaUsuarios();
+      if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
       if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
         renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
       }
@@ -4504,10 +5399,10 @@ function abrirFormUsuario(userId) {
     document.getElementById('usuarioUsername').readOnly = false;
     document.getElementById('usuarioFechaAlta').value = new Date().toISOString().slice(0, 10);
     document.getElementById('usuarioPassword').required = true;
-    document.getElementById('usuarioPassword').type = 'password';
+    document.getElementById('usuarioPassword').type = 'text';
     document.getElementById('usuarioPassword').placeholder = 'Mínimo 4 caracteres';
     var toggleBtnNew = fieldPassword ? fieldPassword.querySelector('.btn-password-toggle') : null;
-    if (toggleBtnNew) toggleBtnNew.style.display = '';
+    if (toggleBtnNew) toggleBtnNew.style.display = 'none';
     var fieldPasswordConfirm = document.getElementById('fieldPasswordConfirm');
     if (fieldPasswordConfirm) {
       fieldPasswordConfirm.style.display = 'block';
@@ -4707,11 +5602,16 @@ function abrirFormUsuarioNuevoConResponsable(responsableUsername) {
 function mostrarPanelAdmin(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   const panelUsuarios = document.getElementById('panelUsuarios');
+  const panelUsuariosTabla = document.getElementById('panelUsuariosTabla');
   const panelConvenios = document.getElementById('panelConvenios');
   const panelEconomia = document.getElementById('panelEconomia');
   const panelSolicitudes = document.getElementById('panelSolicitudesGraficas');
   const panelReset = document.getElementById('panelReset');
   if (panelUsuarios) panelUsuarios.style.display = tab === 'usuarios' ? '' : 'none';
+  if (panelUsuariosTabla) {
+    panelUsuariosTabla.style.display = tab === 'usuarios-tabla' ? '' : 'none';
+    if (tab === 'usuarios-tabla' && typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
+  }
   if (panelConvenios) panelConvenios.style.display = tab === 'convenios' ? '' : 'none';
   if (panelEconomia) {
     panelEconomia.style.display = tab === 'economia' ? '' : 'none';
@@ -4722,28 +5622,144 @@ function mostrarPanelAdmin(tab) {
     if (tab === 'solicitudes-graficas') renderSolicitudesGraficas();
   }
   if (panelReset) panelReset.style.display = tab === 'reset' ? '' : 'none';
+  const panelIndicadores = document.getElementById('panelIndicadores');
+  if (panelIndicadores) {
+    panelIndicadores.style.display = tab === 'indicadores' ? '' : 'none';
+    if (tab === 'indicadores' && typeof renderIndicadoresPanel === 'function') renderIndicadoresPanel();
+  }
+}
+
+function renderTablaUsuarios() {
+  const tbody = document.getElementById('listaUsuariosTabla');
+  if (!tbody) return;
+  const users = typeof getUsers === 'function' ? getUsers() : [];
+  tbody.innerHTML = '';
+  users.forEach(function (u) {
+    const tr = document.createElement('tr');
+    const username = (u.username || '').toString().trim() || '—';
+    const nombre = (u.nombre || '').toString().trim() || '—';
+    const rol = (u.rol || 'mecanico').toString();
+    tr.innerHTML = '<td>' + escapeHtml(username) + '</td><td>' + escapeHtml(nombre) + '</td><td>••••</td><td>' + escapeHtml(rol) + '</td><td><button type="button" class="btn btn-outline btn-sm btn-cambiar-password" data-user-id="' + escapeHtml(u.id) + '" data-username="' + escapeHtml(username) + '">Cambiar contraseña</button> <button type="button" class="btn btn-outline btn-sm btn-editar-usuario-tabla" data-user-id="' + escapeHtml(u.id) + '">Editar</button></td>';
+    tr.querySelector('.btn-cambiar-password').addEventListener('click', function () {
+      var id = this.getAttribute('data-user-id');
+      var uname = this.getAttribute('data-username');
+      if (typeof abrirModalCambiarPassword === 'function') abrirModalCambiarPassword(id, uname);
+    });
+    tr.querySelector('.btn-editar-usuario-tabla').addEventListener('click', function () {
+      var id = this.getAttribute('data-user-id');
+      if (typeof abrirFormUsuario === 'function') abrirFormUsuario(id);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function abrirModalCambiarPassword(userId, username) {
+  var modal = document.getElementById('modalCambiarPassword');
+  if (!modal) return;
+  document.getElementById('cambiarPasswordUserId').value = userId || '';
+  var userEl = document.getElementById('modalCambiarPasswordUsuario');
+  if (userEl) userEl.textContent = 'Usuario: ' + (username || '—');
+  document.getElementById('cambiarPasswordNueva').value = '';
+  document.getElementById('cambiarPasswordConfirmar').value = '';
+  var errEl = document.getElementById('modalCambiarPasswordError');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalCambiarPassword() {
+  var modal = document.getElementById('modalCambiarPassword');
+  if (modal) { modal.classList.remove('active'); modal.setAttribute('aria-hidden', 'true'); }
+}
+
+function buildConveniosFichas() {
+  const grid = document.getElementById('conveniosFichasGrid');
+  if (!grid) return;
+  const convenios = getConvenios();
+  grid.innerHTML = '';
+  convenios.forEach(function (c) {
+    const logoUrl = typeof getLogoUrlForConvenio === 'function' ? getLogoUrlForConvenio(c.nombre) : null;
+    const fontName = typeof getFontForConvenio === 'function' ? getFontForConvenio(c.nombre) : null;
+    const fontFamily = fontName
+      ? (fontName.indexOf(' ') >= 0 ? "'" + fontName.replace(/'/g, "\\'") + "', " : fontName + ", ") + "sans-serif"
+      : '';
+    const fechaStr = c.fechaAcuerdo ? new Date(c.fechaAcuerdo).toLocaleDateString('es-ES') : '—';
+    const inicial = escapeHtml((c.nombre || 'N/A').charAt(0));
+    const card = document.createElement('div');
+    card.className = 'convenio-ficha';
+    card.setAttribute('data-convenio-id', c.id);
+    card.innerHTML =
+      '<div class="convenio-ficha-inner">' +
+      '<div class="convenio-ficha-logo-wrap">' +
+      (logoUrl
+        ? '<img class="convenio-ficha-logo" src="' + escapeHtmlAttr(logoUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\';var s=this.nextElementSibling;if(s)s.style.display=\'flex\'">' +
+          '<span class="convenio-ficha-logo-placeholder" style="display:none">' + inicial + '</span>'
+        : '<span class="convenio-ficha-logo-placeholder">' + inicial + '</span>') +
+      '</div>' +
+      '<div class="convenio-ficha-overlay">' +
+      '<h5 class="convenio-ficha-nombre">' + escapeHtml(c.nombre) + '</h5>' +
+      '<p class="convenio-ficha-descuento">Descuento: <strong>' + (c.descuento || 0) + '%</strong></p>' +
+      (c.privado ? '<p class="convenio-ficha-privado">Privado</p>' : '') +
+      '<p class="convenio-ficha-fecha">Fecha acordado: ' + escapeHtml(fechaStr) + '</p>' +
+      (c.acordadoPorTaller ? '<p class="convenio-ficha-acordado">Taller: ' + escapeHtml(c.acordadoPorTaller) + '</p>' : '') +
+      (c.acordadoPorEmpresa ? '<p class="convenio-ficha-acordado">Empresa: ' + escapeHtml(c.acordadoPorEmpresa) + '</p>' : '') +
+      (function () { var url = ''; var label = 'Ver acuerdo'; var base = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/'; if (c.acuerdoArchivoDataUrl) { url = c.acuerdoArchivoDataUrl; label = c.acuerdoArchivoNombre ? 'Ver acuerdo (' + c.acuerdoArchivoNombre + ')' : 'Ver acuerdo'; } else if (c.acuerdoArchivo) { url = base + encodeURIComponent(c.acuerdoArchivo); } if (url) return '<p class="convenio-ficha-acuerdo">Acuerdo: <a href="' + escapeHtmlAttr(url) + '" target="_blank" rel="noopener" class="convenio-ficha-acuerdo-link" onclick="event.stopPropagation();event.preventDefault();window.open(this.href)">' + escapeHtml(label) + '</a></p>'; return '<p class="convenio-ficha-acuerdo">Acuerdo: —</p>'; })() +
+      '</div></div>';
+    if (fontFamily) {
+      var overlay = card.querySelector('.convenio-ficha-overlay');
+      if (overlay) overlay.style.fontFamily = fontFamily;
+    }
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('title', 'Clic para editar convenio');
+    card.addEventListener('click', function () { abrirFormConvenio(c.id); });
+    card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirFormConvenio(c.id); } });
+    grid.appendChild(card);
+  });
 }
 
 function renderListaConvenios() {
-  const tbody = document.getElementById('listaConvenios');
-  if (!tbody) return;
-  const convenios = getConvenios();
-  tbody.innerHTML = '';
-  convenios.forEach(c => {
-    const tr = document.createElement('tr');
-    const fechaStr = c.fechaAcuerdo ? new Date(c.fechaAcuerdo).toLocaleDateString('es-ES') : '—';
-    tr.innerHTML = `
-      <td>${escapeHtml(c.nombre)}</td>
-      <td>${c.descuento}%</td>
-      <td>${c.privado ? 'Sí' : '—'}</td>
-      <td>${fechaStr}</td>
-      <td>${escapeHtml(c.acordadoPorTaller || '—')}</td>
-      <td>${escapeHtml(c.acordadoPorEmpresa || '—')}</td>
-      <td><button type="button" class="btn btn-outline btn-sm" data-edit-convenio="${c.id}">Editar</button></td>
-    `;
-    tr.querySelector('[data-edit-convenio]').addEventListener('click', () => abrirFormConvenio(c.id));
-    tbody.appendChild(tr);
-  });
+  var grid = document.getElementById('conveniosFichasGrid');
+  if (grid) {
+    if (typeof cargarListadoLogosConvenios === 'function') {
+      cargarListadoLogosConvenios(function () {
+        buildConveniosFichas();
+      });
+    } else {
+      buildConveniosFichas();
+    }
+  }
+  if (typeof renderConveniosEmpleadosYPlacas === 'function') renderConveniosEmpleadosYPlacas();
+}
+
+function renderConveniosEmpleadosYPlacas() {
+  if (typeof getConveniosEmpleados !== 'function' || typeof getConveniosPlacas !== 'function') return;
+  var tbodyEmp = document.getElementById('listaConveniosEmpleados');
+  var tbodyPlacas1 = document.getElementById('listaConveniosPlacas1');
+  var tbodyPlacas2 = document.getElementById('listaConveniosPlacas2');
+  if (tbodyEmp) {
+    var empleados = getConveniosEmpleados();
+    tbodyEmp.innerHTML = empleados.map(function (e) {
+      return '<tr><td>' + escapeHtml(e.empleado || '—') + '</td><td>' + escapeHtml(e.empresa || '—') + '</td></tr>';
+    }).join('');
+  }
+  if (tbodyPlacas1 && tbodyPlacas2) {
+    var placas = getConveniosPlacas();
+    var placas8 = placas.filter(function (p) {
+      var n = parseInt((p.placa || '').trim(), 10);
+      return n >= 801 && n <= 899;
+    });
+    var placas7 = placas.filter(function (p) {
+      var n = parseInt((p.placa || '').trim(), 10);
+      return n >= 701 && n <= 717;
+    });
+    tbodyPlacas1.innerHTML = placas8.map(function (p) {
+      return '<tr><td>' + escapeHtml(p.placa || '—') + '</td><td>' + escapeHtml(p.empleado || '—') + '</td></tr>';
+    }).join('');
+    tbodyPlacas2.innerHTML = placas7.map(function (p) {
+      return '<tr><td>' + escapeHtml(p.placa || '—') + '</td><td>' + escapeHtml(p.empleado || '—') + '</td></tr>';
+    }).join('');
+  }
 }
 
 function escapeHtml(s) {
@@ -4753,10 +5769,25 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+var _convenioPendingAcuerdoDataUrl = null;
+var _convenioPendingAcuerdoNombre = null;
+var _convenioAcuerdoQuitado = false;
+
 function abrirFormConvenio(convenioId) {
   const modal = document.getElementById('modalConvenio');
   const titulo = document.getElementById('modalConvenioTitulo');
   const form = document.getElementById('formConvenio');
+  const fileInput = document.getElementById('convenioAcuerdoArchivoFile');
+  const nombreInput = document.getElementById('convenioAcuerdoArchivoNombre');
+  const actualEl = document.getElementById('convenioAcuerdoActual');
+  const quitarBtn = document.getElementById('convenioAcuerdoQuitar');
+  _convenioPendingAcuerdoDataUrl = null;
+  _convenioPendingAcuerdoNombre = null;
+  _convenioAcuerdoQuitado = false;
+  if (fileInput) fileInput.value = '';
+  if (nombreInput) nombreInput.value = '';
+  if (actualEl) { actualEl.style.display = 'none'; actualEl.textContent = ''; }
+  if (quitarBtn) quitarBtn.style.display = 'none';
   if (convenioId) {
     const convenios = getConvenios();
     const c = convenios.find(x => x.id === convenioId);
@@ -4770,6 +5801,13 @@ function abrirFormConvenio(convenioId) {
     document.getElementById('convenioAcordadoEmpresa').value = c.acordadoPorEmpresa || '';
     const privEl = document.getElementById('convenioPrivado');
     if (privEl) privEl.checked = !!c.privado;
+    if (c.acuerdoArchivoDataUrl) {
+      if (actualEl) { actualEl.textContent = 'Documento actual: ' + (c.acuerdoArchivoNombre || 'acuerdo'); actualEl.style.display = 'block'; }
+      if (quitarBtn) quitarBtn.style.display = 'inline-block';
+      if (nombreInput) nombreInput.placeholder = 'Dejar vacío para mantener el actual';
+    } else if (c.acuerdoArchivo) {
+      if (nombreInput) nombreInput.value = c.acuerdoArchivo;
+    }
   } else {
     titulo.textContent = 'Nuevo convenio';
     form.reset();
@@ -4791,6 +5829,10 @@ function guardarConvenio(e) {
   const acordadoPorTaller = document.getElementById('convenioAcordadoTaller').value.trim();
   const acordadoPorEmpresa = document.getElementById('convenioAcordadoEmpresa').value.trim();
   const privado = document.getElementById('convenioPrivado') ? document.getElementById('convenioPrivado').checked : false;
+  const acuerdoNombreRepo = (document.getElementById('convenioAcuerdoArchivoNombre') && document.getElementById('convenioAcuerdoArchivoNombre').value.trim()) || '';
+  var acuerdoDataUrl = _convenioPendingAcuerdoDataUrl;
+  var acuerdoNombre = _convenioPendingAcuerdoNombre;
+  if (_convenioAcuerdoQuitado) { acuerdoDataUrl = null; acuerdoNombre = null; }
 
   if (id) {
     const idx = convenios.findIndex(c => c.id === id);
@@ -4801,12 +5843,25 @@ function guardarConvenio(e) {
     convenios[idx].acordadoPorTaller = acordadoPorTaller;
     convenios[idx].acordadoPorEmpresa = acordadoPorEmpresa;
     convenios[idx].privado = privado;
+    if (_convenioAcuerdoQuitado) {
+      convenios[idx].acuerdoArchivoDataUrl = undefined;
+      convenios[idx].acuerdoArchivoNombre = undefined;
+      convenios[idx].acuerdoArchivo = undefined;
+    } else if (acuerdoDataUrl) {
+      convenios[idx].acuerdoArchivoDataUrl = acuerdoDataUrl;
+      convenios[idx].acuerdoArchivoNombre = acuerdoNombre || null;
+      convenios[idx].acuerdoArchivo = undefined;
+    } else if (acuerdoNombreRepo) {
+      convenios[idx].acuerdoArchivo = acuerdoNombreRepo;
+      convenios[idx].acuerdoArchivoDataUrl = undefined;
+      convenios[idx].acuerdoArchivoNombre = undefined;
+    }
   } else {
     if (convenios.some(c => c.nombre.toLowerCase() === nombre.toLowerCase())) {
       alert('Ya existe un convenio con esa empresa.');
       return;
     }
-    convenios.push({
+    var nuevo = {
       id: generateConvenioId(),
       nombre,
       descuento,
@@ -4814,8 +5869,14 @@ function guardarConvenio(e) {
       acordadoPorTaller,
       acordadoPorEmpresa,
       privado,
-    });
+    };
+    if (acuerdoDataUrl) { nuevo.acuerdoArchivoDataUrl = acuerdoDataUrl; nuevo.acuerdoArchivoNombre = acuerdoNombre || null; }
+    else if (acuerdoNombreRepo) nuevo.acuerdoArchivo = acuerdoNombreRepo;
+    convenios.push(nuevo);
   }
+  _convenioPendingAcuerdoDataUrl = null;
+  _convenioPendingAcuerdoNombre = null;
+  _convenioAcuerdoQuitado = false;
   saveConvenios(convenios);
   document.getElementById('modalConvenio').classList.remove('active');
   renderListaConvenios();
@@ -5081,8 +6142,8 @@ function vincularMiHistorial() {
   [buscar, tipo, desde, hasta].forEach(el => { if (el) el.addEventListener('input', renderLista); if (el) el.addEventListener('change', renderLista); });
 }
 
-// Contenido en bucle: vídeos aprobados por admin + archivos de input/CONTENT
-const CONTENT_LOOP_BASE = 'input/CONTENT/';
+// Contenido en bucle: vídeos aprobados por admin + archivos de input/CONTENT/Tapes
+const CONTENT_LOOP_BASE = 'input/CONTENT/Tapes/';
 function initContentLoop() {
   const wrap = document.getElementById('contentLoopWrap');
   const videoEl = document.getElementById('contentLoopVideo');
@@ -5199,6 +6260,71 @@ function initContentLoop() {
     setLoadTimeout();
     videoEl.load();
     videoEl.play().then(function () { clearLoadTimeout(); hideFallbackAndOverlay(); }).catch(function () { clearLoadTimeout(); showPlayOverlay(); setTimeout(playNext, 500); });
+  }
+  playNext();
+}
+
+/** Banner de vídeo en bucle en la pantalla Gestión (input/CONTENT/Tapes) */
+function initGestionBannerLoop() {
+  const wrap = document.getElementById('gestionBannerWrap');
+  const videoEl = document.getElementById('gestionBannerVideo');
+  const fallback = document.getElementById('gestionBannerFallback');
+  if (!wrap || !videoEl) return;
+  function showFallback() {
+    if (videoEl) videoEl.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+  }
+  function hideFallback() {
+    if (fallback) fallback.style.display = 'none';
+    if (videoEl) videoEl.style.display = '';
+  }
+  var sources = getContentLoopSources();
+  if (!sources || sources.length === 0) {
+    showFallback();
+    return;
+  }
+  if (!videoEl.dataset.gestionBannerListeners) {
+    videoEl.dataset.gestionBannerListeners = '1';
+    videoEl.addEventListener('error', showFallback);
+    videoEl.addEventListener('loadeddata', hideFallback);
+  }
+  if (sources.length === 1) {
+    var item = sources[0];
+    var src = item.type === 'url' ? item.src : CONTENT_LOOP_BASE + (item.path || 'video.mp4');
+    var firstSource = videoEl.querySelector('source');
+    if (firstSource) firstSource.setAttribute('src', src); else videoEl.innerHTML = '<source src="' + src + '" type="video/mp4">';
+    videoEl.loop = true;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.setAttribute('playsinline', '');
+    videoEl.setAttribute('webkit-playsinline', '');
+    videoEl.style.display = '';
+    hideFallback();
+    videoEl.load();
+    videoEl.play().catch(showFallback);
+    return;
+  }
+  var idx = 0;
+  function playNext() {
+    var item = sources[idx % sources.length];
+    idx += 1;
+    var src = item.type === 'url' ? item.src : CONTENT_LOOP_BASE + (item.path || '');
+    var mime = 'mp4';
+    if (item.type === 'path' && item.path) {
+      var ext = (item.path.match(/\.(\w+)$/i) || [])[1] || 'mp4';
+      mime = ext.toLowerCase() === 'webm' ? 'webm' : ext.toLowerCase() === 'ogg' ? 'ogg' : ext.toLowerCase() === 'mov' ? 'quicktime' : 'mp4';
+    }
+    videoEl.innerHTML = '<source src="' + src + '" type="video/' + mime + '">';
+    videoEl.loop = false;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.setAttribute('playsinline', '');
+    videoEl.setAttribute('webkit-playsinline', '');
+    videoEl.onended = playNext;
+    videoEl.style.display = '';
+    hideFallback();
+    videoEl.load();
+    videoEl.play().catch(showFallback);
   }
   playNext();
 }
@@ -5540,16 +6666,27 @@ function init() {
   vincularSubirVideo();
   vincularModalVerVideoSolicitud();
   vincularNormativas();
+  vincularVacantes();
+  vincularBandejaEntrada();
   vincularFichaTrabajador();
   vincularMiHistorial();
   vincularResultadosCalculadora();
+  vincularModalFotosTuneo();
+  vincularTunnings();
   vincularIndicadoresHistorial();
   vincularPasswordToggle();
   vincularCambiarUsuario();
   vincularPersonalizacion();
+  if (typeof cargarMatriculasDesdePlates === 'function') cargarMatriculasDesdePlates();
+  if (typeof cargarListadoPlacas === 'function') {
+    cargarListadoPlacas(function () {
+      if (typeof aplicarEstiloPlacaActual === 'function') aplicarEstiloPlacaActual();
+    });
+  }
   mostrarPaso('inicio');
   actualizarVista();
   initContentLoop();
+  initGestionBannerLoop();
   initScrollbarVisible();
   // Refresco de indicadores al cargar (por si el panel se pinta después)
   requestAnimationFrame(function () { renderStatsVehiculo(''); });
@@ -5575,6 +6712,9 @@ function init() {
       renderListaUsuarios();
     }
     if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+    // Actualizar KPIs de empleados en dashboard principal y economía
+    if (typeof renderMainDashboard === 'function') renderMainDashboard();
+    if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
   }
 
   window.addEventListener('storage', function (e) {
@@ -5622,28 +6762,45 @@ function cargarConvenios() {
   });
 }
 
+/** Devuelve lista única de nombres de modelo para autocompletado: VEHICULOS_DB + nombres en BBDD clientes */
+function getNombresModeloParaAutocompletado() {
+  const set = new Set();
+  if (typeof VEHICULOS_DB !== 'undefined') {
+    VEHICULOS_DB.forEach(function (v) {
+      if (v.modelo) set.add(String(v.modelo).trim());
+      if (v.nombreIC) set.add(String(v.nombreIC).trim());
+    });
+  }
+  if (typeof getClientesBBDD === 'function') {
+    try {
+      getClientesBBDD().forEach(function (c) {
+        if (c.nombreVehiculo && String(c.nombreVehiculo).trim()) set.add(String(c.nombreVehiculo).trim());
+        if (c.codigoVehiculo && String(c.codigoVehiculo).trim()) set.add(String(c.codigoVehiculo).trim());
+      });
+    } catch (e) {}
+  }
+  return Array.from(set).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+}
+
+function fillNuevoVehiculoModeloDatalist() {
+  const list = document.getElementById('nuevoVehiculoModeloList');
+  if (!list) return;
+  list.innerHTML = '';
+  getNombresModeloParaAutocompletado().forEach(function (nombre) {
+    const o = document.createElement('option');
+    o.value = nombre;
+    list.appendChild(o);
+  });
+}
+
 function cargarVehiculos() {
   const ordenados = [...VEHICULOS_DB].sort((a, b) => (a.nombreIC || a.modelo || '').localeCompare(b.nombreIC || b.modelo || '', 'es'));
   el.modelo.innerHTML = '';
-  const nuevoSelect = document.getElementById('nuevoVehiculoModelo');
-  if (nuevoSelect) {
-    nuevoSelect.innerHTML = '';
-    var optVac = document.createElement('option');
-    optVac.value = '';
-    optVac.textContent = '— Selecciona modelo —';
-    nuevoSelect.appendChild(optVac);
-  }
   ordenados.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.modelo;
     opt.textContent = v.nombreIC;
     el.modelo.appendChild(opt);
-    if (nuevoSelect) {
-      const o = document.createElement('option');
-      o.value = v.modelo;
-      o.textContent = v.nombreIC;
-      nuevoSelect.appendChild(o);
-    }
   });
   const nombreICList = document.getElementById('nombreICList');
   if (nombreICList) {
@@ -5654,7 +6811,92 @@ function cargarVehiculos() {
       nombreICList.appendChild(o);
     });
   }
+  fillNuevoVehiculoModeloDatalist();
   cambiarModelo();
+}
+
+/** Colores por estilo (banner y body) para forzar con inline y que siempre se vea el cambio. */
+var _plateStyleThemes = [
+  { name: 'matricula-plate-yankton', bannerBg: 'linear-gradient(180deg, #9b1f1f 0%, #b82424 30%, #a01c1c 100%)', bannerColor: '#fff', bodyBg: 'linear-gradient(180deg, #a01c1c 0%, #8b1919 50%, #7a1515 100%)', inputColor: '#fff' },
+  { name: 'matricula-plate-europe', bannerBg: 'linear-gradient(180deg, #003399 0%, #0044bb 50%, #002d80 100%)', bannerColor: '#fff', bodyBg: 'linear-gradient(180deg, #002d80 0%, #002060 50%, #001a50 100%)', inputColor: '#fff' },
+  { name: 'matricula-plate-sport', bannerBg: 'linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)', bannerColor: '#ffcc00', bodyBg: 'linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 100%)', inputColor: '#ffcc00' }
+];
+
+/** Aplica un estilo de placa: si hay imágenes en input/CONTENT/PLATES/listado-placas.txt, una aleatoria; si no, rota entre Yankton/Europe/Sport. Placeholder desde matriculas.txt. */
+function aplicarEstiloPlacaAleatorio() {
+  var useImage = typeof hasPlateImagesFromRepo === 'function' && hasPlateImagesFromRepo();
+  var imgUrl = useImage && typeof getPlateImageAleatorio === 'function' ? getPlateImageAleatorio() : null;
+  var ejemplosFallback = ['HRUA9940', 'ABC1234', 'LSMD2025', 'TUNE001', 'REP7890', 'SALT01', 'CAFE42', 'LSCM99', 'GTARP1', 'BENNY7'];
+  var placeholder = typeof getMatriculaAleatoria === 'function' ? getMatriculaAleatoria() : ejemplosFallback[Math.floor(Math.random() * ejemplosFallback.length)];
+
+  function applyToWrap(wrap) {
+    if (!wrap) return;
+    var base = (wrap.getAttribute('class') || '').replace(/\s*matricula-plate-(yankton|europe|sport|from-repo)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (imgUrl) {
+      wrap.setAttribute('class', (base + ' matricula-plate-from-repo').trim());
+      wrap.style.backgroundImage = 'url("' + imgUrl.replace(/"/g, '%22') + '")';
+      wrap.style.backgroundSize = 'cover';
+      wrap.style.backgroundPosition = 'center';
+      var banner = wrap.querySelector('.matricula-plate-banner');
+      var body = wrap.querySelector('.matricula-plate-body');
+      if (banner) { banner.style.background = 'transparent'; banner.style.color = '#fff'; }
+      if (body) { body.style.background = 'transparent'; body.style.color = ''; }
+      var input = wrap.querySelector('.matricula-plate-input');
+      if (input) { input.style.color = '#1a1a1a'; input.style.setProperty('--placeholder-color', 'rgba(0,0,0,0.4)'); }
+    } else {
+      _plateStyleIndex = (_plateStyleIndex + 1) % _plateStyleThemes.length;
+      var theme = _plateStyleThemes[_plateStyleIndex];
+      wrap.setAttribute('class', (base + ' ' + theme.name).trim());
+      wrap.style.backgroundImage = '';
+      wrap.style.backgroundSize = '';
+      wrap.style.backgroundPosition = '';
+      var banner = wrap.querySelector('.matricula-plate-banner');
+      var body = wrap.querySelector('.matricula-plate-body');
+      if (banner) { banner.style.background = theme.bannerBg; banner.style.color = theme.bannerColor; }
+      if (body) { body.style.background = theme.bodyBg; body.style.color = theme.inputColor || ''; }
+      var input = wrap.querySelector('.matricula-plate-input');
+      if (input) { input.style.color = theme.inputColor || ''; input.style.setProperty('--placeholder-color', theme.inputColor === '#ffcc00' ? 'rgba(255,204,0,0.6)' : ''); }
+    }
+  }
+  var wrapPaso = document.getElementById('matriculaPlateWrap');
+  if (wrapPaso) applyToWrap(wrapPaso);
+  document.querySelectorAll('.matricula-plate-wrap').forEach(applyToWrap);
+  var inputMat = document.getElementById('matricula');
+  if (inputMat) inputMat.setAttribute('placeholder', placeholder);
+}
+
+/** Reaplica el estilo de placa actual: imagen aleatoria del repo PLATES si hay listado; si no, el tema actual (Yankton/Europe/Sport). */
+function aplicarEstiloPlacaActual() {
+  var useImage = typeof hasPlateImagesFromRepo === 'function' && hasPlateImagesFromRepo();
+  var imgUrl = useImage && typeof getPlateImageAleatorio === 'function' ? getPlateImageAleatorio() : null;
+  var theme = _plateStyleThemes[_plateStyleIndex % _plateStyleThemes.length];
+  var wraps = document.querySelectorAll('.matricula-plate-wrap');
+  wraps.forEach(function (wrap) {
+    var base = (wrap.getAttribute('class') || '').replace(/\s*matricula-plate-(yankton|europe|sport|from-repo)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (imgUrl) {
+      wrap.setAttribute('class', (base + ' matricula-plate-from-repo').trim());
+      wrap.style.backgroundImage = 'url("' + imgUrl.replace(/"/g, '%22') + '")';
+      wrap.style.backgroundSize = 'cover';
+      wrap.style.backgroundPosition = 'center';
+      var banner = wrap.querySelector('.matricula-plate-banner');
+      var body = wrap.querySelector('.matricula-plate-body');
+      if (banner) { banner.style.background = 'transparent'; banner.style.color = '#fff'; }
+      if (body) { body.style.background = 'transparent'; body.style.color = ''; }
+      var input = wrap.querySelector('.matricula-plate-input');
+      if (input) { input.style.color = '#1a1a1a'; input.style.setProperty('--placeholder-color', 'rgba(0,0,0,0.4)'); }
+    } else {
+      wrap.setAttribute('class', (base + ' ' + theme.name).trim());
+      wrap.style.backgroundImage = '';
+      wrap.style.backgroundSize = '';
+      wrap.style.backgroundPosition = '';
+      var banner = wrap.querySelector('.matricula-plate-banner');
+      var body = wrap.querySelector('.matricula-plate-body');
+      if (banner) { banner.style.background = theme.bannerBg; banner.style.color = theme.bannerColor; }
+      if (body) { body.style.background = theme.bodyBg; if (theme.inputColor) body.style.color = theme.inputColor; else body.style.color = ''; }
+      var input = wrap.querySelector('.matricula-plate-input');
+      if (input && theme.inputColor) input.style.color = theme.inputColor; else if (input) input.style.color = '';
+    }
+  });
 }
 
 function mostrarPaso(paso) {
@@ -5707,9 +6949,12 @@ function mostrarPaso(paso) {
     if (el.matricula) el.matricula.value = '';
     cargarMatriculasGuardadas();
     renderUltimasReparaciones();
+    aplicarEstiloPlacaAleatorio();
+    setTimeout(function () { aplicarEstiloPlacaActual(); }, 150);
   }
-  if (paso === 'calculadora' && matriculaActual) {
-    renderStatsVehiculo(matriculaActual);
+  if (paso === 'calculadora') {
+    aplicarEstiloPlacaAleatorio();
+    if (matriculaActual) renderStatsVehiculo(matriculaActual);
   }
 }
 
@@ -5734,11 +6979,22 @@ function aplicarVisibilidadPorTipo() {
 
 function aplicarRegistroACalculadora(reg) {
   if (!reg) return;
-  if (el.modelo) {
-    el.modelo.value = reg.modelo || '';
+  if (el.modelo && (reg.modelo || '').trim()) {
+    var modeloVal = (reg.modelo || '').trim();
+    var hasOption = false;
+    for (var i = 0; i < el.modelo.options.length; i++) {
+      if ((el.modelo.options[i].value || '').trim() === modeloVal) { hasOption = true; break; }
+    }
+    if (!hasOption) {
+      var opt = document.createElement('option');
+      opt.value = modeloVal;
+      opt.textContent = reg.nombreIC || modeloVal;
+      el.modelo.appendChild(opt);
+    }
+    el.modelo.value = modeloVal;
     cambiarModelo();
   }
-  if (el.nombreIC) el.nombreIC.value = reg.nombreIC || (vehiculoActual ? vehiculoActual.nombreIC : '');
+  if (el.nombreIC) el.nombreIC.value = reg.nombreIC || (vehiculoActual ? vehiculoActual.nombreIC : '') || (reg.modelo || '');
   var placaVal = (reg.placaServicio || (reg.placaPolicial && reg.placaPolicial !== '-' ? reg.placaPolicial : '') || '').toString().trim();
   var esPolicia = placaVal !== '' && placaVal !== '-';
   if (el.negocios) {
@@ -5787,6 +7043,7 @@ function vincularPasos() {
       tipoServicio = tipos[i];
       document.getElementById('nuevoVehiculoWrap').style.display = 'none';
       if (!matriculaActual || !matriculaActual.trim()) {
+        aplicarEstiloPlacaAleatorio();
         mostrarPaso('matricula');
         return;
       }
@@ -5861,8 +7118,9 @@ function vincularPasos() {
             nvConvenio.appendChild(o);
           });
         }
-        document.getElementById('nuevoVehiculoModelo').value = '';
-        document.getElementById('nuevoVehiculoNombreIC').value = '';
+        fillNuevoVehiculoModeloDatalist();
+        var inputModelo = document.getElementById('nuevoVehiculoModeloNombre');
+        if (inputModelo) inputModelo.value = '';
         if (nvConvenio) nvConvenio.value = '';
         document.getElementById('nuevoVehiculoPlacaServicio').value = '';
       }
@@ -5871,15 +7129,20 @@ function vincularPasos() {
 
   if (btnGuardarNuevo) {
     btnGuardarNuevo.addEventListener('click', () => {
-      const modelo = document.getElementById('nuevoVehiculoModelo').value;
-      if (!modelo) {
-        alert('Selecciona un modelo del catálogo.');
+      const inputModeloNombre = document.getElementById('nuevoVehiculoModeloNombre');
+      const modeloNombre = (inputModeloNombre && inputModeloNombre.value || '').trim();
+      if (!modeloNombre) {
+        alert('Escribe el nombre del modelo del vehículo.');
         return;
       }
-      const nombreIC = (document.getElementById('nuevoVehiculoNombreIC').value || '').trim();
       const convenio = (document.getElementById('nuevoVehiculoConvenio').value || '').trim() || 'N/A';
       const placaServicio = (document.getElementById('nuevoVehiculoPlacaServicio').value || '').trim();
-      const v = VEHICULOS_DB.find(x => x.modelo === modelo);
+      const v = typeof VEHICULOS_DB !== 'undefined' && VEHICULOS_DB.find(function (x) {
+        return (x.modelo && String(x.modelo).toLowerCase() === modeloNombre.toLowerCase()) ||
+          (x.nombreIC && String(x.nombreIC).toLowerCase() === modeloNombre.toLowerCase());
+      });
+      const modelo = v ? v.modelo : modeloNombre;
+      const nombreIC = v ? (v.nombreIC || modeloNombre) : modeloNombre;
       const categoria = v ? v.categoria : '';
       const session = getSession();
       const puedeGestionarBBDD = hasPermission(session, 'gestionarRegistroClientes');
@@ -5887,7 +7150,7 @@ function vincularPasos() {
         matricula: matriculaActual,
         placaPolicial: placaServicio || '-',
         codigoVehiculo: modelo,
-        nombreVehiculo: nombreIC || (v ? v.nombreIC : ''),
+        nombreVehiculo: nombreIC,
         categoria,
         convenio,
       };
@@ -5895,17 +7158,18 @@ function vincularPasos() {
         addOrUpdateClienteBBDD({ ...dataCliente, interacciones: 0, totalInvertido: 0 });
       } else if (typeof addPendiente === 'function') {
         addPendiente(dataCliente, session ? (session.nombre || session.username) : '');
+        if (typeof updateBadgePendientesRegistro === 'function') updateBadgePendientesRegistro();
       }
       if (typeof guardarVehiculoRegistro === 'function') {
         guardarVehiculoRegistro({
           matricula: matriculaActual,
-          modelo,
-          nombreIC: nombreIC || (v ? v.nombreIC : ''),
+          modelo: modelo,
+          nombreIC: nombreIC,
           convenio,
           placaServicio,
         });
       }
-      const reg = { matricula: matriculaActual, modelo, nombreIC: nombreIC || (v ? v.nombreIC : ''), convenio, placaServicio };
+      const reg = { matricula: matriculaActual, modelo: modelo, nombreIC: nombreIC, convenio, placaServicio };
       aplicarRegistroACalculadora(reg);
       if (el.matriculaCalc) el.matriculaCalc.value = matriculaActual;
       document.getElementById('nuevoVehiculoWrap').style.display = 'none';
@@ -6037,11 +7301,11 @@ function calcularPrecios() {
 
   let reparacion = 0;
   if (el.reparacion && el.reparacion.checked) {
-    var precioChasis = typeof getPrecioVentaChasis === 'function' ? getPrecioVentaChasis() : 30;
-    var precioEsenciales = typeof getPrecioVentaEsenciales === 'function' ? getPrecioVentaEsenciales() : 65;
     if (kitActivo) {
-      reparacion = 10 * precioChasis + 6 * precioEsenciales;
+      reparacion = 0;
     } else {
+      var precioChasis = typeof getPrecioVentaChasis === 'function' ? getPrecioVentaChasis() : 30;
+      var precioEsenciales = typeof getPrecioVentaEsenciales === 'function' ? getPrecioVentaEsenciales() : 65;
       const ch = parseInt(el.partesChasis?.value, 10) || 0;
       const es = parseInt(el.partesEsenciales?.value, 10) || 0;
       reparacion = ch * precioChasis + es * precioEsenciales;
@@ -6124,11 +7388,15 @@ function actualizarVista() {
     const base = vehiculoActual ? vehiculoActual.precioBase : (CONFIG.baseReparacionSinModelo || 50000);
     var ch = parseInt(el.partesChasis?.value, 10) || 0;
     var es = parseInt(el.partesEsenciales?.value, 10) || 0;
-    if (p.kitActivo) { ch = 10; es = 6; }
-    const costCh = Math.floor(base * CONFIG.factorChasis * ch);
-    const costEs = Math.floor(base * CONFIG.factorEsencial * es);
-    if (v.presupuestoChasis) v.presupuestoChasis.textContent = '$' + costCh.toLocaleString('es-ES') + (p.kitActivo ? ' (todo)' : '');
-    if (v.presupuestoEsenciales) v.presupuestoEsenciales.textContent = '$' + costEs.toLocaleString('es-ES') + (p.kitActivo ? ' (todo)' : '');
+    if (p.kitActivo) {
+      if (v.presupuestoChasis) v.presupuestoChasis.textContent = 'Incluido en kit';
+      if (v.presupuestoEsenciales) v.presupuestoEsenciales.textContent = 'Incluido en kit';
+    } else {
+      const costCh = Math.floor(base * CONFIG.factorChasis * ch);
+      const costEs = Math.floor(base * CONFIG.factorEsencial * es);
+      if (v.presupuestoChasis) v.presupuestoChasis.textContent = '$' + costCh.toLocaleString('es-ES');
+      if (v.presupuestoEsenciales) v.presupuestoEsenciales.textContent = '$' + costEs.toLocaleString('es-ES');
+    }
   } else {
     if (v.presupuestoChasis) v.presupuestoChasis.textContent = '$0';
     if (v.presupuestoEsenciales) v.presupuestoEsenciales.textContent = '$0';
@@ -6367,7 +7635,140 @@ function enviarRegistroServicioADiscord(servicio) {
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
 
-function registrarTuneo() {
+/** Abre el modal de fotos antes/después para registrar un tuneo. */
+function abrirModalFotosTuneo() {
+  const p = calcularPrecios();
+  const tieneTuneo = p.motor > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  if (!tieneTuneo) {
+    alert('No hay ningún tuneo seleccionado.');
+    return;
+  }
+  const mat = (matriculaActual || (el.matriculaCalc && el.matriculaCalc.value) || (el.matricula && el.matricula.value) || '').trim();
+  if (!mat) {
+    alert('Introduce la matrícula del vehículo.');
+    return;
+  }
+  var inputAntes = document.getElementById('tuneoFotoAntes');
+  var inputDespues = document.getElementById('tuneoFotoDespues');
+  var checkConfirmo = document.getElementById('tuneoConfirmoFotosVehiculo');
+  if (inputAntes) inputAntes.value = '';
+  if (inputDespues) inputDespues.value = '';
+  if (checkConfirmo) checkConfirmo.checked = false;
+  var previewAntes = document.getElementById('tuneoPreviewAntes');
+  var previewDespues = document.getElementById('tuneoPreviewDespues');
+  if (previewAntes) previewAntes.innerHTML = '';
+  if (previewDespues) previewDespues.innerHTML = '';
+  var modal = document.getElementById('modalFotosTuneo');
+  if (modal) modal.classList.add('active');
+}
+
+/** Vincula el modal de fotos del tuneo: envío, cancelar y preview. */
+function vincularModalFotosTuneo() {
+  var modal = document.getElementById('modalFotosTuneo');
+  var btnCancelar = document.getElementById('modalFotosTuneoCancelar');
+  var btnEnviar = document.getElementById('modalFotosTuneoEnviar');
+  var inputAntes = document.getElementById('tuneoFotoAntes');
+  var inputDespues = document.getElementById('tuneoFotoDespues');
+  var checkConfirmo = document.getElementById('tuneoConfirmoFotosVehiculo');
+  var previewAntes = document.getElementById('tuneoPreviewAntes');
+  var previewDespues = document.getElementById('tuneoPreviewDespues');
+
+  function cerrarModal() {
+    if (modal) modal.classList.remove('active');
+  }
+  function leerArchivoComoBase64(file, cb) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+      cb('');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () { cb(reader.result || ''); };
+    reader.onerror = function () { cb(''); };
+    reader.readAsDataURL(file);
+  }
+  if (inputAntes) {
+    inputAntes.addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!previewAntes) return;
+      previewAntes.innerHTML = '';
+      if (file && file.type && file.type.indexOf('image/') === 0) {
+        var img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = 'Antes';
+        img.className = 'tuneo-foto-preview-img';
+        img.onload = function () { URL.revokeObjectURL(img.src); };
+        previewAntes.appendChild(img);
+      }
+    });
+  }
+  if (inputDespues) {
+    inputDespues.addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!previewDespues) return;
+      previewDespues.innerHTML = '';
+      if (file && file.type && file.type.indexOf('image/') === 0) {
+        var img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = 'Después';
+        img.className = 'tuneo-foto-preview-img';
+        img.onload = function () { URL.revokeObjectURL(img.src); };
+        previewDespues.appendChild(img);
+      }
+    });
+  }
+  if (btnEnviar) {
+    btnEnviar.addEventListener('click', function () {
+      var fileAntes = inputAntes && inputAntes.files && inputAntes.files[0];
+      var fileDespues = inputDespues && inputDespues.files && inputDespues.files[0];
+      if (!fileAntes || !fileDespues) {
+        alert('Para registrar con fotos debes subir la foto ANTES y la foto DESPUÉS del tuneo. Usa «Registrar sin fotos» si no quieres subirlas ahora.');
+        return;
+      }
+      if (fileAntes.type.indexOf('image/') !== 0 || fileDespues.type.indexOf('image/') !== 0) {
+        alert('Solo se permiten imágenes (JPG, PNG, etc.).');
+        return;
+      }
+      if (!checkConfirmo || !checkConfirmo.checked) {
+        alert('Debes confirmar que las fotos son del vehículo tuneado.');
+        return;
+      }
+      leerArchivoComoBase64(fileAntes, function (base64Antes) {
+        leerArchivoComoBase64(fileDespues, function (base64Despues) {
+          if (!base64Antes || !base64Despues) {
+            alert('No se pudieron leer las imágenes.');
+            return;
+          }
+          registrarTuneo(base64Antes, base64Despues);
+          cerrarModal();
+        });
+      });
+    });
+  }
+  var btnSinFotos = document.getElementById('modalFotosTuneoSinFotos');
+  if (btnSinFotos) {
+    btnSinFotos.addEventListener('click', function () {
+      registrarTuneo(null, null);
+      cerrarModal();
+    });
+  }
+  if (btnCancelar) btnCancelar.addEventListener('click', cerrarModal);
+  if (modal) {
+    var closeBtn = document.getElementById('modalFotosTuneoClose');
+    var backdrop = document.getElementById('modalFotosTuneoBackdrop');
+    if (closeBtn) closeBtn.addEventListener('click', cerrarModal);
+    if (backdrop) backdrop.addEventListener('click', cerrarModal);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) cerrarModal();
+    });
+  }
+}
+
+/**
+ * Registra el tuneo. Si se pasan fotoAntes y fotoDespues (base64), se guardan en TUNNINGS.
+ * @param {string} [fotoAntes] - Base64 de la foto antes del tuneo
+ * @param {string} [fotoDespues] - Base64 de la foto después del tuneo
+ */
+function registrarTuneo(fotoAntes, fotoDespues) {
   const p = calcularPrecios();
   const tieneTuneo = p.motor > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
   if (!tieneTuneo) {
@@ -6400,10 +7801,22 @@ function registrarTuneo() {
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
   var nombreReg = (typeof getSession === 'function' && getSession()) ? (getSession().nombre || getSession().username || '') : '';
   if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreReg);
+  if (fotoAntes && fotoDespues && typeof addTunning === 'function') {
+    addTunning({
+      matricula: mat,
+      modelo: servicio.modelo,
+      fecha: servicio.fecha,
+      usuario: nombreReg || (session ? session.username : ''),
+      fotoAntes: fotoAntes,
+      fotoDespues: fotoDespues,
+      importe: p.total,
+      modificacion: modLabel,
+    });
+  }
   cargarMatriculasGuardadas();
   actualizarModalRegistro();
   renderStatsVehiculo(mat);
-  renderStatsVehiculo(''); // actualizar también estadísticas generales del taller (por si se ve el panel)
+  renderStatsVehiculo('');
   renderListaResultadosCalculadora();
   abrirPantallaResultadosCalculadora();
   alert('Tuneo registrado correctamente.');
@@ -6453,6 +7866,16 @@ function registrarReparacion() {
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
   var nombreReg = (typeof getSession === 'function' && getSession()) ? (getSession().nombre || getSession().username || '') : '';
   if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreReg);
+  if (session && typeof hasPermission === 'function' && !hasPermission(session, 'gestionarUsuarios')) {
+    addAvisoBandejaEntrada(session.username, {
+      tipo: 'reparacion_registrada',
+      mensaje: 'Tienes pendiente colgar las fotos de este tuneo',
+      matricula: mat,
+      modelo: servicio.modelo,
+      importe: p.total,
+      modificacion: servicio.modificacion || 'Reparación',
+    });
+  }
   cargarMatriculasGuardadas();
   actualizarModalRegistro();
   renderStatsVehiculo(mat);
@@ -6558,12 +7981,247 @@ function abrirPantallaResultadosCalculadora() {
   ocultarAppBodyMostrarSecundaria('pantallaResultadosCalculadora');
 }
 
+var _avisoBandejaActual = null;
+
+function abrirModalAvisoFotosTuneo(aviso) {
+  _avisoBandejaActual = aviso || null;
+  var resumen = document.getElementById('modalAvisoFotosTuneoResumen');
+  if (resumen && aviso) {
+    resumen.innerHTML =
+      '<p><strong>Matrícula:</strong> ' + escapeHtml(aviso.matricula || '—') + '</p>' +
+      '<p><strong>Modelo:</strong> ' + escapeHtml(aviso.modelo || '—') + '</p>' +
+      '<p><strong>Importe:</strong> ' + (aviso.importe != null ? (aviso.importe).toLocaleString('es-ES') + '€' : '—') + '</p>' +
+      '<p><strong>Modificación:</strong> ' + escapeHtml(aviso.modificacion || 'Reparación') + '</p>';
+  }
+  var inputAntes = document.getElementById('avisoFotoAntes');
+  var inputDespues = document.getElementById('avisoFotoDespues');
+  var check = document.getElementById('avisoConfirmoFotosVehiculo');
+  if (inputAntes) inputAntes.value = '';
+  if (inputDespues) inputDespues.value = '';
+  if (check) check.checked = false;
+  var prevAntes = document.getElementById('avisoPreviewAntes');
+  var prevDespues = document.getElementById('avisoPreviewDespues');
+  if (prevAntes) prevAntes.innerHTML = '';
+  if (prevDespues) prevDespues.innerHTML = '';
+  var modal = document.getElementById('modalAvisoFotosTuneo');
+  if (modal) modal.classList.add('active');
+}
+
+function cerrarModalAvisoFotosTuneo() {
+  _avisoBandejaActual = null;
+  var modal = document.getElementById('modalAvisoFotosTuneo');
+  if (modal) modal.classList.remove('active');
+}
+
+function renderListaBandejaEntrada() {
+  const cont = document.getElementById('listaBandejaEntrada');
+  if (!cont) return;
+  const session = typeof getSession === 'function' ? getSession() : null;
+  const username = session ? session.username : null;
+  const avisos = username && typeof getBandejaEntrada === 'function' ? getBandejaEntrada(username) : [];
+  if (avisos.length === 0) {
+    cont.innerHTML = '<p class="bandeja-entrada-empty">No tienes avisos. Al registrar una reparación se añadirá un aviso aquí.</p>';
+    return;
+  }
+  cont.innerHTML = avisos.map(function (a) {
+    const fechaStr = a.fecha ? new Date(a.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    const detalle = a.tipo === 'reparacion_registrada'
+      ? (a.matricula || '') + (a.modelo ? ' · ' + a.modelo : '') + (a.importe != null ? ' — ' + (a.importe).toLocaleString('es-ES') + '€' : '')
+      : (a.mensaje || '');
+    const completado = !!a.completado;
+    const clickable = !completado ? ' bandeja-entrada-item-clickable' : '';
+    const completadoBadge = completado ? ' <span class="bandeja-entrada-completado">Completado</span>' : '';
+    return (
+      '<div class="bandeja-entrada-item' + clickable + '" data-id="' + escapeHtmlAttr(a.id || '') + '" data-completado="' + (completado ? '1' : '0') + '">' +
+        '<div class="bandeja-entrada-item-header">' +
+          '<span class="bandeja-entrada-item-tipo">' + escapeHtml(a.mensaje || 'Aviso') + completadoBadge + '</span>' +
+          '<span class="bandeja-entrada-item-fecha">' + escapeHtml(fechaStr) + '</span>' +
+        '</div>' +
+        '<div class="bandeja-entrada-item-body">' + escapeHtml(detalle) + '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  cont.querySelectorAll('.bandeja-entrada-item-clickable').forEach(function (item) {
+    var avisoId = item.getAttribute('data-id');
+    if (!avisoId || !username) return;
+    var avisosList = getBandejaEntrada(username);
+    var aviso = avisosList.find(function (a) { return a.id === avisoId; });
+    if (!aviso || aviso.completado) return;
+    item.addEventListener('click', function () {
+      abrirModalAvisoFotosTuneo(aviso);
+    });
+  });
+}
+
+function vincularModalAvisoFotosTuneo() {
+  var modal = document.getElementById('modalAvisoFotosTuneo');
+  var btnCancelar = document.getElementById('modalAvisoFotosTuneoCancelar');
+  var btnEnviar = document.getElementById('modalAvisoFotosTuneoEnviar');
+  var inputAntes = document.getElementById('avisoFotoAntes');
+  var inputDespues = document.getElementById('avisoFotoDespues');
+  var check = document.getElementById('avisoConfirmoFotosVehiculo');
+  var previewAntes = document.getElementById('avisoPreviewAntes');
+  var previewDespues = document.getElementById('avisoPreviewDespues');
+
+  function leerArchivoComoBase64(file, cb) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) { cb(''); return; }
+    var reader = new FileReader();
+    reader.onload = function () { cb(reader.result || ''); };
+    reader.onerror = function () { cb(''); };
+    reader.readAsDataURL(file);
+  }
+
+  if (inputAntes) inputAntes.addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    if (!previewAntes) return;
+    previewAntes.innerHTML = '';
+    if (file && file.type && file.type.indexOf('image/') === 0) {
+      var img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.alt = 'Antes';
+      img.className = 'tuneo-foto-preview-img';
+      img.onload = function () { URL.revokeObjectURL(img.src); };
+      previewAntes.appendChild(img);
+    }
+  });
+  if (inputDespues) inputDespues.addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    if (!previewDespues) return;
+    previewDespues.innerHTML = '';
+    if (file && file.type && file.type.indexOf('image/') === 0) {
+      var img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.alt = 'Después';
+      img.className = 'tuneo-foto-preview-img';
+      img.onload = function () { URL.revokeObjectURL(img.src); };
+      previewDespues.appendChild(img);
+    }
+  });
+
+  if (btnEnviar) btnEnviar.addEventListener('click', function () {
+    var aviso = _avisoBandejaActual;
+    if (!aviso) { cerrarModalAvisoFotosTuneo(); return; }
+    var fileAntes = inputAntes && inputAntes.files && inputAntes.files[0];
+    var fileDespues = inputDespues && inputDespues.files && inputDespues.files[0];
+    if (!fileAntes || !fileDespues) {
+      alert('Debes subir la foto ANTES y la foto DESPUÉS del tuneo.');
+      return;
+    }
+    if (fileAntes.type.indexOf('image/') !== 0 || fileDespues.type.indexOf('image/') !== 0) {
+      alert('Solo se permiten imágenes (JPG, PNG, etc.).');
+      return;
+    }
+    if (!check || !check.checked) {
+      alert('Debes confirmar que las fotos son del vehículo.');
+      return;
+    }
+    leerArchivoComoBase64(fileAntes, function (base64Antes) {
+      leerArchivoComoBase64(fileDespues, function (base64Despues) {
+        if (!base64Antes || !base64Despues) {
+          alert('No se pudieron leer las imágenes.');
+          return;
+        }
+        var session = typeof getSession === 'function' ? getSession() : null;
+        var nombreReg = session ? (session.nombre || session.username || '') : '';
+        if (typeof addTunning === 'function') {
+          addTunning({
+            matricula: aviso.matricula || '',
+            modelo: aviso.modelo || '',
+            fecha: aviso.fecha || new Date().toISOString(),
+            usuario: nombreReg,
+            fotoAntes: base64Antes,
+            fotoDespues: base64Despues,
+            importe: aviso.importe,
+            modificacion: aviso.modificacion || 'Reparación',
+          });
+        }
+        if (session && session.username && typeof updateAvisoBandejaEntrada === 'function') {
+          updateAvisoBandejaEntrada(session.username, aviso.id, { completado: true });
+        }
+        cerrarModalAvisoFotosTuneo();
+        if (typeof renderListaBandejaEntrada === 'function') renderListaBandejaEntrada();
+        if (typeof renderTunningsGallery === 'function') renderTunningsGallery();
+        alert('Fotos subidas correctamente. El aviso se ha marcado como completado.');
+      });
+    });
+  });
+
+  if (btnCancelar) btnCancelar.addEventListener('click', cerrarModalAvisoFotosTuneo);
+  var closeBtn = document.getElementById('modalAvisoFotosTuneoClose');
+  var backdrop = document.getElementById('modalAvisoFotosTuneoBackdrop');
+  if (closeBtn) closeBtn.addEventListener('click', cerrarModalAvisoFotosTuneo);
+  if (backdrop) backdrop.addEventListener('click', cerrarModalAvisoFotosTuneo);
+  if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) cerrarModalAvisoFotosTuneo(); });
+}
+
+function vincularBandejaEntrada() {
+  const btn = document.getElementById('btnBandejaEntrada');
+  const btnHome = document.getElementById('btnBandejaEntradaHome');
+  if (btn) btn.addEventListener('click', function () {
+    if (typeof renderListaBandejaEntrada === 'function') renderListaBandejaEntrada();
+    if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+    if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaBandejaEntrada');
+  });
+  if (btnHome) btnHome.addEventListener('click', irAPantallaPrincipal);
+  vincularModalAvisoFotosTuneo();
+}
+
 function vincularResultadosCalculadora() {
   const btn = document.getElementById('btnResultadosCalculadora');
   const pantalla = document.getElementById('pantallaResultadosCalculadora');
   const btnHome = document.getElementById('btnResultadosHome');
   const principal = document.getElementById('pantallaPrincipal');
   if (btn) btn.addEventListener('click', () => { renderListaResultadosCalculadora(); abrirPantallaResultadosCalculadora(); });
+  if (btnHome) btnHome.addEventListener('click', irAPantallaPrincipal);
+}
+
+function renderTunningsGallery() {
+  var lista = document.getElementById('listaTunnings');
+  if (!lista) return;
+  var tunnings = typeof getTunnings === 'function' ? getTunnings() : [];
+  var session = typeof getSession === 'function' ? getSession() : null;
+  var puedeEliminar = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarUsuarios');
+  if (tunnings.length === 0) {
+    lista.innerHTML = '<p class="no-tunnings">Aún no hay fotos de tuneos. Al registrar un tuneo se piden fotos antes y después.</p>';
+    return;
+  }
+  lista.innerHTML = tunnings.map(function (t) {
+    var fechaStr = t.fecha ? new Date(t.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    var btnEliminar = puedeEliminar ? '<button type="button" class="btn btn-outline btn-sm btn-eliminar-tunning" data-id="' + escapeHtmlAttr(t.id) + '" title="Eliminar (solo admin)">Eliminar</button>' : '';
+    return (
+      '<div class="tunning-card" data-id="' + escapeHtmlAttr(t.id) + '">' +
+        '<div class="tunning-card-header">' +
+          '<span class="tunning-card-matricula">' + escapeHtml(t.matricula || '—') + '</span> ' +
+          '<span class="tunning-card-modelo">' + escapeHtml(t.modelo || '') + '</span> · ' +
+          '<span class="tunning-card-fecha">' + escapeHtml(fechaStr) + '</span> · ' +
+          escapeHtml(t.usuario || '') +
+          (btnEliminar ? ' · ' + btnEliminar : '') +
+        '</div>' +
+        '<div class="tunning-card-fotos">' +
+          '<div class="tunning-foto-wrap"><span class="tunning-foto-label">Antes</span><img src="' + escapeHtmlAttr(t.fotoAntes || '') + '" alt="Antes" class="tunning-foto-img"></div>' +
+          '<div class="tunning-foto-wrap"><span class="tunning-foto-label">Después</span><img src="' + escapeHtmlAttr(t.fotoDespues || '') + '" alt="Después" class="tunning-foto-img"></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+  lista.querySelectorAll('.btn-eliminar-tunning').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-id');
+      if (!id || !confirm('¿Eliminar esta entrada de Tunnings?')) return;
+      if (typeof removeTunning === 'function') removeTunning(id);
+      renderTunningsGallery();
+    });
+  });
+}
+
+function vincularTunnings() {
+  var btn = document.getElementById('btnTunnings');
+  var btnHome = document.getElementById('btnTunningsHome');
+  if (btn) btn.addEventListener('click', function () {
+    if (typeof renderTunningsGallery === 'function') renderTunningsGallery();
+    if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaTunnings');
+  });
   if (btnHome) btnHome.addEventListener('click', irAPantallaPrincipal);
 }
 
@@ -6618,7 +8276,7 @@ function vincularEventos() {
   el.negocios.addEventListener('input', actualizarVistaDebounced);
   if (el.descuentoPorcentaje) el.descuentoPorcentaje.addEventListener('input', actualizarDescuentoSuperior);
   if (el.descuentoPorcentaje) el.descuentoPorcentaje.addEventListener('change', actualizarDescuentoSuperior);
-  el.btnRegistrarTuneo.addEventListener('click', registrarTuneo);
+  el.btnRegistrarTuneo.addEventListener('click', abrirModalFotosTuneo);
   el.btnRegistrarReparacion.addEventListener('click', registrarReparacion);
   el.btnReset.addEventListener('click', limpiarUnidadesCalculadora);
   el.modalClose.addEventListener('click', () => el.modalRegistro.classList.remove('active'));

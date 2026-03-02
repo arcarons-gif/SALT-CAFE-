@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario de solicitud — Mecánico RP · SALTLAB CAFE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .formulario-mecanicos-page { min-height: 100vh; background: var(--bg); color: var(--text); padding: 2rem 1rem 3rem; }
+    .formulario-mecanicos-page .formulario-container { max-width: 640px; margin: 0 auto; }
+    .formulario-mecanicos-page h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .formulario-mecanicos-page .formulario-desc { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; }
+    .formulario-mecanicos-page .field { margin-bottom: 1.25rem; }
+    .formulario-mecanicos-page label { display: block; margin-bottom: 0.35rem; font-weight: 500; color: var(--text); }
+    .formulario-mecanicos-page input[type="text"],
+    .formulario-mecanicos-page input[type="email"],
+    .formulario-mecanicos-page textarea,
+    .formulario-mecanicos-page select { width: 100%; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-family: inherit; }
+    .formulario-mecanicos-page textarea { min-height: 100px; resize: vertical; }
+    .formulario-mecanicos-page .field-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .formulario-mecanicos-page .field-group .field { flex: 1; min-width: 200px; }
+    .formulario-mecanicos-page .btn-enviar { margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
+    .formulario-mecanicos-page .btn-enviar:hover { background: var(--primary-hover); }
+    .formulario-mecanicos-page .mensaje-enviado { display: none; padding: 1.5rem; background: var(--success); color: #fff; border-radius: var(--radius); margin-top: 1rem; text-align: center; }
+    .formulario-mecanicos-page .mensaje-enviado.visible { display: block; }
+    .formulario-mecanicos-page .formulario-form.hidden { display: none; }
+    .formulario-mecanicos-page .brand { text-align: center; margin-bottom: 2rem; }
+    .formulario-mecanicos-page .brand img { max-height: 48px; }
+    .formulario-mecanicos-page .required { color: var(--primary); }
+  </style>
+</head>
+<body class="formulario-mecanicos-page">
+  <div class="formulario-container">
+    <div class="brand">
+      <img src="assets/saltlab-logo.png" alt="SALTLAB CAFE" onerror="this.style.display='none'">
+      <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">SALTLAB CAFE · FLAVOR MEETS THE SEA</p>
+    </div>
+    <h1>Formulario de solicitud — Mecánico en el taller</h1>
+    <p class="formulario-desc">Si te interesa trabajar como mecánico en nuestro taller de roleplay, rellena este formulario. Las respuestas serán revisadas por el equipo. Recomendamos leer antes las normativas del taller.</p>
+
+    <div id="formularioFormWrap" class="formulario-form">
+      <form id="formularioMecanicos" action="#" method="post">
+        <div class="field">
+          <label for="fmNombre">Nombre del personaje (IC) <span class="required">*</span></label>
+          <input type="text" id="fmNombre" name="nombre" required placeholder="Nombre y apellidos de tu personaje">
+        </div>
+        <div class="field">
+          <label for="fmContacto">Nombre de usuario / contacto (OOC, para responderte) <span class="required">*</span></label>
+          <input type="text" id="fmContacto" name="contacto" required placeholder="Usuario Discord, nick del servidor, etc.">
+        </div>
+        <div class="field">
+          <label for="fmExperienciaRp">¿Cuánto tiempo llevas en el servidor / en roleplay de vehículos?</label>
+          <select id="fmExperienciaRp" name="experiencia_rp">
+            <option value="">— Selecciona —</option>
+            <option value="menos_1">Menos de 1 mes</option>
+            <option value="1_3">1–3 meses</option>
+            <option value="3_6">3–6 meses</option>
+            <option value="6_12">6–12 meses</option>
+            <option value="mas_1">Más de 1 año</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fmExperienciaMecanico">¿Has trabajado antes como mecánico en roleplay (este u otro servidor)?</label>
+          <select id="fmExperienciaMecanico" name="experiencia_mecanico">
+            <option value="">— Selecciona —</option>
+            <option value="no">No, sería mi primera vez</option>
+            <option value="otro_servidor">Sí, en otro servidor</option>
+            <option value="este_servidor">Sí, en este servidor (otro taller)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fmNormativas">¿Has leído las normativas del taller (disponibles en la app Normativas)?</label>
+          <select id="fmNormativas" name="normativas">
+            <option value="">— Selecciona —</option>
+            <option value="si">Sí, las he leído</option>
+            <option value="parcial">Parcialmente</option>
+            <option value="no">Aún no</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fmDisponibilidad">¿Qué franjas horarias sueles tener disponibles para roleplay?</label>
+          <input type="text" id="fmDisponibilidad" name="disponibilidad" placeholder="Ej: tardes entre 18:00 y 23:00, fines de semana">
+        </div>
+        <div class="field">
+          <label for="fmMotivacion">¿Por qué quieres trabajar en el taller? <span class="required">*</span></label>
+          <textarea id="fmMotivacion" name="motivacion" required placeholder="Breve explicación (rol e interés por la mecánica, reparaciones, tuneos...)"></textarea>
+        </div>
+        <div class="field">
+          <label for="fmDescripcion">Breve descripción de tu personaje (rol, profesión IC, aficiones relacionadas con coches/mecánica)</label>
+          <textarea id="fmDescripcion" name="descripcion" placeholder="Opcional"></textarea>
+        </div>
+        <div class="field">
+          <label for="fmConvenios">¿Conoces el sistema de convenios (SAPD, empresas, etc.) para reparaciones? ¿Alguna preferencia o duda?</label>
+          <textarea id="fmConvenios" name="convenios" placeholder="Opcional"></textarea>
+        </div>
+        <div class="field">
+          <label for="fmOtro">Cualquier otra información que quieras añadir</label>
+          <textarea id="fmOtro" name="otro" placeholder="Opcional"></textarea>
+        </div>
+        <button type="submit" class="btn-enviar" id="fmEnviar">Registrar respuesta y enviar</button>
+      </form>
+    </div>
+    <div id="mensajeEnviado" class="mensaje-enviado" aria-live="polite">
+      <p><strong>Gracias por tu solicitud.</strong></p>
+      <p>Tu formulario ha sido registrado. El equipo del taller revisará las solicitudes y se pondrá en contacto contigo si procede.</p>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var VACANTES_STORAGE = 'benny_vacantes_solicitudes';
+      var form = document.getElementById('formularioMecanicos');
+      var wrap = document.getElementById('formularioFormWrap');
+      var msg = document.getElementById('mensajeEnviado');
+      if (!form || !wrap || !msg) return;
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var id = Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+        var data = {
+          id: id,
+          nombre: (document.getElementById('fmNombre') && document.getElementById('fmNombre').value || '').trim(),
+          contacto: (document.getElementById('fmContacto') && document.getElementById('fmContacto').value || '').trim(),
+          experiencia_rp: (document.getElementById('fmExperienciaRp') && document.getElementById('fmExperienciaRp').value || ''),
+          experiencia_mecanico: (document.getElementById('fmExperienciaMecanico') && document.getElementById('fmExperienciaMecanico').value || ''),
+          normativas: (document.getElementById('fmNormativas') && document.getElementById('fmNormativas').value || ''),
+          disponibilidad: (document.getElementById('fmDisponibilidad') && document.getElementById('fmDisponibilidad').value || '').trim(),
+          motivacion: (document.getElementById('fmMotivacion') && document.getElementById('fmMotivacion').value || '').trim(),
+          descripcion: (document.getElementById('fmDescripcion') && document.getElementById('fmDescripcion').value || '').trim(),
+          convenios: (document.getElementById('fmConvenios') && document.getElementById('fmConvenios').value || '').trim(),
+          otro: (document.getElementById('fmOtro') && document.getElementById('fmOtro').value || '').trim(),
+          fecha: new Date().toISOString(),
+          estado: 'pendiente'
+        };
+        try {
+          var list = JSON.parse(localStorage.getItem(VACANTES_STORAGE) || '[]');
+          list.push(data);
+          localStorage.setItem(VACANTES_STORAGE, JSON.stringify(list));
+        } catch (err) {
+          console.warn('No se pudo guardar en localStorage', err);
+        }
+        wrap.classList.add('hidden');
+        msg.classList.add('visible');
+        msg.focus();
+      });
+    })();
+  </script>
+</body>
+</html>

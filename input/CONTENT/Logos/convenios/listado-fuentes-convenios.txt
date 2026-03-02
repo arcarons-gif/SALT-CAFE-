@@ -1,0 +1,30 @@
+# Fuente por convenio (clave = nombre normalizado del convenio, misma lógica que el logo).
+# Formato: clave|Nombre de la fuente
+# Si no hay línea para un convenio, se usa la fuente por defecto (Oswald).
+# Ejemplos: sapd|Oswald, bennysoriginalmotorworks|Bebas Neue
+
+sapd|Oswald
+saed|Oswald
+safd|Oswald
+sams|Oswald
+bennysoriginalmotorworks|Bebas Neue
+badulaquecentral|Oswald
+blackwoodssaloon|Oswald
+bohembeach|Oswald
+burgershot|Bebas Neue
+caferojodemadera|Oswald
+departamentodejusticia|Oswald
+helmuts|Oswald
+importgaraje|Oswald
+lsairlines|Oswald
+megamall|Oswald
+pizzeravenecia|Oswald
+ruta68|Oswald
+skylinevibes|Oswald
+sushibar|Oswald
+tallerpaleto|Oswald
+vanillaunicorn|Oswald
+weazelnews|Oswald
+weedland|Oswald
+na|Oswald
+saltlabcafe|Oswald

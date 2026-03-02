@@ -83,11 +83,11 @@
           </div>
           <div class="field">
             <label>Contraseña</label>
-            <input type="password" id="crearUsuarioPassword" required minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+            <input type="text" id="crearUsuarioPassword" required minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
           </div>
           <div class="field">
             <label>Confirmar contraseña</label>
-            <input type="password" id="crearUsuarioPasswordConfirm" required minlength="4" placeholder="Repite la contraseña" autocomplete="new-password">
+            <input type="text" id="crearUsuarioPasswordConfirm" required minlength="4" placeholder="Repite la contraseña" autocomplete="new-password">
             <span class="field-hint field-error" id="crearUsuarioPasswordConfirmError" style="display:none;"></span>
           </div>
           <p id="crearUsuarioError" class="login-error" style="display:none;"></p>
@@ -139,6 +139,13 @@
           </div>
         </div>
         <div id="normativasListWrap" class="normativas-list-wrap">
+          <div class="normativas-formulario-mecanicos-wrap" aria-label="Formulario de solicitud para mecánicos">
+            <p class="normativas-formulario-desc">¿Quieres trabajar en el taller? Los interesados pueden rellenar el formulario de solicitud (mecánica en roleplay).</p>
+            <div class="normativas-formulario-actions">
+              <a id="normativasFormularioLink" href="formulario-mecanicos.html" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Abrir formulario de mecánicos</a>
+              <button type="button" class="btn btn-outline btn-sm" id="normativasFormularioCopiar" title="Copiar enlace para compartir">Copiar enlace</button>
+            </div>
+          </div>
           <p class="normativas-list-desc">Selecciona un documento para leerlo.</p>
           <ul id="normativasList" class="normativas-list"></ul>
         </div>
@@ -279,7 +286,7 @@
       <div id="pasoMatricula" class="paso paso-matricula" style="display:none">
         <div class="paso-matricula-conjunto">
           <h2 class="paso-titulo">Introduce la matrícula del vehículo</h2>
-          <div class="matricula-plate-wrap matricula-plate-yankton" aria-label="Matrícula estilo placa GTA V">
+          <div id="matriculaPlateWrap" class="matricula-plate-wrap matricula-plate-yankton" aria-label="Matrícula estilo placa GTA V">
             <div class="matricula-plate-banner">
               <span class="matricula-plate-banner-left">LSCM</span>
               <span class="matricula-plate-banner-center">LOS SANTOS</span>
@@ -301,16 +308,12 @@
           </div>
         </div>
         <div id="nuevoVehiculoWrap" class="nuevo-vehiculo-wrap" style="display:none">
-          <p class="nuevo-vehiculo-msg">Vehículo no registrado. Rellena los datos para darlo de alta:</p>
+          <p class="nuevo-vehiculo-msg">Vehículo no registrado. Rellena los datos para darlo de alta. Si el modelo no está en la base de datos, escríbelo y se añadirá como modelo nuevo.</p>
           <div class="nuevo-vehiculo-form">
             <div class="field">
-              <label>Modelo (catálogo)</label>
-              <select id="nuevoVehiculoModelo"></select>
-            </div>
-            <div class="field">
-              <label>Nombre IC del vehículo</label>
-              <input type="text" id="nuevoVehiculoNombreIC" list="nombreICList" placeholder="Nombre in-game" autocomplete="off">
-              <datalist id="nombreICList"></datalist>
+              <label>Nombre del modelo / Nombre IC</label>
+              <input type="text" id="nuevoVehiculoModeloNombre" list="nuevoVehiculoModeloList" placeholder="Escribe el modelo (autocompletado con la base de datos)" autocomplete="off" required>
+              <datalist id="nuevoVehiculoModeloList"></datalist>
             </div>
             <div class="field">
               <label>Convenio</label>
@@ -521,7 +524,7 @@
             <span class="content-loop-play-overlay-text">Reproducir</span>
           </div>
           <div id="contentLoopFallback" class="content-loop-fallback" style="display:none">
-            <span class="content-loop-fallback-text">Vídeo no disponible. Añade <strong>video.mp4</strong> en la carpeta <strong>input/CONTENT</strong>.</span>
+            <span class="content-loop-fallback-text">Vídeo no disponible. Añade vídeos en la carpeta <strong>input/CONTENT/Tapes</strong>.</span>
           </div>
         </div>
       </div>
@@ -536,45 +539,51 @@
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
           <span class="btn-nav-ios-label">Fichajes</span>
         </button>
-        <button type="button" class="btn btn-nav-ios" id="btnFichaTrabajador" style="display:none" title="Mi ficha">
-          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-          <span class="btn-nav-ios-label">Mi ficha</span>
-        </button>
-        <button type="button" class="btn btn-nav-ios" id="btnMiHistorial" style="display:none" title="Mi historial">
-          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
-          <span class="btn-nav-ios-label">Mi historial</span>
-        </button>
         <button type="button" class="btn btn-nav-ios" id="btnSubirVideo" style="display:none" title="Subir video para el taller">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>
           <span class="btn-nav-ios-label">Subir video</span>
-        </button>
-        <button type="button" class="btn btn-nav-ios" id="btnNormativas" style="display:none" title="Normativas del taller">
-          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
-          <span class="btn-nav-ios-label">Normativas</span>
         </button>
         <button type="button" class="btn btn-nav-ios btn-nav-admin" id="btnAdminPanel" style="display:none" title="Gestión">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
           <span class="btn-nav-ios-label">Gestión</span>
         </button>
-        <button type="button" class="btn btn-nav-ios btn-nav-admin" id="btnRegistroClientes" style="display:none" title="Registro clientes">
-          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          <span class="btn-nav-ios-label">Clientes</span>
+        <button type="button" class="btn btn-nav-ios" id="btnBandejaEntrada" style="display:none" title="Bandeja de entrada">
+          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8"/><path d="M22 12h-6l-2 3h-4l-2-3H2"/></svg></span>
+          <span class="btn-nav-ios-label">Bandeja de entrada</span>
         </button>
         <button type="button" class="btn btn-nav-ios" id="btnResultadosCalculadora" title="Resultados">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></span>
           <span class="btn-nav-ios-label">Resultados</span>
         </button>
-        <button type="button" class="btn btn-nav-ios" id="btnPersonalizacion" title="Personalizar apariencia">
-          <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-          <span class="btn-nav-ios-label">Personalización</span>
-        </button>
         <button type="button" class="btn btn-nav-ios btn-nav-logout" id="btnLogout" title="Cerrar sesión">
           <span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
           <span class="btn-nav-ios-label">Salir</span>
         </button>
+        <!-- Botones solo accesibles desde Gestión (ocultos en el lateral) -->
+        <div class="nav-sidebar-gestion-only" id="navSidebarGestionOnly" aria-hidden="true" style="display:none">
+          <button type="button" class="btn btn-nav-ios" id="btnFichaTrabajador" title="Mi ficha"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="btn-nav-ios-label">Mi ficha</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnMiHistorial" title="Mi historial"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="btn-nav-ios-label">Mi historial</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnNormativas" title="Normativas"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span><span class="btn-nav-ios-label">Normativas</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnRegistroClientes" title="Clientes"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="btn-nav-ios-label">Clientes</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnVacantes" title="Vacantes"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M5 8h14"/><path d="M9 7v2"/></svg></span><span class="btn-nav-ios-label">Vacantes</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnTunnings" title="Tunnings"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6V4h8v2"/><circle cx="12" cy="13" r="1.5"/></svg></span><span class="btn-nav-ios-label">Tunnings</span></button>
+          <button type="button" class="btn btn-nav-ios" id="btnPersonalizacion" title="Personalización"><span class="btn-nav-ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="btn-nav-ios-label">Personalización</span></button>
+        </div>
       </nav>
     </aside>
     </div><!-- /app-body -->
+
+    <!-- Bandeja de entrada (solo usuarios no admin: avisos al registrar reparación) -->
+    <div id="pantallaBandejaEntrada" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnBandejaEntradaHome" aria-label="Volver">← Volver</button>
+        <h2 class="pantalla-secundaria-titulo">Bandeja de entrada</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <p class="bandeja-entrada-desc">Avisos generados al registrar reparaciones. Solo visible para empleados (no administradores).</p>
+        <div id="listaBandejaEntrada" class="lista-bandeja-entrada"></div>
+      </div>
+    </div>
 
     <!-- Pantalla RESULTADOS CALCULADORA -->
     <div id="pantallaResultadosCalculadora" class="pantalla-secundaria" style="display:none">
@@ -584,6 +593,18 @@
       </div>
       <div class="pantalla-secundaria-body scrollbar-on-scroll">
         <div id="listaResultadosCalculadora" class="lista-resultados-calculadora"></div>
+      </div>
+    </div>
+
+    <!-- Pantalla TUNNINGS (fotos antes/después de tuneos; todos pueden ver, solo admin eliminar) -->
+    <div id="pantallaTunnings" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnTunningsHome" aria-label="Ir a inicio">HOME</button>
+        <h2 class="pantalla-secundaria-titulo">TUNNINGS</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <p class="tunnings-desc">Fotos antes y después de los tuneos. Solo se permiten fotos de vehículos. Los administradores pueden eliminar fotos no válidas.</p>
+        <div id="listaTunnings" class="lista-tunnings"></div>
       </div>
     </div>
 
@@ -755,16 +776,15 @@
         </button>
         <h2 class="pantalla-secundaria-titulo">Gestión</h2>
       </div>
+      <div class="gestion-body">
       <div id="gestionMenu" class="gestion-menu">
-        <button type="button" class="gestion-card gestion-card-usuarios gestion-card-shape-circle" data-tab="usuarios" title="Empleados">
-          <span class="gestion-card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          <span class="gestion-card-label">Empleados</span>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-clientes" data-gestion-nav="clientes" id="gestionCardClientes" title="Registro de clientes">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span class="gestion-card-label">Clientes</span>
         </button>
         <button type="button" class="gestion-card gestion-card-convenios gestion-card-shape-doc" data-tab="convenios" title="Convenios">
           <span class="gestion-card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16 L2 11 L4 9 L7 9 L10 11 L10 13 L8 14 L5 14 L3 15 Z"/><path d="M22 16 L22 11 L20 9 L17 9 L14 11 L14 13 L16 14 L19 14 L21 15 Z"/><path d="M10 12 L14 12"/></svg>
           </span>
           <span class="gestion-card-label">Convenios</span>
         </button>
@@ -774,11 +794,29 @@
           </span>
           <span class="gestion-card-label">Economía</span>
         </button>
-        <button type="button" class="gestion-card gestion-card-solicitudes gestion-card-shape-frame" data-tab="solicitudes-graficas" title="Solicitudes">
+        <button type="button" class="gestion-card gestion-card-usuarios gestion-card-shape-circle" data-tab="usuarios" title="Empleados">
           <span class="gestion-card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="6" r="2.2"/><path d="M3.5 4.5h4"/><path d="M5 8.2v3.5l-1.2 1.8 1.2 1 1.2-1-1.2-1.8V8.2z"/><circle cx="18.5" cy="6" r="2.2"/><path d="M16.5 4.5h4"/><path d="M18 8.2v3.5l-1.2 1.8 1.2 1 1.2-1-1.2-1.8V8.2z"/><path d="M12 7v10M12 17l-2.5 2.2v1.2h5v-1.2l-2.5-2.2"/></svg>
           </span>
-          <span class="gestion-card-label">Solicitudes</span>
+          <span class="gestion-card-label">Empleados</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-indicadores gestion-card-shape-doc" data-tab="indicadores" title="Indicadores (solo admin)">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="3" y="4" width="18" height="4" rx="1"/></svg>
+          </span>
+          <span class="gestion-card-label">Indicadores</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-ficha" data-gestion-nav="ficha" id="gestionCardFicha" title="Mi ficha">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span class="gestion-card-label">Mi ficha</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-historial" data-gestion-nav="historial" id="gestionCardHistorial" title="Mi historial">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+          <span class="gestion-card-label">Mi historial</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-normativas" data-gestion-nav="normativas" id="gestionCardNormativas" title="Normativas">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+          <span class="gestion-card-label">Normativas</span>
         </button>
         <button type="button" class="gestion-card gestion-card-organigrama gestion-card-shape-grid" data-tab="organigrama" id="gestionCardOrganigrama" title="Organigrama">
           <span class="gestion-card-icon" aria-hidden="true">
@@ -786,12 +824,41 @@
           </span>
           <span class="gestion-card-label">Organigrama</span>
         </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-personalizacion" data-gestion-nav="personalizacion" id="gestionCardPersonalizacion" title="Personalización">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          <span class="gestion-card-label">Personalización</span>
+        </button>
         <button type="button" class="gestion-card gestion-card-reset gestion-card-shape-circle" data-tab="reset" id="gestionCardReset" title="Reset / Limpiar datos (solo admin)">
           <span class="gestion-card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           </span>
           <span class="gestion-card-label">Reset datos</span>
         </button>
+        <button type="button" class="gestion-card gestion-card-solicitudes gestion-card-shape-frame" data-tab="solicitudes-graficas" title="Solicitudes">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8"/><path d="M22 12h-6l-2 3h-4l-2-3H2"/></svg>
+          </span>
+          <span class="gestion-card-label">Solicitudes</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-tunnings" data-gestion-nav="tunnings" id="gestionCardTunnings" title="Tunnings">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6V4h8v2"/><circle cx="12" cy="13" r="1.5"/></svg></span>
+          <span class="gestion-card-label">Tunnings</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-usuarios-tabla gestion-card-shape-doc" data-tab="usuarios-tabla" title="Usuarios">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><line x1="4" y1="11" x2="20" y2="11"/><line x1="4" y1="15" x2="14" y2="15"/></svg>
+          </span>
+          <span class="gestion-card-label">Usuarios</span>
+        </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-admin gestion-card-nav-vacantes" data-gestion-nav="vacantes" id="gestionCardVacantes" title="Vacantes">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M5 8h14"/><path d="M9 7v2"/></svg></span>
+          <span class="gestion-card-label">Vacantes</span>
+        </button>
+      </div>
+      <div id="gestionBannerWrap" class="gestion-banner-wrap" aria-label="Vídeos en bucle">
+        <video id="gestionBannerVideo" class="gestion-banner-video" muted playsinline webkit-playsinline preload="metadata"></video>
+        <p id="gestionBannerFallback" class="gestion-banner-fallback" style="display:none">Vídeo no disponible. Añade vídeos en <strong>input/CONTENT/Tapes</strong>.</p>
+      </div>
       </div>
       <div id="gestionContenido" class="gestion-contenido" style="display:none">
         <div class="gestion-contenido-bar">
@@ -807,23 +874,83 @@
           <button type="button" class="btn btn-register" id="btnNuevoUsuario">+ Nuevo usuario</button>
           <div id="listaUsuarios" class="lista-usuarios"></div>
         </div>
-        <div id="panelConvenios" class="admin-panel" style="display:none">
-          <button type="button" class="btn btn-register" id="btnNuevoConvenio">+ Nuevo convenio</button>
-          <div class="convenios-table-wrap">
-            <table class="convenios-table">
+        <div id="panelUsuariosTabla" class="admin-panel" style="display:none">
+          <p class="gestion-usuarios-tabla-desc">Registro de usuarios (nombre de usuario y contraseña). Solo administradores. La contraseña no se muestra por seguridad; usa «Cambiar contraseña» para asignar una nueva.</p>
+          <button type="button" class="btn btn-register" id="btnAnadirUsuarioTabla">+ Añadir usuario</button>
+          <div class="convenios-table-wrap usuarios-tabla-wrap">
+            <table class="convenios-table usuarios-tabla">
               <thead>
                 <tr>
-                  <th>Empresa</th>
-                  <th>Convenio (%)</th>
-                  <th>Privado</th>
-                  <th>Fecha acordado</th>
-                  <th>Acordado por (taller)</th>
-                  <th>Acordado por (empresa)</th>
+                  <th>Usuario</th>
+                  <th>Nombre</th>
+                  <th>Contraseña</th>
+                  <th>Rol</th>
                   <th></th>
                 </tr>
               </thead>
-              <tbody id="listaConvenios"></tbody>
+              <tbody id="listaUsuariosTabla"></tbody>
             </table>
+          </div>
+        </div>
+        <div id="panelConvenios" class="admin-panel" style="display:none">
+          <div class="convenios-tabs">
+            <button type="button" class="convenios-tab active" data-convenios-tab="empresas" id="conveniosTabEmpresas">Empresas y descuentos</button>
+            <button type="button" class="convenios-tab" data-convenios-tab="empleados-placas" id="conveniosTabEmpleadosPlacas">Empleados y placas</button>
+          </div>
+          <div id="conveniosPanelEmpresas" class="convenios-panel-tab">
+            <button type="button" class="btn btn-register" id="btnNuevoConvenio">+ Nuevo convenio</button>
+            <div id="conveniosFichasGrid" class="convenios-fichas-grid"></div>
+          </div>
+          <div id="conveniosPanelEmpleadosPlacas" class="convenios-panel-tab" style="display:none">
+            <div class="convenios-detalle-wrap">
+              <h4 class="convenios-detalle-titulo">SAN ANDREAS DEPARTAMENTO DE JUSTICIA</h4>
+              <p class="convenios-detalle-desc">Empleado | Empresa — Para aplicar el convenio por persona, independientemente del vehículo (de faena o particular).</p>
+              <div class="convenios-table-wrap convenios-detalle-table">
+                <table class="convenios-table convenios-table-empleados">
+                  <thead>
+                    <tr>
+                      <th>Empleado</th>
+                      <th>Empresa</th>
+                    </tr>
+                  </thead>
+                  <tbody id="listaConveniosEmpleados"></tbody>
+                </table>
+              </div>
+              <h4 class="convenios-detalle-titulo">SAN ANDREAS FIRE DEPARTMENT (SAFD)</h4>
+              <p class="convenios-detalle-desc">Placa | Empleado — Para aplicar el convenio por placa de servicio.</p>
+              <div class="convenios-placas-grid">
+                <div class="convenios-placas-block">
+                  <div class="convenios-table-wrap">
+                    <table class="convenios-table convenios-table-placas">
+                      <thead>
+                        <tr>
+                          <th>Placa</th>
+                          <th>Empleado</th>
+                        </tr>
+                      </thead>
+                      <tbody id="listaConveniosPlacas1"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <h4 class="convenios-detalle-titulo">SAN ANDREAS MEDICAL SERVICES (SAMS)</h4>
+              <p class="convenios-detalle-desc">Placa | Empleado — Para aplicar el convenio por placa de servicio.</p>
+              <div class="convenios-placas-grid">
+                <div class="convenios-placas-block">
+                  <div class="convenios-table-wrap">
+                    <table class="convenios-table convenios-table-placas">
+                      <thead>
+                        <tr>
+                          <th>Placa</th>
+                          <th>Empleado</th>
+                        </tr>
+                      </thead>
+                      <tbody id="listaConveniosPlacas2"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div id="panelEconomia" class="admin-panel economia-panel" style="display:none">
@@ -995,6 +1122,54 @@
             <button type="button" class="btn btn-danger btn-reset-section" id="btnResetTodo" data-reset="todo">Reset todo (excepto usuarios y convenios)</button>
           </div>
         </div>
+        <div id="panelIndicadores" class="admin-panel indicadores-panel" style="display:none">
+          <p class="indicadores-desc">Elige el periodo y los datos a incluir. Marca los indicadores y gráficos que quieres ver. Los datos se calculan a partir del registro de servicios y de economía.</p>
+          <div class="indicadores-filtros">
+            <div class="indicadores-filtro-row">
+              <label for="indicadoresPeriodo">Periodo</label>
+              <select id="indicadoresPeriodo" class="indicadores-select">
+                <option value="1">Último mes</option>
+                <option value="3">Últimos 3 meses</option>
+                <option value="6">Últimos 6 meses</option>
+                <option value="12" selected>Últimos 12 meses</option>
+              </select>
+            </div>
+            <div class="indicadores-filtro-row indicadores-checkboxes">
+              <span class="indicadores-filtro-label">Datos a incluir</span>
+              <label><input type="checkbox" id="indicadoresIncluirRep" checked> Reparaciones</label>
+              <label><input type="checkbox" id="indicadoresIncluirTuneo" checked> Tuneos</label>
+              <label><input type="checkbox" id="indicadoresIncluirIngresos" checked> Ingresos (importes)</label>
+              <label><input type="checkbox" id="indicadoresIncluirEmpleados" checked> Por empleado</label>
+            </div>
+            <div class="indicadores-filtro-row indicadores-checkboxes">
+              <span class="indicadores-filtro-label">Gráficos predefinidos</span>
+              <label><input type="checkbox" id="indicadoresChartIngresos" checked> Ingresos por mes</label>
+              <label><input type="checkbox" id="indicadoresChartRepTuneo" checked> Reparaciones vs Tuneos por mes</label>
+              <label><input type="checkbox" id="indicadoresChartEmpleados" checked> Servicios por empleado</label>
+              <label><input type="checkbox" id="indicadoresChartGastos" checked> Gastos del taller por mes</label>
+            </div>
+            <button type="button" class="btn btn-register btn-sm" id="indicadoresGenerar">Generar indicadores</button>
+          </div>
+          <div id="indicadoresKpis" class="indicadores-kpis"></div>
+          <div id="indicadoresCharts" class="indicadores-charts">
+            <div id="indicadoresChartIngresosWrap" class="indicadores-chart-wrap" style="display:none">
+              <h4 class="indicadores-chart-title">Ingresos por mes</h4>
+              <div id="indicadoresChartIngresosContainer" class="indicadores-chart-container"></div>
+            </div>
+            <div id="indicadoresChartRepTuneoWrap" class="indicadores-chart-wrap" style="display:none">
+              <h4 class="indicadores-chart-title">Reparaciones vs Tuneos por mes</h4>
+              <div id="indicadoresChartRepTuneoContainer" class="indicadores-chart-container"></div>
+            </div>
+            <div id="indicadoresChartEmpleadosWrap" class="indicadores-chart-wrap" style="display:none">
+              <h4 class="indicadores-chart-title">Servicios por empleado</h4>
+              <div id="indicadoresChartEmpleadosContainer" class="indicadores-chart-container"></div>
+            </div>
+            <div id="indicadoresChartGastosWrap" class="indicadores-chart-wrap" style="display:none">
+              <h4 class="indicadores-chart-title">Gastos del taller por mes</h4>
+              <div id="indicadoresChartGastosContainer" class="indicadores-chart-container"></div>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1065,7 +1240,7 @@
         <button type="button" class="registro-clientes-tab" data-tab="fichas">Fichas de clientes</button>
         <button type="button" class="registro-clientes-tab" data-tab="bbdd">Tabla BBDD</button>
         <button type="button" class="registro-clientes-tab" data-tab="vetados">Vetados</button>
-        <button type="button" class="registro-clientes-tab" data-tab="pendientes">Pendientes de aprobación</button>
+        <button type="button" class="registro-clientes-tab" data-tab="pendientes">Pendientes de aprobación <span class="registro-clientes-tab-badge" id="badgePendientesRegistro" aria-hidden="true"></span></button>
       </div>
       <div class="pantalla-secundaria-body scrollbar-on-scroll">
         <div id="panelRegistroClientesMificha" class="registro-clientes-panel">
@@ -1078,39 +1253,78 @@
         </div>
         <div id="panelRegistroClientesFichas" class="registro-clientes-panel" style="display:none">
           <p class="registro-clientes-hint">Fichas de todos los clientes. Haz clic en un cliente para ver su ficha: datos, vehículos, historial de reparaciones y fotos.</p>
-          <div class="registro-clientes-filtro">
+          <div class="registro-clientes-filtro registro-clientes-filtro-row">
             <label for="filtroFichasClientes" class="sr-only">Buscar en fichas</label>
             <input type="text" id="filtroFichasClientes" class="input-buscar-registro" placeholder="Buscar por nombre, matrícula, teléfono, ID, nº socio LSCM…" autocomplete="off">
+            <button type="button" class="btn btn-register btn-sm" id="btnAnadirClienteFichas">+ Añadir cliente</button>
           </div>
           <div id="listaFichasClientes" class="fichas-clientes-grid"></div>
         </div>
         <div id="panelRegistroClientesBBDD" class="registro-clientes-panel" style="display:none">
           <p class="registro-clientes-hint">Clientes y matrículas registrados. Edita los valores y se actualizan al guardar. Las columnas de fechas, interacciones y total se rellenan al registrar servicios.</p>
-          <div class="registro-clientes-filtro">
+          <div class="registro-clientes-filtro registro-clientes-filtro-row bbdd-toolbar">
             <label for="filtroTablaBBDD" class="sr-only">Buscar en tabla BBDD</label>
             <input type="text" id="filtroTablaBBDD" class="input-buscar-registro" placeholder="Buscar por matrícula, nombre, teléfono, ID, convenio…" autocomplete="off">
+            <button type="button" class="btn btn-register btn-sm" id="btnAnadirClienteBBDD">+ Añadir cliente</button>
+            <div class="bbdd-toolbar-extra">
+              <div class="bbdd-dropdown-wrap">
+                <button type="button" class="btn btn-outline btn-sm" id="btnFiltrosBBDD" title="Filtrar por convenio, categoría…">Filtros</button>
+                <div id="panelFiltrosBBDD" class="bbdd-dropdown-panel" aria-hidden="true">
+                  <div class="bbdd-filtro-field">
+                    <label for="filtroBBDDConvenio">Convenio</label>
+                    <select id="filtroBBDDConvenio" class="bbdd-filtro-select">
+                      <option value="">Todos</option>
+                    </select>
+                  </div>
+                  <div class="bbdd-filtro-field">
+                    <label for="filtroBBDDCategoria">Categoría</label>
+                    <select id="filtroBBDDCategoria" class="bbdd-filtro-select">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="bbdd-filtro-field">
+                    <label for="filtroBBDDEstado">Estado</label>
+                    <select id="filtroBBDDEstado" class="bbdd-filtro-select">
+                      <option value="">Todos</option>
+                      <option value="moroso">Moroso</option>
+                      <option value="vetado">Vetado</option>
+                      <option value="ok">Sin marcar</option>
+                    </select>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm bbdd-filtro-limpiar" id="btnLimpiarFiltrosBBDD">Limpiar filtros</button>
+                </div>
+              </div>
+              <div class="bbdd-dropdown-wrap">
+                <button type="button" class="btn btn-outline btn-sm" id="btnColumnasBBDD" title="Mostrar u ocultar columnas">Columnas</button>
+                <div id="panelColumnasBBDD" class="bbdd-dropdown-panel bbdd-columnas-panel" aria-hidden="true">
+                  <p class="bbdd-columnas-desc">Marcar las columnas a mostrar:</p>
+                  <div id="panelColumnasBBDDLista" class="bbdd-columnas-lista"></div>
+                  <button type="button" class="btn btn-outline btn-sm" id="btnColumnasBBDDTodas">Mostrar todas</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="clientes-bbdd-table-wrap">
-            <table class="convenios-table clientes-bbdd-table">
+            <table class="convenios-table clientes-bbdd-table" id="tablaClientesBBDD">
               <thead>
                 <tr>
-                  <th>ID cliente</th>
-                  <th>Matrícula</th>
-                  <th>Nombre quien registró</th>
-                  <th>Teléfono cliente</th>
-                  <th>Nombre propietario</th>
-                  <th>Nº socio LSCM</th>
-                  <th>Placa policial</th>
-                  <th>Código vehículo</th>
-                  <th>Nombre vehículo</th>
-                  <th>Categoría</th>
-                  <th>Convenio</th>
-                  <th>Estado</th>
-                  <th>1ª interacción</th>
-                  <th>Últ. actualización</th>
-                  <th>Interacciones</th>
-                  <th>Total invertido</th>
-                  <th></th>
+                  <th data-col="idCliente">ID cliente</th>
+                  <th data-col="matricula">Matrícula</th>
+                  <th data-col="nombreRegistrador">Nombre quien registró</th>
+                  <th data-col="telefonoCliente">Teléfono cliente</th>
+                  <th data-col="nombrePropietario">Nombre propietario</th>
+                  <th data-col="numeroSocioLSCM">Nº socio LSCM</th>
+                  <th data-col="placaPolicial">Placa policial</th>
+                  <th data-col="codigoVehiculo">Código vehículo</th>
+                  <th data-col="nombreVehiculo">Nombre vehículo</th>
+                  <th data-col="categoria">Categoría</th>
+                  <th data-col="convenio">Convenio</th>
+                  <th data-col="estado">Estado</th>
+                  <th data-col="fechaPrimera">1ª interacción</th>
+                  <th data-col="fechaUltima">Últ. actualización</th>
+                  <th data-col="interacciones">Interacciones</th>
+                  <th data-col="totalInvertido">Total invertido</th>
+                  <th data-col="acciones"></th>
                 </tr>
               </thead>
               <tbody id="listaClientesBBDD"></tbody>
@@ -1141,11 +1355,56 @@
       </div>
     </div>
 
-    <!-- Modal Editar cliente (BBDD) -->
+    <!-- Pantalla Vacantes (solicitudes de trabajo, solo administradores) -->
+    <div id="pantallaVacantes" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnVacantesHome" aria-label="Volver">← Volver</button>
+        <h2 class="pantalla-secundaria-titulo">Vacantes</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <p class="vacantes-desc">Solicitudes de trabajo en el taller (formulario de mecánicos). Revisa cada solicitud completa antes de aprobar o denegar.</p>
+        <div class="vacantes-filtro">
+          <label for="filtroVacantesEstado" class="sr-only">Filtrar por estado</label>
+          <select id="filtroVacantesEstado" class="input-buscar-registro">
+            <option value="">Todas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="aprobada">Aprobadas</option>
+            <option value="denegada">Denegadas</option>
+          </select>
+          <input type="text" id="filtroVacantesBuscar" class="input-buscar-registro" placeholder="Buscar por nombre, contacto…" autocomplete="off">
+        </div>
+        <div id="listaVacantes" class="vacantes-lista"></div>
+        <p id="vacantesEmpty" class="vacantes-empty" style="display:none">No hay solicitudes registradas.</p>
+      </div>
+    </div>
+
+    <!-- Modal Detalle solicitud Vacantes (revisar antes de aprobar/denegar) -->
+    <div id="modalVacanteSolicitud" class="modal">
+      <div class="modal-backdrop" id="modalVacanteSolicitudBackdrop"></div>
+      <div class="modal-content modal-vacante-solicitud">
+        <div class="modal-header">
+          <h3>Solicitud de trabajo — <span id="modalVacanteNombre">—</span></h3>
+          <button type="button" class="modal-close" id="modalVacanteSolicitudClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body modal-body-vacante">
+          <div id="modalVacanteContenido" class="vacante-solicitud-contenido"></div>
+          <div class="vacante-solicitud-revisado-wrap">
+            <label class="vacante-revisado-label"><input type="checkbox" id="modalVacanteHeRevisado"> He abierto y revisado toda la solicitud (todos los apartados)</label>
+          </div>
+          <div id="modalVacanteAcciones" class="vacante-solicitud-acciones" style="display:none">
+            <button type="button" class="btn btn-outline btn-danger" id="modalVacanteDenegar">Denegar</button>
+            <button type="button" class="btn btn-register" id="modalVacanteAprobar">Aprobar</button>
+          </div>
+          <p id="modalVacanteEstado" class="vacante-solicitud-estado"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar / Añadir cliente (BBDD) -->
     <div id="modalEditarCliente" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Editar cliente</h3>
+          <h3 id="modalEditarClienteTitulo">Editar cliente</h3>
           <button type="button" class="modal-close" id="modalEditarClienteClose">&times;</button>
         </div>
         <form id="formEditarCliente" class="modal-body">
@@ -1228,6 +1487,38 @@
       </div>
     </div>
 
+    <!-- Modal Fotos del tuneo (antes/después) - obligatorio al registrar tuneo -->
+    <div id="modalFotosTuneo" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="modalFotosTuneoBackdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Fotos del tuneo</h3>
+          <button type="button" class="modal-close" id="modalFotosTuneoClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="tuneo-fotos-nota">Puedes subir fotos del vehículo <strong>antes</strong> y <strong>después</strong> del tuneo (opcional). Solo se permiten fotografías de vehículos; el administrador puede eliminar contenido no válido.</p>
+          <div class="field">
+            <label>Foto ANTES del tuneo</label>
+            <input type="file" id="tuneoFotoAntes" accept="image/*" capture="environment">
+            <div id="tuneoPreviewAntes" class="tuneo-foto-preview"></div>
+          </div>
+          <div class="field">
+            <label>Foto DESPUÉS del tuneo</label>
+            <input type="file" id="tuneoFotoDespues" accept="image/*" capture="environment">
+            <div id="tuneoPreviewDespues" class="tuneo-foto-preview"></div>
+          </div>
+          <div class="field checkbox-field">
+            <label><input type="checkbox" id="tuneoConfirmoFotosVehiculo"> Confirmo que las fotos son del vehículo tuneado</label>
+          </div>
+          <div class="modal-fotos-tuneo-actions">
+            <button type="button" class="btn btn-outline" id="modalFotosTuneoCancelar">Cancelar</button>
+            <button type="button" class="btn btn-outline" id="modalFotosTuneoSinFotos">Registrar sin fotos</button>
+            <button type="button" class="btn btn-register" id="modalFotosTuneoEnviar">Registrar tuneo con fotos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal resumen reparación (al clicar en última reparación) -->
     <div id="modalResumenReparacion" class="modal" aria-hidden="true" style="display:none">
       <div class="modal-backdrop" id="modalResumenReparacionBackdrop"></div>
@@ -1237,6 +1528,38 @@
           <button type="button" class="modal-close" id="modalResumenReparacionClose" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body" id="modalResumenReparacionBody"></div>
+      </div>
+    </div>
+
+    <!-- Modal Añadir fotos del tuneo (desde aviso bandeja de entrada) -->
+    <div id="modalAvisoFotosTuneo" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="modalAvisoFotosTuneoBackdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Registro de la reparación · Añadir fotos</h3>
+          <button type="button" class="modal-close" id="modalAvisoFotosTuneoClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="modalAvisoFotosTuneoResumen" class="aviso-fotos-resumen"></div>
+          <p class="aviso-fotos-hint">Añade las fotos del vehículo antes y después del tuneo para cerrar el aviso.</p>
+          <div class="field">
+            <label>Foto ANTES del tuneo</label>
+            <input type="file" id="avisoFotoAntes" accept="image/*" capture="environment">
+            <div id="avisoPreviewAntes" class="tuneo-foto-preview"></div>
+          </div>
+          <div class="field">
+            <label>Foto DESPUÉS del tuneo</label>
+            <input type="file" id="avisoFotoDespues" accept="image/*" capture="environment">
+            <div id="avisoPreviewDespues" class="tuneo-foto-preview"></div>
+          </div>
+          <div class="field checkbox-field">
+            <label><input type="checkbox" id="avisoConfirmoFotosVehiculo"> Confirmo que las fotos son del vehículo</label>
+          </div>
+          <div class="modal-fotos-tuneo-actions">
+            <button type="button" class="btn btn-outline" id="modalAvisoFotosTuneoCancelar">Cancelar</button>
+            <button type="button" class="btn btn-register" id="modalAvisoFotosTuneoEnviar">Subir fotos y cerrar aviso</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1271,6 +1594,16 @@
           </div>
           <div class="field checkbox-field">
             <label><input type="checkbox" id="convenioPrivado"> Privado (solo lo ven máximos responsables)</label>
+          </div>
+          <div class="field convenio-acuerdo-field">
+            <label>Archivo del acuerdo</label>
+            <p class="convenio-acuerdo-desc">Sube un documento (PDF, etc.) o indica el nombre del archivo si lo tienes en <code>input/CONTENT/Logos/convenios/acuerdos/</code>.</p>
+            <div class="convenio-acuerdo-inputs">
+              <input type="file" id="convenioAcuerdoArchivoFile" accept=".pdf,.doc,.docx,image/*" class="convenio-acuerdo-file">
+              <input type="text" id="convenioAcuerdoArchivoNombre" placeholder="Ej. acuerdo_SAPD.pdf (archivo en carpeta acuerdos)">
+            </div>
+            <p id="convenioAcuerdoActual" class="convenio-acuerdo-actual" style="display:none"></p>
+            <button type="button" id="convenioAcuerdoQuitar" class="btn btn-outline btn-sm convenio-acuerdo-quitar" style="display:none">Quitar archivo</button>
           </div>
           <button type="submit" class="btn btn-register">Guardar</button>
         </form>
@@ -1330,7 +1663,7 @@
               <div class="field field-password-wrap" id="fieldPasswordConfirm" style="display:none">
                 <label>Confirmar contraseña</label>
                 <div class="input-password-group">
-                  <input type="password" id="usuarioPasswordConfirm" placeholder="Repite la contraseña" autocomplete="off">
+                  <input type="text" id="usuarioPasswordConfirm" placeholder="Repite la contraseña" autocomplete="off">
                 </div>
                 <span class="field-hint" id="usuarioPasswordConfirmError" style="display:none; color: var(--danger, #c00);"></span>
               </div>
@@ -1576,6 +1909,33 @@
           <button type="button" class="modal-close" id="modalUsuarioClose">&times;</button>
         </div>
         <div class="modal-body"><p>La ficha del empleado se abre en pantalla completa.</p></div>
+      </div>
+    </div>
+
+    <div id="modalCambiarPassword" class="modal" aria-hidden="true" style="display:none">
+      <div class="modal-backdrop" id="modalCambiarPasswordBackdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalCambiarPasswordTitulo">Cambiar contraseña</h3>
+          <button type="button" class="modal-close" id="modalCambiarPasswordClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="cambiarPasswordUserId">
+          <p id="modalCambiarPasswordUsuario" class="modal-cambiar-password-user"></p>
+          <div class="field">
+            <label for="cambiarPasswordNueva">Nueva contraseña</label>
+            <input type="password" id="cambiarPasswordNueva" minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="cambiarPasswordConfirmar">Confirmar contraseña</label>
+            <input type="password" id="cambiarPasswordConfirmar" placeholder="Repite la contraseña" autocomplete="new-password">
+          </div>
+          <p id="modalCambiarPasswordError" class="modal-error" style="display:none"></p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" id="modalCambiarPasswordCancelar">Cancelar</button>
+            <button type="button" class="btn btn-register" id="modalCambiarPasswordAceptar">Aceptar</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1827,7 +2187,7 @@
   <script src="data/convenios.js"></script>
   <script src="data/fichajes.js"></script>
   <!-- Backend API: sincronización con servidor (usuarios/fichajes entre dispositivos) -->
-  <script>window.SALTLAB_API_URL = window.SALTLAB_API_URL || 'http://localhost:3001';</script>
+  <script>window.SALTLAB_API_URL = window.SALTLAB_API_URL || '';</script>
   <script src="js/backend-api.js"></script>
   <script src="data/organigrama.js"></script>
   <script src="data/content-list.js"></script>
@@ -1838,6 +2198,8 @@
   <script src="data/entregas-material.js"></script>
   <script src="data/clientes-seed.js"></script>
   <script src="data/clientes-bbdd.js"></script>
+  <script src="data/plates.js"></script>
+  <script src="data/tunnings.js"></script>
   <script src="js/organigrama.js"></script>
   <script src="app.js"></script>
 </body>
