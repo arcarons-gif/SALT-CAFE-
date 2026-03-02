@@ -13,7 +13,9 @@
   function getStoredApiUrl() {
     try {
       var url = (localStorage.getItem(API_URL_STORAGE) || '').trim();
-      return url || null;
+      if (url) return url;
+      var predefined = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').trim() : '';
+      return predefined || null;
     } catch (_) {
       return null;
     }

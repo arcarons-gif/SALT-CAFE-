@@ -1043,12 +1043,28 @@ function vincularLoginUsuariosRecientes() {
 }
 
 function arranqueAuth() {
-  if (typeof ensureSeedUsers === 'function') {
-    ensureSeedUsers().then(function () {
-      arranqueAuthContinuar();
-    });
-  } else {
+  function continuar() {
+    var el = document.getElementById('loginConectando');
+    if (el) el.style.display = 'none';
     arranqueAuthContinuar();
+  }
+  function trasBackend() {
+    if (window.backendApi && window.backendApi.getStoredApiUrl()) {
+      var el = document.getElementById('loginConectando');
+      if (el) el.style.display = 'block';
+      window.backendApi.init().then(function () {
+        continuar();
+      }).catch(function () {
+        continuar();
+      });
+    } else {
+      continuar();
+    }
+  }
+  if (typeof ensureSeedUsers === 'function') {
+    ensureSeedUsers().then(trasBackend);
+  } else {
+    trasBackend();
   }
 }
 

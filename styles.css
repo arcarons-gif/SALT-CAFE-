@@ -760,7 +760,12 @@ h1, h2, h3, h4, .paso-titulo, .btn, .header-title, .section-destacado-titulo,
   text-align: center;
   font-size: 0.9rem;
   color: var(--text-muted);
-  margin-bottom: 1.75rem;
+}
+.login-conectando {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--accent, #d4af37);
+  margin: 0.5rem 0 1rem;
   font-weight: 500;
 }
 

@@ -19,6 +19,7 @@
           <span class="login-saltlab-text hidden">SALTLAB CAFE</span>
         </div>
         <p class="login-subtitle">SALTLAB Calculator · SALTLAB CAFE</p>
+        <p id="loginConectando" class="login-conectando" style="display:none">Conectando con el servidor…</p>
         <div class="field login-usuarios-wrap">
           <label>Usuarios con sesión reciente</label>
           <select id="loginUsuariosRecientes" class="login-input">
@@ -2186,8 +2187,8 @@
   <script src="data/vehiculos-registro.js"></script>
   <script src="data/convenios.js"></script>
   <script src="data/fichajes.js"></script>
-  <!-- Backend API: sincronización con servidor (usuarios/fichajes entre dispositivos) -->
-  <script>window.SALTLAB_API_URL = window.SALTLAB_API_URL || '';</script>
+  <!-- Backend API: URL predefinida en js/config.js; los usuarios no tienen que escribirla -->
+  <script src="js/config.js"></script>
   <script src="js/backend-api.js"></script>
   <script src="data/organigrama.js"></script>
   <script src="data/content-list.js"></script>
