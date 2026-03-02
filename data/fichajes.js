@@ -33,7 +33,11 @@ function limpiarEntradasAbiertasAntiguas() {
 }
 
 function saveFichajes(arr) {
-  localStorage.setItem(FICHAJES_STORAGE, JSON.stringify(arr));
+  const list = Array.isArray(arr) ? arr : [];
+  localStorage.setItem(FICHAJES_STORAGE, JSON.stringify(list));
+  if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.syncFichajesToServer === 'function') {
+    window.backendApi.syncFichajesToServer(list);
+  }
 }
 
 /** Añade un fichaje: { id, userId, entrada (ISO), salida (ISO o null) } */

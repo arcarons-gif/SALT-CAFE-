@@ -261,7 +261,13 @@
         <div class="paso-inicio-inferior">
           <div class="ultimas-reparaciones-wrap" id="ultimasReparacionesWrap">
             <h3 class="ultimas-reparaciones-titulo">Últimas reparaciones</h3>
-            <p class="ultimas-reparaciones-hint">Haz clic en una fila para ver el resumen.</p>
+            <p class="ultimas-reparaciones-hint">Todas las reparaciones y tuneos registrados (matrícula, valor, fecha y empleado). Clic en una fila para ver el resumen.</p>
+            <div class="ultimas-reparaciones-header" aria-hidden="true">
+              <span class="ultimas-rep-placa">Matrícula</span>
+              <span class="ultimas-rep-valor">Valor factura</span>
+              <span class="ultimas-rep-fecha">Fecha y hora</span>
+              <span class="ultimas-rep-empleado">Empleado</span>
+            </div>
             <ul id="ultimasReparacionesList" class="ultimas-reparaciones-list"></ul>
           </div>
           <div id="mainDashboardWrap" class="main-dashboard-wrap main-dashboard-left">
@@ -1668,6 +1674,7 @@
                 </div>
                 <span class="field-hint" id="usuarioPasswordConfirmError" style="display:none; color: var(--danger, #c00);"></span>
               </div>
+              <p class="field-hint" id="hintPasswordBloqueada" style="display:none; color: var(--text-muted);"></p>
               <div class="field">
                 <label>Rol</label>
                 <select id="usuarioRol">

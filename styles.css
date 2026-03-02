@@ -690,6 +690,12 @@ h1, h2, h3, h4, .paso-titulo, .btn, .header-title, .section-destacado-titulo,
   background: var(--border-focus) !important;
   border-color: var(--border-focus);
 }
+.btn-outline.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: var(--text-muted);
+}
 .btn-outline.btn-danger {
   border-color: var(--primary);
   color: var(--primary);
@@ -3453,7 +3459,7 @@ button.login-recovery-link {
 .matricula-plate-from-repo .matricula-plate-banner {
   background: transparent !important;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.8);
 }
 .matricula-plate-from-repo .matricula-plate-body {
   background: transparent !important;
@@ -3466,11 +3472,21 @@ button.login-recovery-link {
 }
 .matricula-plate-from-repo .matricula-plate-display,
 .matricula-plate-from-repo .matricula-plate-input {
-  color: #1a1a1a;
-  text-shadow: 0 0 2px #fff, 0 1px 3px rgba(255,255,255,0.9);
+  color: #0d0d0d;
+  text-shadow:
+    0 0 3px #fff,
+    0 0 6px #fff,
+    0 1px 2px rgba(0,0,0,0.9),
+    0 2px 4px rgba(0,0,0,0.7),
+    1px 0 0 #fff,
+    -1px 0 0 #fff,
+    0 1px 0 #fff,
+    0 -1px 0 #fff;
+  font-weight: 800;
 }
 .matricula-plate-from-repo .matricula-plate-input::placeholder {
   color: rgba(0,0,0,0.5);
+  text-shadow: 0 0 4px #fff, 0 1px 2px rgba(0,0,0,0.6);
 }
 
 /* Estilo Yankton: placa roja completa, sin franja blanca; el número va sobre el mismo fondo */
@@ -3642,9 +3658,9 @@ button.login-recovery-link {
   min-height: 100px;
   background: transparent !important;
   border: none !important;
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: 0.4em;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: 0.35em;
   text-transform: uppercase;
   color: #1a1a1a;
   text-align: center;
@@ -3804,9 +3820,12 @@ button.login-recovery-link {
     padding: 0.4rem 0.75rem;
   }
   .matricula-plate-input {
-    font-size: 2rem;
-    letter-spacing: 0.25em;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    letter-spacing: 0.2em;
     min-height: 72px;
+  }
+  .matricula-plate-from-repo .matricula-plate-input {
+    letter-spacing: 0.2em;
   }
   .matricula-plate-body {
     min-height: 100px;
@@ -3950,39 +3969,52 @@ button.login-recovery-link {
   color: var(--text-muted);
   margin: 0 0 0.5rem 0;
 }
+.ultimas-reparaciones-header {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr 1.1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
 .ultimas-reparaciones-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text);
-  max-height: 180px;
+  max-height: 320px;
   overflow-y: auto;
 }
 .ultimas-reparaciones-list li {
   padding: 0.35rem 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 0.9fr 1.1fr 1fr;
   gap: 0.5rem;
+  align-items: center;
 }
 .ultimas-reparaciones-list li:last-child { border-bottom: none; }
 .ultimas-reparaciones-list .ultimas-rep-placa {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 .ultimas-reparaciones-list .ultimas-rep-placa .matricula-plate-mini {
-  max-width: 100px;
+  max-width: 90px;
   margin: 0;
 }
-.ultimas-reparaciones-list .ultimas-rep-info {
-  flex: 1;
-  min-width: 0;
-  padding: 0 0.5rem;
+.ultimas-reparaciones-list .ultimas-rep-valor {
+  font-weight: 500;
+  color: var(--accent);
 }
-.ultimas-reparaciones-list .ultimas-rep-fecha { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; }
-.ultimas-reparaciones-list .no-ultimas { color: var(--text-muted); font-style: italic; }
+.ultimas-reparaciones-list .ultimas-rep-fecha { color: var(--text-muted); font-size: 0.75rem; }
+.ultimas-reparaciones-list .ultimas-rep-empleado { color: var(--text); font-size: 0.8rem; }
+.ultimas-reparaciones-list .no-ultimas { color: var(--text-muted); font-style: italic; grid-column: 1 / -1; }
 .ultimas-reparaciones-list .ultimas-rep-item-clickable { cursor: pointer; transition: background 0.15s, color 0.15s; }
 .ultimas-reparaciones-list .ultimas-rep-item-clickable:hover { background: var(--accent-soft); color: var(--accent); }
 .ultimas-reparaciones-list .ultimas-rep-item-clickable:focus { outline: 2px solid var(--accent); outline-offset: 2px; }

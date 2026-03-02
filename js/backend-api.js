@@ -6,8 +6,9 @@
 (function () {
   const AUTH_STORAGE = 'benny_users';
   const FICHAJES_STORAGE = 'benny_fichajes';
+  const SERVICIOS_STORAGE = 'benny_servicios';
   const API_URL_STORAGE = 'saltlab_api_url';
-  const POLL_INTERVAL_MS = 25000;
+  const POLL_INTERVAL_MS = 5000;
   const DEFAULT_API_URL = 'http://localhost:3001';
 
   function getStoredApiUrl() {
@@ -104,6 +105,28 @@
     }
   }
 
+  async function fetchAndApplyServicios() {
+    try {
+      const servicios = await fetchJson(getBaseUrl() + '/api/servicios');
+      if (servicios.length > 0) {
+        const prev = localStorage.getItem(SERVICIOS_STORAGE);
+        const next = JSON.stringify(servicios);
+        localStorage.setItem(SERVICIOS_STORAGE, next);
+        return prev !== next;
+      }
+      var local = [];
+      try {
+        local = JSON.parse(localStorage.getItem(SERVICIOS_STORAGE) || '[]');
+      } catch (_) {}
+      if (local.length > 0) {
+        await syncServiciosToServer(local);
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   async function syncUsersToServer(users) {
     if (!Array.isArray(users)) return;
     try {
@@ -130,6 +153,19 @@
     }
   }
 
+  async function syncServiciosToServer(servicios) {
+    if (!Array.isArray(servicios)) return;
+    try {
+      await fetch(getBaseUrl() + '/api/servicios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ servicios }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo sincronizar reparaciones/servicios', e);
+    }
+  }
+
   var pollTimer = null;
 
   function startPolling() {
@@ -138,8 +174,9 @@
       if (!(await isAvailable())) return;
       const usersChanged = await fetchAndApplyUsers();
       const fichajesChanged = await fetchAndApplyFichajes();
-      if (usersChanged || fichajesChanged) {
-        window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { users: usersChanged, fichajes: fichajesChanged } }));
+      const serviciosChanged = await fetchAndApplyServicios();
+      if (usersChanged || fichajesChanged || serviciosChanged) {
+        window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { users: usersChanged, fichajes: fichajesChanged, servicios: serviciosChanged } }));
       }
     }, POLL_INTERVAL_MS);
   }
@@ -149,6 +186,7 @@
     if (!(await isAvailable())) return false;
     await fetchAndApplyUsers();
     await fetchAndApplyFichajes();
+    await fetchAndApplyServicios();
     startPolling();
     return true;
   }
@@ -162,14 +200,7 @@
     };
   }
 
-  // Envolver saveFichajes
-  var originalSaveFichajes = window.saveFichajes;
-  if (typeof originalSaveFichajes === 'function') {
-    window.saveFichajes = function (arr) {
-      originalSaveFichajes(arr);
-      syncFichajesToServer(arr);
-    };
-  }
+  // saveFichajes ya sincroniza con el servidor desde data/fichajes.js si backendApi está disponible
 
   window.backendApi = {
     getBaseUrl,
@@ -179,8 +210,10 @@
     isAvailable,
     fetchAndApplyUsers,
     fetchAndApplyFichajes,
+    fetchAndApplyServicios,
     syncUsersToServer,
     syncFichajesToServer,
+    syncServiciosToServer,
     init,
     startPolling,
   };

@@ -17,21 +17,35 @@ const CONFIG = {
   discordWebhookUrl: 'https://discord.com/api/webhooks/1477415887605731449/bV0MEE81JWF0YEVZ5RRZv1dBtGV9g7evSqTcNVuImswTJ4eu5sFeXlQB4Ek3QvMHffW5',
 };
 
-// Estado (servicios: siempre sincronizar con localStorage al cargar)
+// Estado (servicios: cache en memoria para evitar parse repetido; se invalida al guardar o al sincronizar)
 let vehiculoActual = null;
+const SERVICIOS_MAX = 1000;
+let _cachedServicios = null;
 function getRegistroServicios() {
+  if (_cachedServicios !== null) return _cachedServicios;
   try {
     const raw = localStorage.getItem('benny_servicios');
     const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
+    _cachedServicios = Array.isArray(arr) ? arr : [];
+    return _cachedServicios;
   } catch (e) {
     return [];
   }
 }
+function invalidateServiciosCache() {
+  _cachedServicios = null;
+}
 function saveRegistroServicios(arr) {
   try {
-    const list = Array.isArray(arr) ? arr : [];
+    let list = Array.isArray(arr) ? arr : [];
+    if (list.length > SERVICIOS_MAX) {
+      list = list.slice().sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); }).slice(0, SERVICIOS_MAX);
+    }
+    _cachedServicios = list;
     localStorage.setItem('benny_servicios', JSON.stringify(list));
+    if (window.backendApi && typeof window.backendApi.syncServiciosToServer === 'function') {
+      window.backendApi.syncServiciosToServer(list);
+    }
   } catch (e) {
     console.warn('saveRegistroServicios', e);
   }
@@ -52,6 +66,7 @@ function getBandejaEntrada(username) {
   const list = all[username];
   return Array.isArray(list) ? list : [];
 }
+const BANDEJA_ENTRADA_MAX = 80;
 function addAvisoBandejaEntrada(username, aviso) {
   if (!username) return;
   const all = getBandejaEntradaAll();
@@ -62,6 +77,7 @@ function addAvisoBandejaEntrada(username, aviso) {
     completado: false,
     ...aviso,
   });
+  if (list.length > BANDEJA_ENTRADA_MAX) list.length = BANDEJA_ENTRADA_MAX;
   all[username] = list;
   try {
     localStorage.setItem(BANDEJA_ENTRADA_STORAGE, JSON.stringify(all));
@@ -732,18 +748,32 @@ function vincularIndicadoresHistorial() {
 function renderUltimasReparaciones() {
   const list = document.getElementById('ultimasReparacionesList');
   if (!list) return;
-  const servicios = getRegistroServicios().slice(0, 10);
+  const todos = getRegistroServicios()
+    .slice()
+    .sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); });
+  const servicios = todos.slice(0, 50);
+  const users = typeof getUsers === 'function' ? getUsers() : [];
+  function nombreEmpleado(s) {
+    const uid = (s.empleado || s.userId || '').toString().trim();
+    if (!uid) return '—';
+    const u = users.find(function (x) { return (x.username || x.id || '') === uid; });
+    return u ? (u.nombre || u.username || uid) : uid;
+  }
   if (servicios.length === 0) {
     list.innerHTML = '<li class="no-ultimas">No hay reparaciones ni tuneos recientes.</li>';
     return;
   }
   list.innerHTML = servicios.map((s, i) => {
-    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
-    const tipo = (s.tipo || '').toLowerCase();
-    const label = tipo === 'reparación' ? 'Rep.' : tipo === 'tuneo' ? 'Tuneo' : (s.tipo || '—');
+    const fechaHora = s.fecha ? new Date(s.fecha).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
     const placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(s.matricula || '—') : '<span>' + escapeHtml((s.matricula || '—').toString()) + '</span>';
-    const imp = s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—';
-    return '<li class="ultimas-rep-item-clickable" data-ultimas-index="' + i + '" role="button" tabindex="0" title="Clic para ver resumen"><span class="ultimas-rep-placa">' + placaHtml + '</span><span class="ultimas-rep-info">' + escapeHtml(label) + ' · ' + imp + '</span><span class="ultimas-rep-fecha">' + escapeHtml(fecha) + '</span></li>';
+    const valorFactura = s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—';
+    const empleado = nombreEmpleado(s);
+    return '<li class="ultimas-rep-item-clickable" data-ultimas-index="' + i + '" role="button" tabindex="0" title="Clic para ver resumen">' +
+      '<span class="ultimas-rep-placa">' + placaHtml + '</span>' +
+      '<span class="ultimas-rep-valor">' + escapeHtml(valorFactura) + '</span>' +
+      '<span class="ultimas-rep-fecha">' + escapeHtml(fechaHora) + '</span>' +
+      '<span class="ultimas-rep-empleado">' + escapeHtml(empleado) + '</span>' +
+      '</li>';
   }).join('');
   if (!list.dataset.ultimasBound) {
     list.dataset.ultimasBound = '1';
@@ -752,8 +782,8 @@ function renderUltimasReparaciones() {
       if (!li) return;
       var idx = parseInt(li.getAttribute('data-ultimas-index'), 10);
       if (isNaN(idx)) return;
-      var todos = getRegistroServicios().slice(0, 10);
-      if (todos[idx]) mostrarResumenReparacion(todos[idx]);
+      var ordenados = getRegistroServicios().slice().sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); });
+      if (ordenados[idx]) mostrarResumenReparacion(ordenados[idx]);
     });
     list.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -1248,6 +1278,10 @@ function arranqueAuthContinuar() {
         if (errEl) { errEl.textContent = 'Indica tu nombre de usuario.'; errEl.style.display = 'block'; }
         return;
       }
+      if (typeof isUsuarioContrasenaProtegida === 'function' && isUsuarioContrasenaProtegida(username)) {
+        if (errEl) { errEl.textContent = 'No está permitido cambiar la contraseña de este usuario.'; errEl.style.display = 'block'; }
+        return;
+      }
       var res = typeof resetPasswordPorUsuario === 'function' ? await resetPasswordPorUsuario(username, nueva) : { error: 'No disponible' };
       if (res.error) {
         if (errEl) { errEl.textContent = res.error; errEl.style.display = 'block'; }
@@ -1656,7 +1690,7 @@ function getGastosPorMesesUltimosN(n) {
   return datos;
 }
 
-// ——— Indicadores (panel admin) ———
+// ——— Indicadores (panel admin): usan todos los servicios del taller, sincronizados por backend ———
 function getServiciosEnPeriodo(periodoMeses) {
   var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
   var n = Math.max(1, parseInt(periodoMeses, 10) || 12);
@@ -4364,8 +4398,14 @@ function vincularRegistroClientes() {
   var filtroPendEl = document.getElementById('filtroPendientes');
   if (filtroFichasEl) filtroFichasEl.addEventListener('input', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
   if (filtroFichasEl) filtroFichasEl.addEventListener('change', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
-  if (filtroBBDDEl) filtroBBDDEl.addEventListener('input', function () { renderTablaClientesBBDD(); });
-  if (filtroBBDDEl) filtroBBDDEl.addEventListener('change', function () { renderTablaClientesBBDD(); });
+  if (filtroBBDDEl) {
+    var debounceBBDD;
+    filtroBBDDEl.addEventListener('input', function () {
+      clearTimeout(debounceBBDD);
+      debounceBBDD = setTimeout(function () { renderTablaClientesBBDD(); }, 180);
+    });
+    filtroBBDDEl.addEventListener('change', function () { renderTablaClientesBBDD(); });
+  }
   (function () {
     var btnFiltros = document.getElementById('btnFiltrosBBDD');
     var panelFiltros = document.getElementById('panelFiltrosBBDD');
@@ -4620,6 +4660,10 @@ function vincularRegistroClientes() {
       permisos: {},
       activo: document.getElementById('usuarioActivo').checked,
     };
+    if (id && typeof isUsuarioContrasenaProtegida === 'function') {
+      var userEdit = getUsers().find(function (x) { return x.id === id; });
+      if (userEdit && isUsuarioContrasenaProtegida(userEdit.username)) delete data.password;
+    }
     if (rol === 'admin') {
       Object.keys(PERMISOS).forEach(k => { data.permisos[k] = true; });
     } else if (rol === 'responsableMecanicos') {
@@ -4956,26 +5000,39 @@ function vincularFichajes() {
     document.getElementById('panelMiFichaje').style.display = 'block';
     document.getElementById('panelFichajesTodos').style.display = 'none';
     document.getElementById('panelRendimiento').style.display = 'none';
-    if (userId) {
-      renderFichajesDashboard(userId);
-      renderListaFichajesReciente(userId);
-    }
-    actualizarLedFichaje();
-    if (isAdmin) {
-      const sel = document.getElementById('selectFichajesEmpleado');
-      if (sel) {
-        sel.innerHTML = '';
-        getUsers().filter(u => u.activo !== false).forEach(u => {
-          const o = document.createElement('option');
-          o.value = u.username;
-          o.textContent = u.nombre || u.username;
-          sel.appendChild(o);
-        });
-        sel.dispatchEvent(new Event('change'));
+    function pintarFichajes() {
+      if (userId) {
+        renderFichajesDashboard(userId);
+        renderListaFichajesReciente(userId);
       }
-      renderTablaRendimiento();
+      actualizarLedFichaje();
+      if (isAdmin) {
+        const sel = document.getElementById('selectFichajesEmpleado');
+        if (sel) {
+          sel.innerHTML = '';
+          getUsers().filter(u => u.activo !== false).forEach(u => {
+            const o = document.createElement('option');
+            o.value = u.username;
+            o.textContent = u.nombre || u.username;
+            sel.appendChild(o);
+          });
+          sel.dispatchEvent(new Event('change'));
+        }
+        renderTablaRendimiento();
+      }
     }
-    ocultarAppBodyMostrarSecundaria('pantallaFichajes');
+    if (window.backendApi && typeof window.backendApi.fetchAndApplyFichajes === 'function') {
+      window.backendApi.fetchAndApplyFichajes().then(function () {
+        pintarFichajes();
+        ocultarAppBodyMostrarSecundaria('pantallaFichajes');
+      }).catch(function () {
+        pintarFichajes();
+        ocultarAppBodyMostrarSecundaria('pantallaFichajes');
+      });
+    } else {
+      pintarFichajes();
+      ocultarAppBodyMostrarSecundaria('pantallaFichajes');
+    }
   }
 
   function volverPantallaPrincipal() {
@@ -5397,15 +5454,30 @@ function abrirFormUsuario(userId) {
     var hintAdmin = document.getElementById('hintPasswordAdmin');
     var passInput = document.getElementById('usuarioPassword');
     var toggleBtn = fieldPassword ? fieldPassword.querySelector('.btn-password-toggle') : null;
-    if (hintAdmin) hintAdmin.style.display = esAdmin ? 'block' : 'none';
-    if (passInput) {
-      passInput.type = 'text';
-      passInput.placeholder = esAdmin ? 'Escribe la nueva contraseña (mín. 4 caracteres). Vacío = no cambiar' : 'Dejar vacío para no cambiar';
+    var fieldPasswordConfirmRef = document.getElementById('fieldPasswordConfirm');
+    var contrasenaBloqueada = typeof isUsuarioContrasenaProtegida === 'function' && isUsuarioContrasenaProtegida(u.username);
+    if (contrasenaBloqueada) {
+      if (fieldPassword) fieldPassword.style.display = 'none';
+      if (fieldPasswordConfirmRef) fieldPasswordConfirmRef.style.display = 'none';
+      var hintBloqueada = document.getElementById('hintPasswordBloqueada');
+      if (hintBloqueada) { hintBloqueada.style.display = 'block'; hintBloqueada.textContent = 'La contraseña de este usuario no se puede modificar.'; }
+    } else {
+      if (fieldPassword) fieldPassword.style.display = '';
+      if (fieldPasswordConfirmRef) fieldPasswordConfirmRef.style.display = 'none';
+      var hintBloqueadaOff = document.getElementById('hintPasswordBloqueada');
+      if (hintBloqueadaOff) hintBloqueadaOff.style.display = 'none';
+      if (hintAdmin) hintAdmin.style.display = esAdmin ? 'block' : 'none';
+      if (passInput) {
+        passInput.type = 'text';
+        passInput.placeholder = esAdmin ? 'Escribe la nueva contraseña (mín. 4 caracteres). Vacío = no cambiar' : 'Dejar vacío para no cambiar';
+      }
+      if (toggleBtn) toggleBtn.style.display = 'none';
     }
-    if (toggleBtn) toggleBtn.style.display = 'none';
   } else {
     if (titulo) titulo.textContent = 'Nuevo usuario';
     if (subtitulo) subtitulo.textContent = 'Crear credenciales y permisos';
+    var hintBloqueadaNew = document.getElementById('hintPasswordBloqueada');
+    if (hintBloqueadaNew) hintBloqueadaNew.style.display = 'none';
     var fotoInicialesNew = document.getElementById('fichaEmpleadoFotoIniciales');
     var fotoImgNew = document.getElementById('fichaEmpleadoFotoImg');
     if (fotoInicialesNew) { fotoInicialesNew.style.display = ''; fotoInicialesNew.textContent = '+'; }
@@ -5655,8 +5727,13 @@ function renderTablaUsuarios() {
     const username = (u.username || '').toString().trim() || '—';
     const nombre = (u.nombre || '').toString().trim() || '—';
     const rol = (u.rol || 'mecanico').toString();
-    tr.innerHTML = '<td>' + escapeHtml(username) + '</td><td>' + escapeHtml(nombre) + '</td><td>••••</td><td>' + escapeHtml(rol) + '</td><td><button type="button" class="btn btn-outline btn-sm btn-cambiar-password" data-user-id="' + escapeHtml(u.id) + '" data-username="' + escapeHtml(username) + '">Cambiar contraseña</button> <button type="button" class="btn btn-outline btn-sm btn-editar-usuario-tabla" data-user-id="' + escapeHtml(u.id) + '">Editar</button></td>';
-    tr.querySelector('.btn-cambiar-password').addEventListener('click', function () {
+    const puedeCambiarPassword = typeof isUsuarioContrasenaProtegida === 'function' ? !isUsuarioContrasenaProtegida(username) : true;
+    const btnCambiarHtml = puedeCambiarPassword
+      ? '<button type="button" class="btn btn-outline btn-sm btn-cambiar-password" data-user-id="' + escapeHtml(u.id) + '" data-username="' + escapeHtml(username) + '">Cambiar contraseña</button>'
+      : '<span class="btn btn-outline btn-sm btn-disabled" title="No se puede cambiar la contraseña de este usuario">Cambiar contraseña</span>';
+    tr.innerHTML = '<td>' + escapeHtml(username) + '</td><td>' + escapeHtml(nombre) + '</td><td>••••</td><td>' + escapeHtml(rol) + '</td><td>' + btnCambiarHtml + ' <button type="button" class="btn btn-outline btn-sm btn-editar-usuario-tabla" data-user-id="' + escapeHtml(u.id) + '">Editar</button></td>';
+    var btnCambiar = tr.querySelector('.btn-cambiar-password');
+    if (btnCambiar) btnCambiar.addEventListener('click', function () {
       var id = this.getAttribute('data-user-id');
       var uname = this.getAttribute('data-username');
       if (typeof abrirModalCambiarPassword === 'function') abrirModalCambiarPassword(id, uname);
@@ -5670,6 +5747,10 @@ function renderTablaUsuarios() {
 }
 
 function abrirModalCambiarPassword(userId, username) {
+  if (typeof isUsuarioContrasenaProtegida === 'function' && isUsuarioContrasenaProtegida(username)) {
+    alert('No está permitido cambiar la contraseña de este usuario.');
+    return;
+  }
   var modal = document.getElementById('modalCambiarPassword');
   if (!modal) return;
   document.getElementById('cambiarPasswordUserId').value = userId || '';
@@ -6752,13 +6833,36 @@ function init() {
         if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
         if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
       }
+      if (detail.servicios) {
+        if (typeof invalidateServiciosCache === 'function') invalidateServiciosCache();
+        if (typeof paso !== 'undefined' && paso === 'inicio') {
+          registroServicios = getRegistroServicios();
+          if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+          if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
+        }
+      }
     });
   });
-  // Al volver a la pestaña, refrescar indicadores por si hubo registros en otra pestaña
+  // Al volver a la pestaña, refrescar desde el backend (fichajes y servicios de otros usuarios) y pintar
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && typeof paso !== 'undefined' && paso === 'inicio') {
+    if (document.visibilityState !== 'visible') return;
+    if (window.backendApi && window.backendApi.fetchAndApplyFichajes && window.backendApi.fetchAndApplyServicios) {
+      Promise.all([
+        window.backendApi.fetchAndApplyFichajes(),
+        window.backendApi.fetchAndApplyServicios()
+      ]).then(function () {
+        var session = getSession();
+        if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
+        if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+        registroServicios = getRegistroServicios();
+        if (typeof paso !== 'undefined' && paso === 'inicio') {
+          if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+          if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
+        }
+      }).catch(function () {});
+    } else if (typeof paso !== 'undefined' && paso === 'inicio') {
       registroServicios = getRegistroServicios();
-      requestAnimationFrame(function () { renderStatsVehiculo(''); });
+      requestAnimationFrame(function () { if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo(''); });
     }
   });
 }

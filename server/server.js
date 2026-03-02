@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3001;
 const dataDir = path.join(__dirname, 'data');
 const usersPath = path.join(dataDir, 'users.json');
 const fichajesPath = path.join(dataDir, 'fichajes.json');
+const serviciosPath = path.join(dataDir, 'servicios.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -50,6 +51,22 @@ function writeFichajes(fichajes) {
   fs.writeFileSync(fichajesPath, JSON.stringify(fichajes), 'utf8');
 }
 
+function readServicios() {
+  ensureDataDir();
+  try {
+    const raw = fs.readFileSync(serviciosPath, 'utf8');
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeServicios(servicios) {
+  ensureDataDir();
+  fs.writeFileSync(serviciosPath, JSON.stringify(servicios), 'utf8');
+}
+
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '2mb' }));
 
@@ -65,6 +82,7 @@ app.get('/', (req, res) => {
         <li><a href="/api/health">/api/health</a> – estado del servidor</li>
         <li>/api/users – GET (lista) / POST (guardar)</li>
         <li>/api/fichajes – GET (lista) / POST (guardar)</li>
+        <li>/api/servicios – GET (lista) / POST (guardar reparaciones/tuneos)</li>
       </ul>
       <p><strong>Cómo usar:</strong> abre la app (index.html con Live Server o similar) en otro puerto; ella se conectará a <code>http://localhost:3001</code>.</p>
     </body></html>
@@ -131,6 +149,31 @@ app.post('/api/fichajes', (req, res) => {
       salida: f.salida || null,
     }));
     writeFichajes(normalized);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+// ----- Servicios (reparaciones y tuneos) -----
+app.get('/api/servicios', (req, res) => {
+  try {
+    const list = readServicios();
+    res.json(list);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+app.post('/api/servicios', (req, res) => {
+  try {
+    const servicios = req.body.servicios;
+    if (!Array.isArray(servicios)) {
+      return res.status(400).json({ error: 'Se espera { servicios: [...] }' });
+    }
+    writeServicios(servicios);
     res.json({ ok: true });
   } catch (e) {
     console.error(e);

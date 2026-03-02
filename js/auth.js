@@ -17,6 +17,13 @@ const SEED_USERS = [
   { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
 ];
 
+/** Usuarios cuya contraseña no puede ser cambiada (admin y Savannah). */
+const USUARIOS_CONTRASENA_BLOQUEADA = ['admin', 'savannah'];
+function isUsuarioContrasenaProtegida(username) {
+  const u = (username || '').toString().trim().toLowerCase();
+  return USUARIOS_CONTRASENA_BLOQUEADA.includes(u);
+}
+
 // Permisos disponibles
 const PERMISOS = {
   verCalculadora: 'Usar la calculadora',
@@ -233,14 +240,16 @@ async function createUser(userData, createdBy) {
   const salt = crypto.randomUUID() + Date.now();
   const passwordHash = await hashPassword(passwordInicial, salt);
   const esAutoregistro = createdBy === 'self';
+  const rol = userData.rol || 'mecanico';
+  const permisos = (rol === 'admin') ? Object.assign({}, ADMIN_PERMISOS_FULL) : (userData.permisos || {});
   const newUser = {
     id: 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
     username: usernameTrim,
     passwordHash,
     salt,
     nombre: (userData.nombre || userData.username).trim(),
-    rol: userData.rol || 'mecanico',
-    permisos: userData.permisos || {},
+    rol: rol,
+    permisos: permisos,
     activo: true,
     cambiarPasswordObligatorio: esAutoregistro ? false : true,
     creadoPor: createdBy,
@@ -266,6 +275,9 @@ async function updateUser(userId, userData, updatedBy) {
   const idx = users.findIndex(u => u.id === userId);
   if (idx === -1) return { error: 'Usuario no encontrado' };
   const existing = users[idx];
+  if (isUsuarioContrasenaProtegida(existing.username) && userData.password && userData.password.length >= 4) {
+    delete userData.password;
+  }
   if (userData.username !== undefined) {
     const usernameTrim = (userData.username || '').toString().trim();
     if (!usernameTrim) return { error: 'El nombre de usuario no puede estar vacío' };
@@ -275,8 +287,11 @@ async function updateUser(userId, userData, updatedBy) {
     users[idx].username = usernameTrim;
   }
   if (userData.nombre) users[idx].nombre = userData.nombre.trim();
-  if (userData.rol) users[idx].rol = userData.rol;
-  if (userData.permisos !== undefined) users[idx].permisos = userData.permisos;
+  if (userData.rol) {
+    users[idx].rol = userData.rol;
+    if (userData.rol === 'admin') users[idx].permisos = Object.assign({}, ADMIN_PERMISOS_FULL);
+  }
+  if (userData.permisos !== undefined && users[idx].rol !== 'admin') users[idx].permisos = userData.permisos;
   if (userData.activo !== undefined) users[idx].activo = userData.activo;
   if (userData.fechaAlta !== undefined) users[idx].fechaAlta = userData.fechaAlta;
   if (userData.responsable !== undefined) users[idx].responsable = userData.responsable || null;
@@ -286,7 +301,7 @@ async function updateUser(userId, userData, updatedBy) {
   if (userData.equipo !== undefined) users[idx].equipo = Array.isArray(userData.equipo) ? userData.equipo : [];
   if (userData.fotosFicha !== undefined) users[idx].fotosFicha = Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [];
   if (userData.fondoFichaIndex !== undefined) users[idx].fondoFichaIndex = userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null;
-  if (userData.password && userData.password.length >= 4) {
+  if (userData.password && userData.password.length >= 4 && !isUsuarioContrasenaProtegida(users[idx].username)) {
     const salt = crypto.randomUUID() + Date.now();
     users[idx].passwordHash = await hashPassword(userData.password, salt);
     users[idx].salt = salt;
@@ -320,6 +335,9 @@ async function cambiarPassword(userId, nuevaPassword) {
   const users = getUsers();
   const idx = users.findIndex(u => u.id === userId);
   if (idx === -1) return { error: 'Usuario no encontrado' };
+  if (isUsuarioContrasenaProtegida(users[idx].username)) {
+    return { error: 'No está permitido cambiar la contraseña de este usuario.' };
+  }
   if (!nuevaPassword || nuevaPassword.length < 4) {
     return { error: 'La contraseña debe tener al menos 4 caracteres' };
   }
@@ -335,6 +353,9 @@ async function cambiarPassword(userId, nuevaPassword) {
 async function resetPasswordPorUsuario(username, nuevaPassword) {
   const u = (username || '').toString().trim();
   if (!u) return { error: 'Indica tu nombre de usuario' };
+  if (isUsuarioContrasenaProtegida(u)) {
+    return { error: 'No está permitido cambiar la contraseña de este usuario.' };
+  }
   const users = getUsers();
   const idx = users.findIndex(x => (x.username || '').toString().trim().toLowerCase() === u.toLowerCase());
   if (idx === -1) return { error: 'No existe ningún usuario con ese nombre' };
@@ -349,6 +370,7 @@ async function resetPasswordPorUsuario(username, nuevaPassword) {
   return { ok: true };
 }
 
+/** El rol 'admin' convierte al usuario en administrador (todos los permisos). */
 function hasPermission(user, permiso) {
   if (!user) return false;
   if (user.rol === 'admin') return true;
