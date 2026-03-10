@@ -3527,28 +3527,19 @@ function escapeHtmlAttr(s) {
   return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** Genera HTML de una placa: fotografía completa de la placa con el número centrado y tamaño real.
- * Si hay imágenes en el repo (listado-placas.txt), usa una como fondo con background-size: contain para ver la foto completa.
- * El número va centrado encima. Proporción real tipo placa (aprox. 520×110 mm). */
+/** Genera HTML de una placa para tablas/listas: imagen de placa + número centrado, o solo número en marco simple. */
 function buildMatriculaPlateHtml(matricula) {
   var mat = (matricula || '—').toString().trim();
   var useImage = typeof hasPlateImagesFromRepo === 'function' && hasPlateImagesFromRepo();
   var imgUrl = useImage && typeof getPlateImageAleatorio === 'function' ? getPlateImageAleatorio() : null;
   if (imgUrl) {
-    var wrapStyle = 'background-image:url(' + String(imgUrl).replace(/"/g, '%22').replace(/\\/g, '/') + ');background-size:contain;background-position:center;background-repeat:no-repeat;';
-    return '<div class="matricula-plate-full-photo matricula-plate-mini" style="' + escapeHtmlAttr(wrapStyle) + '" aria-label="Matrícula ' + escapeHtmlAttr(mat) + '">' +
-      '<span class="matricula-plate-number">' + escapeHtml(mat) + '</span></div>';
+    var srcEscaped = String(imgUrl).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<div class="matricula-plate-photo-wrap matricula-plate-mini" aria-label="Matrícula ' + escapeHtmlAttr(mat) + '">' +
+      '<img src="' + srcEscaped + '" alt="" class="matricula-plate-photo-img" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'matricula-plate-no-img\');">' +
+      '<span class="matricula-plate-number-overlay">' + escapeHtml(mat) + '</span></div>';
   }
-  var style = typeof getPlateStyleAleatorio === 'function' ? getPlateStyleAleatorio() : 'matricula-plate-yankton';
-  return '<div class="matricula-plate-wrap matricula-plate-mini ' + escapeHtmlAttr(style) + '">' +
-    '<div class="matricula-plate-banner">' +
-    '<span class="matricula-plate-banner-left">LSCM</span>' +
-    '<span class="matricula-plate-banner-center">LOS SANTOS</span>' +
-    '</div>' +
-    '<div class="matricula-plate-body matricula-plate-body-readonly">' +
-    '<span class="matricula-plate-display">' + escapeHtml(mat) + '</span>' +
-    '</div>' +
-    '</div>';
+  return '<div class="matricula-plate-mini-simple" aria-label="Matrícula ' + escapeHtmlAttr(mat) + '">' +
+    '<span class="matricula-plate-display">' + escapeHtml(mat) + '</span></div>';
 }
 
 // ========== NORMATIVAS (lectura obligatoria / consulta) ==========
@@ -7417,7 +7408,7 @@ function aplicarEstiloPlacaAleatorio() {
     if (imgUrl) {
       wrap.setAttribute('class', (base + ' matricula-plate-from-repo').trim());
       wrap.style.backgroundImage = 'url("' + imgUrl.replace(/"/g, '%22') + '")';
-      wrap.style.backgroundSize = 'cover';
+      wrap.style.backgroundSize = 'contain';
       wrap.style.backgroundPosition = 'center';
       var banner = wrap.querySelector('.matricula-plate-banner');
       var body = wrap.querySelector('.matricula-plate-body');

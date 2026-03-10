@@ -3468,29 +3468,52 @@ button.login-recovery-link {
   border-radius: 12px;
   overflow: hidden;
   box-shadow:
-    0 0 0 3px #2a2a2a,
     0 6px 24px rgba(0,0,0,0.45),
     inset 0 1px 0 rgba(255,255,255,0.15);
   position: relative;
   isolation: isolate;
 }
 
-/* Placa con imagen del repo: cuerpo siempre opaco para que no se vea el rojo del banner */
+/* Con imagen del repo: fondo oscuro para que no se vea marco blanco; la placa es la imagen */
+.matricula-plate-wrap.matricula-plate-from-repo {
+  background-color: var(--bg-app, #1a1a1a) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+/* Placa con imagen del repo: contain para ver la matrícula entera sin alargar */
 .matricula-plate-from-repo {
+  background-color: var(--bg-app, #1a1a1a) !important;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
 }
-/* Sin franja blanca: el fondo es la imagen del repo; solo el texto de la matrícula encima */
+/* Con foto: ocultar banner y logo para que solo se vea la foto completa y el número encima */
 .matricula-plate-from-repo .matricula-plate-banner {
-  background: transparent !important;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.8);
+  display: none !important;
 }
 .matricula-plate-from-repo .matricula-plate-body {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  flex: 1;
+  min-height: 0;
+  padding: 0.4rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.matricula-plate-from-repo .matricula-plate-logo-wrap {
+  display: none !important;
+}
+.matricula-plate-from-repo .matricula-plate-input-wrap {
+  flex: 1;
+  max-width: 100%;
+  min-width: 0;
+  justify-content: center;
+  overflow: hidden;
 }
 .matricula-plate-from-repo .matricula-plate-body::before,
 .matricula-plate-from-repo .matricula-plate-body::after {
@@ -3509,15 +3532,23 @@ button.login-recovery-link {
     0 1px 0 #fff,
     0 -1px 0 #fff;
   font-weight: 800;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 0.25rem;
+  box-sizing: border-box;
 }
 .matricula-plate-from-repo .matricula-plate-input::placeholder {
   color: rgba(0,0,0,0.5);
   text-shadow: 0 0 4px #fff, 0 1px 2px rgba(0,0,0,0.6);
 }
-/* Placa grande (paso matrícula / calculadora): proporción real, número centrado y tamaño real */
+/* Placa grande: proporción tipo placa real; la imagen con contain se ve entera y sin deformar */
 .matricula-plate-wrap.matricula-plate-from-repo {
   aspect-ratio: 520 / 110;
   max-width: 520px;
+  width: min(100%, 520px);
+  min-height: 110px;
 }
 .matricula-plate-wrap.matricula-plate-from-repo .matricula-plate-body {
   flex: 1;
@@ -3530,8 +3561,9 @@ button.login-recovery-link {
 .matricula-plate-wrap.matricula-plate-from-repo .matricula-plate-input,
 .matricula-plate-wrap.matricula-plate-from-repo .matricula-plate-display {
   text-align: center;
-  font-size: clamp(1.25rem, 4vw, 2rem);
-  letter-spacing: 0.2em;
+  font-size: clamp(1rem, 3.5vw, 1.65rem);
+  letter-spacing: 0.12em;
+  width: 100%;
 }
 
 /* Estilo Yankton: placa roja completa, sin franja blanca; el número va sobre el mismo fondo */
@@ -3630,7 +3662,112 @@ button.login-recovery-link {
   color: #ffcc00;
 }
 
-/* Placa como fotografía completa: imagen de fondo visible al 100%, número centrado y tamaño real (proporción ~520×110 mm) */
+/* Placa como en la captura: nuestra imagen de placa como foto principal, número centrado encima (estilo Yankton) */
+.matricula-plate-photo-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 520 / 110;
+  min-height: 38px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  background: transparent;
+}
+.matricula-plate-photo-wrap .matricula-plate-photo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+.matricula-plate-photo-wrap .matricula-plate-number-overlay {
+  position: relative;
+  z-index: 1;
+  font-family: 'Oswald', 'Bebas Neue', var(--font);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #0d0d0d;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 4px #fff,
+    0 1px 2px rgba(0,0,0,0.9),
+    1px 0 0 #fff,
+    -1px 0 0 #fff,
+    0 1px 0 #fff,
+    0 -1px 0 #fff;
+  text-align: center;
+  pointer-events: none;
+}
+.matricula-plate-photo-wrap.matricula-plate-mini {
+  width: 160px;
+  max-width: 160px;
+  min-width: 160px;
+  margin: 0;
+  flex-shrink: 0;
+}
+@media (min-width: 400px) {
+  .matricula-plate-photo-wrap.matricula-plate-mini { width: 180px; max-width: 180px; min-width: 180px; }
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-photo-wrap.matricula-plate-mini,
+.col-matricula-cell .matricula-plate-photo-wrap.matricula-plate-mini {
+  width: 140px;
+  max-width: 140px;
+  min-width: 140px;
+}
+.clientes-bbdd-table td.col-matricula-cell {
+  width: 1%;
+  white-space: nowrap;
+  padding: 0.35rem 0.5rem;
+  vertical-align: middle;
+}
+
+/* Cuando no hay imagen o falla la carga: marco simple solo con el número (misma proporción que la placa) */
+.matricula-plate-mini-simple {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 520 / 110;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  min-height: 30px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-sizing: border-box;
+}
+.matricula-plate-mini-simple .matricula-plate-display {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.clientes-bbdd-table .col-matricula-cell .matricula-plate-mini-simple,
+.col-matricula-cell .matricula-plate-mini-simple {
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
+}
+
+/* Si la imagen de la placa no carga, mostrar fondo y número visible */
+.matricula-plate-photo-wrap.matricula-plate-no-img {
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+}
+.matricula-plate-photo-wrap.matricula-plate-no-img .matricula-plate-number-overlay {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Placa como fotografía completa (fallback): imagen de fondo, número centrado */
 .matricula-plate-full-photo {
   display: flex;
   align-items: center;
@@ -3774,6 +3911,35 @@ button.login-recovery-link {
 .matricula-plate-calc {
   max-width: 100%;
   margin: 0 0 0.5rem 0;
+}
+/* Misma medida que paso matrícula: fondo oscuro para no mostrar marco blanco */
+.matricula-plate-calc.matricula-plate-from-repo {
+  background-color: var(--bg-app, #1a1a1a) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  aspect-ratio: 520 / 110;
+  max-width: 520px;
+  width: min(100%, 520px);
+}
+.matricula-plate-calc.matricula-plate-from-repo .matricula-plate-body-readonly {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  padding: 0.4rem 0.75rem;
+  min-height: 0;
+}
+.matricula-plate-calc.matricula-plate-from-repo .matricula-plate-display,
+.matricula-plate-calc.matricula-plate-from-repo .matricula-plate-modelo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.matricula-plate-calc.matricula-plate-from-repo .matricula-plate-display {
+  font-size: clamp(1rem, 3.5vw, 1.65rem);
+  letter-spacing: 0.12em;
+}
+.matricula-plate-calc.matricula-plate-from-repo .matricula-plate-modelo {
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
+  margin-left: 0.2rem;
 }
 .matricula-plate-body-readonly {
   min-height: 60px;
@@ -4078,6 +4244,9 @@ button.login-recovery-link {
   color: var(--text-muted);
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
+.ultimas-reparaciones-header .ultimas-rep-placa {
+  text-align: center;
+}
 .ultimas-reparaciones-list {
   list-style: none;
   padding: 0;
@@ -4099,11 +4268,12 @@ button.login-recovery-link {
 .ultimas-reparaciones-list .ultimas-rep-placa {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-width: 0;
 }
 .ultimas-reparaciones-list .ultimas-rep-placa .matricula-plate-mini {
   max-width: 90px;
-  margin: 0;
+  margin: 0 auto;
 }
 .ultimas-reparaciones-list .ultimas-rep-valor {
   font-weight: 500;
