@@ -1,8 +1,9 @@
 # SALTLAB Calculator
 
-App web de la calculadora del taller SALTLAB CAFE para FiveM: presupuestos de reparación y tuneo, fichajes, normativas, gestión de usuarios y organigrama, economía, clientes y personalización.
+App web de la calculadora del taller SALTLAB CAFE para FiveM: presupuestos de reparación y tuneo, fichajes, normativas, gestión de usuarios y organigrama, economía, clientes, almacén de materiales y personalización.
 
-**Instrucciones completas:** ver [INSTRUCCIONES_USO.md](INSTRUCCIONES_USO.md).
+**Instrucciones completas:** [INSTRUCCIONES_USO.md](INSTRUCCIONES_USO.md)  
+**Desplegar backend en la nube** (para que todos los usuarios compartan datos sin depender de tu PC): [DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)
 
 ## Uso rápido
 
@@ -13,7 +14,7 @@ App web de la calculadora del taller SALTLAB CAFE para FiveM: presupuestos de re
 5. **REGISTRAR TUNEO** o **REGISTRAR REPARACION** guarda el servicio.
 6. **HOME** para otro servicio; **Salir** cierra sesión (y registra salida automática si tenías entrada abierta).
 
-Otras funciones: **Mi ficha**, **Mi historial**, **Normativas**, **Resultados**, **Gestión** (usuarios, convenios, organigrama, economía), **Clientes**, **Personalización**, y el **asistente de dudas** (chatbot) en la esquina inferior derecha para preguntas sobre normativas e instrucciones.
+Otras funciones: **Mi ficha**, **Mi historial**, **Normativas**, **Resultados**, **Gestión** (usuarios, convenios, organigrama, economía, stock, **materiales recuperados**), **Clientes**, **Personalización**, y el **asistente de dudas** (chatbot) en la esquina inferior derecha.
 
 ## Base de datos de vehículos
 
@@ -67,49 +68,37 @@ Los valores por defecto dan ~$47/pieza para un Previon de $38k (4+4 partes ≈ $
 
 ## Datos guardados
 
-- **Usuarios**: en `localStorage` (clave interna `benny_users`).
-- **Registro de servicios**: en `localStorage` (persiste entre sesiones).
-- **Matrículas usadas**: se guardan para autocompletar en el siguiente uso.
+- **En local (sin backend):** usuarios, registro de servicios y matrículas en `localStorage` del navegador.
+- **Con backend en marcha:** la app sincroniza usuarios, fichajes y reparaciones con el servidor; todos los que usen la misma URL del backend ven los mismos datos.
+
+## Configuración del backend
+
+En **`js/config.js`** puedes definir:
+
+- **`API_URL_LOCAL`**: URL del backend cuando usas la app en tu red (ej. `http://192.168.0.63:3001`).
+- **`API_URL_PRODUCCION`**: URL del backend cuando la app se abre desde GitHub Pages; así todos los que entren por el enlace público usan el mismo servidor en la nube.
+
+Si despliegas el backend en Render (u otro servicio), edita `API_URL_PRODUCCION` con la URL que te den. Ver [DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md).
 
 ---
 
-## Compartir la app online (para que un compañero pueda entrar)
+## Compartir la app online
 
-La app es estática (solo HTML/CSS/JS). Para que alguien pueda abrirla por internet y hacer login, hay que **subir la carpeta del proyecto** a un hosting. Cada persona que abra la URL tendrá su propio “espacio” de datos (localStorage del navegador).
+### Opción A: Todos comparten los mismos datos (recomendado)
 
-### Opción 1: Netlify Drop (rápido, sin cuenta obligatoria)
+1. **Frontend** en GitHub Pages (o Netlify/Vercel): sube el proyecto y obtén una URL (ej. `https://tu-usuario.github.io/SALT-CAFE-/`).
+2. **Backend** en la nube: despliega la carpeta `server` en [Render](https://render.com) (gratis). Ver **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.
+3. En **`js/config.js`** pon en **`API_URL_PRODUCCION`** la URL de tu backend en Render.
+4. Quien abra el enlace del frontend usará ese backend: **usuarios, fichajes y reparaciones se sincronizan para todos**, aunque tu PC esté apagado.
 
-1. Entra en [https://app.netlify.com/drop](https://app.netlify.com/drop).
-2. Arrastra la carpeta **SALTLAB Calculator** completa (con `index.html`, `app.js`, `data/`, `js/`, `styles.css`, `assets/`, etc.) a la zona de “Deploy”.
-3. Netlify te dará una URL tipo `https://nombre-random-123.netlify.app`. Esa es la URL que puedes pasar a tu compañero.
+### Opción B: Solo subir el frontend (cada uno con sus datos)
 
-**Con cuenta Netlify:** puedes elegir un nombre (ej. `saltlab-calculadora.netlify.app`) en Site settings → Domain management.
-
-### Opción 2: Vercel
-
-1. Crea cuenta en [vercel.com](https://vercel.com).
-2. Instala Vercel CLI: `npm i -g vercel` (o usa “Import Project” en la web con GitHub).
-3. En la carpeta del proyecto ejecuta: `vercel` y sigue los pasos. La carpeta que contiene `index.html` debe ser la raíz del proyecto.
-4. Te darán una URL tipo `https://tu-proyecto.vercel.app`.
-
-### Opción 3: GitHub Pages
-
-1. Crea un repositorio en GitHub y sube todo el contenido del proyecto (la raíz del repo debe tener `index.html`).
-2. En el repo: **Settings → Pages** → Source: “Deploy from a branch” → rama `main` (o `master`) → carpeta `/ (root)` → Save.
-3. La app quedará en `https://tu-usuario.github.io/nombre-repo/`.
-
-### Login cuando la app está online
-
-- **Primera vez que alguien entra** en esa URL: no hay usuarios; la app crea el **admin por defecto** y, si aplica, usuarios de prueba.
-- Tu compañero puede entrar con:
-  - **Usuario:** `admin` · **Contraseña:** `1234` (luego le pedirá cambiarla), o
-  - Usuarios de prueba: `juan` / `tyrone` / `pepa` con contraseña `1234` (si existen en tu versión).
-- Los usuarios y el registro de servicios se guardan **en el navegador de quien usa la app**. Es decir: lo que haga tu compañero en su ordenador (login, reparaciones, etc.) queda en su navegador; lo que hagas tú en el tuyo, en el tuyo. No se comparte una base de datos entre dispositivos.
-- Si quieres que todos compartan los mismos usuarios y datos (mismo login para todos), haría falta conectar la app a un **backend** (servidor + base de datos) y cambiar el sistema de login para usar esa API.
+- Sube la carpeta del proyecto a [Netlify Drop](https://app.netlify.com/drop), [Vercel](https://vercel.com) o **GitHub Pages** (Settings → Pages → Deploy from branch).
+- Cada persona que abra la URL tendrá su propio `localStorage` (no se comparten usuarios ni registros entre dispositivos).
 
 ### Resumen
 
 | Qué quieres | Cómo hacerlo |
 |------------|----------------|
-| Que tu compañero abra la app por internet y pueda hacer login | Sube la carpeta a Netlify Drop, Vercel o GitHub Pages y pásale la URL. Usará `admin` / `1234` (o usuarios de prueba) la primera vez. |
-| Mismo usuario/datos para todos los dispositivos | Requiere backend (API + base de datos); la app actual solo usa `localStorage` por navegador. |
+| Que todos vean los mismos datos al abrir el enlace (sin depender de tu PC) | Despliega el backend en Render y configura `API_URL_PRODUCCION` en `js/config.js`. Ver [DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md). |
+| Solo que alguien pueda abrir la app por internet | Sube el proyecto a GitHub Pages, Netlify o Vercel. Cada usuario tendrá sus datos en su navegador. |

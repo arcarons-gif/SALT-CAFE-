@@ -1736,6 +1736,9 @@
           <div class="ficha-empleado-actions">
             <button type="submit" class="btn btn-register btn-ficha-guardar">Guardar cambios</button>
           </div>
+          <div class="ficha-empleado-actions ficha-empleado-actions-eliminar" id="wrapFichaEliminar" style="display:none">
+            <button type="button" class="btn btn-outline btn-danger btn-eliminar-ficha-dentro" id="btnEliminarEmpleadoFicha" title="Eliminar empleado">Eliminar empleado</button>
+          </div>
         </form>
         <section id="usuarioSeccionMaterialEntregado" class="ficha-empleado-seccion ficha-seccion-material" style="display:none">
           <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>Material entregado</h3>
@@ -1744,6 +1747,11 @@
             <button type="button" class="btn btn-outline" id="btnRegistrarEntregaDesdeFicha">+ Registrar entrega</button>
           </div>
           <div id="listaMaterialEntregadoFicha" class="usuario-material-entregado-lista"></div>
+        </section>
+        <section id="usuarioSeccionVehiculos" class="ficha-empleado-seccion ficha-seccion-vehiculos" style="display:none">
+          <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14v-5H5v5zm2-7h2V7H7v3zm8 0h2V7h-2v3zm-4-5h2V4h-2v1z"/><path d="M2 12h2v5H2zM20 12h2v5h-2z"/></svg></span>Vehículos del empleado</h3>
+          <p class="ficha-seccion-desc">Vehículos asociados a este empleado. Al indicar la matrícula en reparaciones o tuneos ya constan como registrados.</p>
+          <div id="fichaEmpleadoVehiculosLista" class="ficha-vehiculos-lista"></div>
         </section>
       </div>
     </div>

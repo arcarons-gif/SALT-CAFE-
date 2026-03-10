@@ -1532,6 +1532,22 @@ function vincularAdmin() {
   modalUsuarioClose?.addEventListener('click', () => modalUsuario.classList.remove('active'));
   modalUsuario?.addEventListener('click', e => { if (e.target === modalUsuario) modalUsuario.classList.remove('active'); });
   document.getElementById('btnFichaEmpleadoHome')?.addEventListener('click', function () { cerrarTodasPantallasSecundarias(); });
+  document.getElementById('btnEliminarEmpleadoFicha')?.addEventListener('click', function () {
+    var id = document.getElementById('usuarioId') && document.getElementById('usuarioId').value;
+    if (!id) return;
+    var users = typeof getUsers === 'function' ? getUsers() : [];
+    var u = users.find(function (x) { return x.id === id; });
+    var nombre = (u && (u.nombre || u.username)) || id;
+    if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+    var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
+    if (res && res.error) { alert(res.error); return; }
+    cerrarTodasPantallasSecundarias();
+    if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+    if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
+    if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
+      renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
+    }
+  });
   var btnFichaAnadirFoto = document.getElementById('btnFichaEmpleadoAnadirFoto');
   var inputFichaFoto = document.getElementById('fichaEmpleadoFotoInput');
   if (btnFichaAnadirFoto && inputFichaFoto) {
@@ -3511,16 +3527,20 @@ function escapeHtmlAttr(s) {
   return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** Genera HTML de una placa en miniatura. Usa una imagen aleatoria del repo PLATES si hay listado-placas.txt con imágenes; si no, un estilo aleatorio (Yankton/Europe/Sport). */
+/** Genera HTML de una placa: fotografía completa de la placa con el número centrado y tamaño real.
+ * Si hay imágenes en el repo (listado-placas.txt), usa una como fondo con background-size: contain para ver la foto completa.
+ * El número va centrado encima. Proporción real tipo placa (aprox. 520×110 mm). */
 function buildMatriculaPlateHtml(matricula) {
   var mat = (matricula || '—').toString().trim();
   var useImage = typeof hasPlateImagesFromRepo === 'function' && hasPlateImagesFromRepo();
   var imgUrl = useImage && typeof getPlateImageAleatorio === 'function' ? getPlateImageAleatorio() : null;
+  if (imgUrl) {
+    var wrapStyle = 'background-image:url(' + String(imgUrl).replace(/"/g, '%22').replace(/\\/g, '/') + ');background-size:contain;background-position:center;background-repeat:no-repeat;';
+    return '<div class="matricula-plate-full-photo matricula-plate-mini" style="' + escapeHtmlAttr(wrapStyle) + '" aria-label="Matrícula ' + escapeHtmlAttr(mat) + '">' +
+      '<span class="matricula-plate-number">' + escapeHtml(mat) + '</span></div>';
+  }
   var style = typeof getPlateStyleAleatorio === 'function' ? getPlateStyleAleatorio() : 'matricula-plate-yankton';
-  var wrapClass = 'matricula-plate-wrap matricula-plate-mini ' + (imgUrl ? 'matricula-plate-from-repo' : escapeHtmlAttr(style));
-  var wrapStyle = imgUrl ? 'background-image: url("' + String(imgUrl).replace(/"/g, '%22').replace(/\\/g, '/') + '"); background-size: cover; background-position: center;' : '';
-  var wrapAttr = wrapStyle ? ' style="' + escapeHtmlAttr(wrapStyle) + '"' : '';
-  return '<div class="' + wrapClass + '"' + wrapAttr + '>' +
+  return '<div class="matricula-plate-wrap matricula-plate-mini ' + escapeHtmlAttr(style) + '">' +
     '<div class="matricula-plate-banner">' +
     '<span class="matricula-plate-banner-left">LSCM</span>' +
     '<span class="matricula-plate-banner-center">LOS SANTOS</span>' +
@@ -5664,7 +5684,7 @@ function renderListaUsuarios() {
       '</div>' +
       '<div class="empleado-ficha-actions">' +
       '<button type="button" class="btn btn-outline btn-sm btn-editar-ficha" data-edit="' + escapeHtmlAttr(u.id) + '">Editar</button>' +
-      (puedeEliminar ? '<button type="button" class="btn btn-outline btn-sm btn-danger btn-eliminar-ficha" data-delete="' + escapeHtmlAttr(u.id) + '" title="Eliminar empleado">Eliminar</button>' : '') +
+      '<button type="button" class="btn btn-outline btn-sm btn-vehiculos-ficha" data-user-id="' + escapeHtmlAttr(u.id) + '" title="Ver vehículos del empleado">Vehículos</button>' +
       '</div></div></div>';
   }
 
@@ -5688,20 +5708,19 @@ function renderListaUsuarios() {
       if (id) abrirFormUsuario(id);
     });
   });
-  lista.querySelectorAll('.btn-eliminar-ficha').forEach(function (btn) {
+  lista.querySelectorAll('.btn-vehiculos-ficha').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var id = this.getAttribute('data-delete');
+      var id = this.getAttribute('data-user-id');
       if (!id) return;
-      var u = users.find(function (x) { return x.id === id; });
-      var nombre = (u && (u.nombre || u.username)) || id;
-      if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
-      var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
-      if (res && res.error) { alert(res.error); return; }
-      renderListaUsuarios();
-      if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
-      if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
-        renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
-      }
+      abrirFormUsuario(id);
+      requestAnimationFrame(function () {
+        var seccion = document.getElementById('usuarioSeccionVehiculos');
+        if (seccion) {
+          seccion.style.display = 'block';
+          if (typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(id);
+          seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
     });
   });
 }
@@ -5878,6 +5897,13 @@ function abrirFormUsuario(userId) {
 
   fieldActivo.style.display = userId ? '' : 'none';
 
+  var wrapEliminar = document.getElementById('wrapFichaEliminar');
+  if (wrapEliminar) {
+    var session = getSession();
+    var puedeEliminar = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarUsuarios');
+    wrapEliminar.style.display = (userId && puedeEliminar) ? 'block' : 'none';
+  }
+
   var seccionMaterial = document.getElementById('usuarioSeccionMaterialEntregado');
   if (seccionMaterial) {
     if (userId) {
@@ -5888,6 +5914,17 @@ function abrirFormUsuario(userId) {
       if (puedeVerEntregas && typeof renderMaterialEntregadoEnFicha === 'function') renderMaterialEntregadoEnFicha(userId);
     } else {
       seccionMaterial.style.display = 'none';
+    }
+  }
+  var seccionVehiculos = document.getElementById('usuarioSeccionVehiculos');
+  if (seccionVehiculos) {
+    if (userId) {
+      var uEditV = getUsers().find(function (x) { return x.id === userId; });
+      var vehiculos = (uEditV && Array.isArray(uEditV.vehiculos)) ? uEditV.vehiculos : [];
+      seccionVehiculos.style.display = vehiculos.length > 0 ? 'block' : 'none';
+      if (vehiculos.length > 0 && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(userId);
+    } else {
+      seccionVehiculos.style.display = 'none';
     }
   }
   if (pantalla) {
@@ -6017,6 +6054,79 @@ function renderMaterialEntregadoEnFicha(userId) {
     var fecha = e.fecha ? new Date(e.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
     tr.innerHTML = '<td>' + escapeHtml(fecha) + '</td><td>' + escapeHtml(e.materialLabel || e.materialConcepto || '—') + '</td><td>' + (e.cantidad || 0) + '</td><td>' + escapeHtml(e.unidad || 'ud') + '</td><td>' + escapeHtml(e.entregadoPorNombre || '—') + '</td>';
     tbody.appendChild(tr);
+  });
+}
+
+function renderFichaEmpleadoVehiculos(userId) {
+  var cont = document.getElementById('fichaEmpleadoVehiculosLista');
+  if (!cont || !userId) return;
+  var users = typeof getUsers === 'function' ? getUsers() : [];
+  var u = users.find(function (x) { return x.id === userId; });
+  var vehiculos = (u && Array.isArray(u.vehiculos)) ? u.vehiculos : [];
+  if (vehiculos.length === 0) {
+    cont.innerHTML = '<p class="ficha-vehiculos-empty">Este empleado no tiene vehículos asociados.</p>';
+    return;
+  }
+  cont.setAttribute('data-user-id', userId);
+  var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+  var imgBase = typeof FIVEM_IMG_BASE !== 'undefined' ? FIVEM_IMG_BASE : 'https://docs.fivem.net/vehicles/';
+  cont.innerHTML = vehiculos.map(function (v, idx) {
+    var codigo = (v.codigoVehiculo || '').toString().trim() || 'primo';
+    var imgUrl = imgBase + codigo + '.webp';
+    var nombre = (v.nombreVehiculo || v.codigoVehiculo || '—').toString().trim();
+    var matricula = (v.matricula || '—').toString().trim();
+    var matNorm = matricula.toUpperCase();
+    var fotos = typeof getFotosByMatricula === 'function' ? getFotosByMatricula(matricula) : [];
+    var serviciosMat = servicios.filter(function (s) { return (s.matricula || '').trim().toUpperCase() === matNorm; });
+    var serviciosOrdenados = serviciosMat.slice().sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); });
+    var previewUrl = Array.isArray(fotos) && fotos.length > 0 ? fotos[0] : '';
+    var previewHtml = previewUrl
+      ? '<div class="ficha-vehiculo-foto-preview" style="background-image:url(' + escapeHtml(previewUrl) + ')"></div>'
+      : '<div class="ficha-vehiculo-foto-preview ficha-vehiculo-foto-placeholder">Sin foto</div>';
+    var inputId = 'fichaVehiculoFoto_' + userId.replace(/\W/g, '_') + '_' + idx;
+    var reparacionesHtml = serviciosOrdenados.length === 0
+      ? '<p class="ficha-vehiculo-reparaciones-empty">Sin reparaciones</p>'
+      : '<ul class="ficha-vehiculo-reparaciones-list">' + serviciosOrdenados.slice(0, 20).map(function (s) {
+        var fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+        var tipo = (s.tipo || 'Servicio').toString();
+        var importe = s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—';
+        return '<li>' + escapeHtml(tipo) + ' · ' + importe + ' · ' + escapeHtml(fecha) + '</li>';
+      }).join('') + '</ul>';
+    return '<article class="ficha-vehiculo-card" data-matricula="' + escapeHtml(matricula) + '">' +
+      '<div class="ficha-vehiculo-img-wrap"><img src="' + escapeHtml(imgUrl) + '" alt="" class="ficha-vehiculo-img" onerror="this.style.background=\'var(--bg-elevated)\';this.onerror=null;this.src=\'\';"></div>' +
+      '<div class="ficha-vehiculo-body">' +
+      '<div class="ficha-vehiculo-top">' +
+      '<span class="ficha-vehiculo-modelo">' + escapeHtml(nombre) + '</span>' +
+      '<span class="ficha-vehiculo-matricula">' + escapeHtml(matricula) + '</span>' +
+      '</div>' +
+      '<div class="ficha-vehiculo-content">' +
+      '<div class="ficha-vehiculo-fotos-block">' +
+      '<strong class="ficha-vehiculo-block-title">Fotos del vehículo</strong>' +
+      '<div class="ficha-vehiculo-foto-preview-wrap">' + previewHtml + '</div>' +
+      '<input type="file" accept="image/*" id="' + inputId + '" class="ficha-vehiculo-foto-input" data-matricula="' + escapeHtml(matricula) + '">' +
+      '<label for="' + inputId + '" class="btn btn-outline btn-sm ficha-vehiculo-foto-add">+ Añadir foto</label>' +
+      '</div>' +
+      '<div class="ficha-vehiculo-reparaciones-block">' +
+      '<strong class="ficha-vehiculo-block-title">Historial reparaciones</strong>' +
+      '<div class="ficha-vehiculo-reparaciones-scroll">' + reparacionesHtml + '</div>' +
+      '</div>' +
+      '</div></div></article>';
+  }).join('');
+
+  cont.querySelectorAll('.ficha-vehiculo-foto-input').forEach(function (inp) {
+    inp.addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      var mat = this.getAttribute('data-matricula');
+      var uid = cont.getAttribute('data-user-id');
+      reader.onload = function () {
+        if (typeof addFotoMatricula === 'function') addFotoMatricula(mat, reader.result);
+        if (uid && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(uid);
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
   });
 }
 
@@ -7348,8 +7458,9 @@ function aplicarEstiloPlacaActual() {
     if (imgUrl) {
       wrap.setAttribute('class', (base + ' matricula-plate-from-repo').trim());
       wrap.style.backgroundImage = 'url("' + imgUrl.replace(/"/g, '%22') + '")';
-      wrap.style.backgroundSize = 'cover';
+      wrap.style.backgroundSize = 'contain';
       wrap.style.backgroundPosition = 'center';
+      wrap.style.backgroundRepeat = 'no-repeat';
       var banner = wrap.querySelector('.matricula-plate-banner');
       var body = wrap.querySelector('.matricula-plate-body');
       if (banner) { banner.style.background = 'transparent'; banner.style.color = '#fff'; }

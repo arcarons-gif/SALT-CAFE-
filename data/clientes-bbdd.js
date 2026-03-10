@@ -299,4 +299,27 @@ function seedClientesBBDDIfEmpty() {
 
 if (typeof getClientesBBDD === 'function' && typeof saveClientesBBDD === 'function') {
   seedClientesBBDDIfEmpty();
+  ensureVehiculosSavannahDavies();
+}
+
+/** Asegura que los vehículos de Savannah Davies existan en la BBDD (para reparaciones/tuneos por matrícula). */
+function ensureVehiculosSavannahDavies() {
+  var vehiculos = [
+    { matricula: 'VOBN5712', codigoVehiculo: 'primo', nombreVehiculo: 'Primo', categoria: 'Sedans', nombrePropietario: 'Savannah Davies' },
+    { matricula: 'SAVP001', codigoVehiculo: 'previon', nombreVehiculo: 'Previon', categoria: 'Coupes', nombrePropietario: 'Savannah Davies' },
+    { matricula: 'SAVW001', codigoVehiculo: 'l35', nombreVehiculo: 'Walton L35', categoria: 'Todoterrenos', nombrePropietario: 'Savannah Davies' },
+  ];
+  for (var i = 0; i < vehiculos.length; i++) {
+    if (!getClienteByMatricula(vehiculos[i].matricula)) {
+      addOrUpdateClienteBBDD({
+        matricula: vehiculos[i].matricula,
+        placaPolicial: '-',
+        codigoVehiculo: vehiculos[i].codigoVehiculo,
+        nombreVehiculo: vehiculos[i].nombreVehiculo,
+        categoria: vehiculos[i].categoria,
+        convenio: '',
+        nombrePropietario: vehiculos[i].nombrePropietario,
+      });
+    }
+  }
 }

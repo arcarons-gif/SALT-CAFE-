@@ -13,6 +13,7 @@ Es la **calculadora del taller** de SALTLAB CAFE. Permite:
 - **Fichajes** (entrada/salida) del personal.
 - **Consulta de normativas** e **instrucciones** mediante un asistente (chatbot).
 - **Gestión** de usuarios, organigrama, economía, clientes y materiales (según permisos).
+- **Materiales recuperados**: cualquier usuario puede indicar materiales devueltos al almacén tras reparaciones y enviar el registro a Discord (el almacén se actualiza automáticamente).
 - **Personalización** de colores, fuentes y aspecto de la interfaz.
 
 ---
@@ -110,9 +111,10 @@ El servicio queda registrado (y puede enviarse a Discord si está configurado). 
 | **Subir video** | Enviar un vídeo para el taller (revisión por admin). |
 | **Normativas** | Consultar las normativas del taller. |
 | **Resultados** | Registro de servicios (reparaciones/tuneos). |
-| **Gestión** | Panel de administración (solo con permiso): Usuarios, Convenios, Organigrama, Economía. |
+| **Gestión** | Panel: Usuarios, Convenios, Organigrama, Economía, Stock, **Materiales recuperados** (todos), Mi ficha, Normativas, etc. (según permisos). |
 | **Clientes** | Registro de clientes, BBDD, pendientes, vetados (si tienes permiso). |
 | **Personalización** | Ajustar colores, fuentes, tema, fondo de pantalla, estilo de tarjetas, animaciones. |
+| **Materiales recuperados** | (Dentro de Gestión, visible para todos.) Indicar cantidades de materiales devueltos al almacén; **Enviar registro al canal de Discord** actualiza el almacén y envía el resumen a Discord. |
 | **Salir** | Cerrar sesión (y fichar salida automática si tenías entrada abierta). |
 
 La visibilidad de cada opción depende de tu **rol y permisos**.
@@ -142,12 +144,16 @@ Acceso desde **Menú → Gestión**. Incluye:
 - **Convenios:** crear y editar convenios con descuentos.
 - **Organigrama:** vista jerárquica del equipo con **líneas de conexión** y **fichas** por nivel. Puedes seleccionar un nodo para ver una **previsualización de la ficha** del empleado; desde ahí abrir la ficha completa.
 - **Economía:**  
-  - Compras, inventario, gastos, entregas de material, materiales recuperados.  
-  - **Gestión financiera** (solo admin): límites de stock, reparto de beneficios, etc.
+  - Compras, inventario, gastos, **entregas a trabajadores**, historial de pedidos, previsiones.  
+  - **Gestión financiera** (solo admin): resultado EBITA, reparto de beneficios, **Enviar registro al canal de Discord** (resumen financiero). El mismo botón de Discord está en Historial de pedidos, Gastos y Previsiones.  
+  - **Entregas a trabajadores:** al registrar una entrega (quién entrega, material, cantidad, a qué trabajador), el registro se envía automáticamente al canal de Discord configurado.
+- **Stock / Almacén materiales:**  
+  - Tabla por material (ACERO, ALUMINIO, COBRE, etc.) con **Cantidad en almacén**, **Aportaciones**, **Retiradas**, **Aplicar** (suma aportaciones y resta retiradas) y **Reset** (poner esa cantidad a cero).  
+  - **Registrar materiales recuperados** (modal): añade cantidades al almacén (como hasta ahora).
 
-**Sincronización de datos:** Los datos (usuarios, servicios, clientes, etc.) se guardan en el **navegador** (almacenamiento local).  
-- **Mismo ordenador, varias pestañas:** Si dos personas usan la app en **pestañas distintas del mismo navegador**, los cambios (crear/borrar usuarios, etc.) **sí se reflejan** en la otra pestaña al instante.  
-- **Ordenadores distintos:** Si cada uno usa **su propio ordenador**, los datos **no se comparten**: lo que hace uno no se ve en el otro, porque no hay servidor central. Para que todos vean los mismos datos desde distintos PCs haría falta un backend (servidor y base de datos).
+**Sincronización de datos:**  
+- **Sin backend:** Los datos se guardan en el **navegador** (localStorage). En el mismo PC y navegador, varias pestañas comparten datos. Entre ordenadores distintos no se comparten.  
+- **Con backend en la nube:** Si el backend está desplegado (p. ej. en Render) y la app abre desde la URL pública (GitHub Pages), **todos los usuarios comparten los mismos usuarios, fichajes y reparaciones**; la actualización es simultánea y no depende de que tu PC esté encendido. Ver **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)** para desplegar el backend.
 
 ---
 
@@ -207,3 +213,10 @@ Los cambios se **guardan por usuario** y se aplican al instante.
 7. Para otro servicio: **HOME** y repetir desde el paso 3.
 
 Para dudas sobre permisos, precios o convenios, consulta al responsable del taller o usa el **asistente de dudas** (chatbot) para preguntas sobre normativas e instrucciones.
+
+---
+
+## 17. Configuración y despliegue
+
+- **`js/config.js`**: Define la URL del backend para uso local (`API_URL_LOCAL`) y para cuando la app se abre desde GitHub Pages (`API_URL_PRODUCCION`). Los webhooks de Discord (economía, entregas, materiales) se configuran en el backend al desplegarlo.
+- **Backend en la nube:** Para que todos los que abran el enlace público compartan los mismos datos (usuarios, fichajes, reparaciones) sin depender de tu PC, despliega la carpeta `server` en un servicio como Render y configura `API_URL_PRODUCCION` con la URL que te den. Instrucciones paso a paso: **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.

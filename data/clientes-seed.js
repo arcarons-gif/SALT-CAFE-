@@ -4,6 +4,10 @@
  * Generado desde Registro_Vehicular_vehiculos_FINAL_v3.xlsx
  */
 const CLIENTES_SEED = [
+  // Vehículos del empleado Savannah Davies (siempre disponibles para reparaciones/tuneos)
+  { matricula: "VOBN5712", placaPolicial: "--", codigoVehiculo: "primo", nombreVehiculo: "Primo", categoria: "Sedans", convenio: "", nombrePropietario: "Savannah Davies" },
+  { matricula: "SAVP001", placaPolicial: "--", codigoVehiculo: "previon", nombreVehiculo: "Previon", categoria: "Coupes", convenio: "", nombrePropietario: "Savannah Davies" },
+  { matricula: "SAVW001", placaPolicial: "--", codigoVehiculo: "l35", nombreVehiculo: "Walton L35", categoria: "Todoterrenos", convenio: "", nombrePropietario: "Savannah Davies" },
   { matricula: "CCCI3943", placaPolicial: "--", codigoVehiculo: "club", nombreVehiculo: "Club", categoria: "Compactos", convenio: "" },
   { matricula: "NGEN4071", placaPolicial: "--", codigoVehiculo: "dominator3", nombreVehiculo: "Dominator GTX", categoria: "Muscle", convenio: "" },
   { matricula: "LGEN9870", placaPolicial: "--", codigoVehiculo: "weevil", nombreVehiculo: "Weevil", categoria: "Compactos", convenio: "" },

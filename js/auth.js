@@ -9,12 +9,15 @@ const PASSWORD_PREDETERMINADA = '1234';
 const ADMIN_RESET_FLAG = 'benny_admin_reset_1234';
 /** Al migrar a v2, se sustituye la lista de usuarios por solo estos tres. */
 const USUARIOS_PREDEFINIDOS_MIGRATION = 'benny_usuarios_predefinidos_v2';
+/** Una vez: sincroniza contraseñas de admin y Savannah con las del seed (7264). */
+const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v1';
 
 /** Únicos usuarios predefinidos. Cualquier otro usuario se elimina en la migración. */
 const SEED_USERS = [
   { username: 'admin', nombre: 'Administrador', password: '7264', rol: 'admin' },
   { username: 'Savannah', nombre: 'Savannah', password: '7264', rol: 'admin' },
   { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
+  { username: 'Gerald J', nombre: 'Gerald J. Ford', password: '1234', rol: 'mecanico', cambiarPasswordObligatorio: true },
 ];
 
 /** Usuarios cuya contraseña no puede ser cambiada (admin y Savannah). */
@@ -85,7 +88,7 @@ function createDefaultAdmin(passwordHash, salt) {
 
 function buildSeedAdminUser(seed, passwordHash, salt) {
   const id = seed.username.toLowerCase() === 'admin' ? 'admin-default' : 'u-seed-' + (seed.username || '').replace(/\s+/g, '-');
-  return {
+  const base = {
     id,
     username: seed.username,
     passwordHash,
@@ -94,7 +97,7 @@ function buildSeedAdminUser(seed, passwordHash, salt) {
     rol: seed.rol || 'admin',
     permisos: seed.rol === 'admin' ? Object.assign({}, ADMIN_PERMISOS_FULL) : {},
     activo: true,
-    cambiarPasswordObligatorio: false,
+    cambiarPasswordObligatorio: seed.cambiarPasswordObligatorio === true,
     creadoPor: 'system',
     fechaCreacion: new Date().toISOString(),
     fechaAlta: new Date().toISOString().slice(0, 10),
@@ -106,6 +109,14 @@ function buildSeedAdminUser(seed, passwordHash, salt) {
     fotosFicha: [],
     fondoFichaIndex: null,
   };
+  if ((seed.username || '').toString().trim().toLowerCase() === 'savannah') {
+    base.vehiculos = [
+      { matricula: 'VOBN5712', codigoVehiculo: 'primo', nombreVehiculo: 'Primo', categoria: 'Sedans' },
+      { matricula: 'SAVP001', codigoVehiculo: 'previon', nombreVehiculo: 'Previon', categoria: 'Coupes' },
+      { matricula: 'SAVW001', codigoVehiculo: 'l35', nombreVehiculo: 'Walton L35', categoria: 'Todoterrenos' },
+    ];
+  }
+  return base;
 }
 
 async function hashPassword(password, salt) {
@@ -162,6 +173,38 @@ async function ensureSeedUsers() {
     changed = true;
   }
   if (changed) saveUsers(users);
+  // Migración: Savannah debe tener vehiculos en su ficha
+  users = getUsers();
+  var savannah = users.find(function (u) { return (u.username || '').toString().trim().toLowerCase() === 'savannah'; });
+  if (savannah && (!Array.isArray(savannah.vehiculos) || savannah.vehiculos.length === 0)) {
+    savannah.vehiculos = [
+      { matricula: 'VOBN5712', codigoVehiculo: 'primo', nombreVehiculo: 'Primo', categoria: 'Sedans' },
+      { matricula: 'SAVP001', codigoVehiculo: 'previon', nombreVehiculo: 'Previon', categoria: 'Coupes' },
+      { matricula: 'SAVW001', codigoVehiculo: 'l35', nombreVehiculo: 'Walton L35', categoria: 'Todoterrenos' },
+    ];
+    saveUsers(users);
+  }
+  // Sincronizar contraseñas de admin y Savannah con el seed (una sola vez)
+  if (!localStorage.getItem(SYNC_SEED_PASSWORDS_MIGRATION)) {
+    users = getUsers();
+    var toSync = SEED_USERS.filter(function (s) {
+      var u = (s.username || '').toString().trim().toLowerCase();
+      return u === 'admin' || u === 'savannah';
+    });
+    await Promise.all(toSync.map(function (seed) {
+      var existing = users.find(function (u) {
+        return (u.username || '').toString().trim().toLowerCase() === (seed.username || '').toString().trim().toLowerCase();
+      });
+      if (!existing) return Promise.resolve();
+      var salt = crypto.randomUUID() + Date.now();
+      return hashPassword(seed.password, salt).then(function (hash) {
+        existing.passwordHash = hash;
+        existing.salt = salt;
+      });
+    }));
+    saveUsers(users);
+    localStorage.setItem(SYNC_SEED_PASSWORDS_MIGRATION, '1');
+  }
 }
 
 function saveUsers(users) {
@@ -301,6 +344,7 @@ async function updateUser(userId, userData, updatedBy) {
   if (userData.equipo !== undefined) users[idx].equipo = Array.isArray(userData.equipo) ? userData.equipo : [];
   if (userData.fotosFicha !== undefined) users[idx].fotosFicha = Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [];
   if (userData.fondoFichaIndex !== undefined) users[idx].fondoFichaIndex = userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null;
+  if (userData.vehiculos !== undefined) users[idx].vehiculos = Array.isArray(userData.vehiculos) ? userData.vehiculos : [];
   if (userData.password && userData.password.length >= 4 && !isUsuarioContrasenaProtegida(users[idx].username)) {
     const salt = crypto.randomUUID() + Date.now();
     users[idx].passwordHash = await hashPassword(userData.password, salt);
