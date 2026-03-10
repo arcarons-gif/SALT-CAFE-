@@ -97,6 +97,30 @@
     return Object.keys(stock).reduce(function (sum, id) { return sum + (stock[id] || 0); }, 0);
   }
 
+  /**
+   * Pone la cantidad de un material a cero.
+   */
+  function setStockMaterialCero(id) {
+    var stock = getAlmacenMateriales();
+    if (!TIPOS_MATERIAL_ALMACEN.some(function (t) { return t.id === id; })) return stock;
+    stock[id] = 0;
+    saveAlmacenMateriales(stock);
+    return stock;
+  }
+
+  /**
+   * Aplica aportaciones y retiradas a un material. Nuevo stock = actual + aportaciones - retiradas (mínimo 0).
+   */
+  function aplicarAportacionesRetiradas(id, aportaciones, retiradas) {
+    var stock = getAlmacenMateriales();
+    if (!TIPOS_MATERIAL_ALMACEN.some(function (t) { return t.id === id; })) return stock;
+    var a = typeof aportaciones === 'number' ? aportaciones : 0;
+    var r = typeof retiradas === 'number' ? retiradas : 0;
+    stock[id] = Math.max(0, (stock[id] || 0) + a - r);
+    saveAlmacenMateriales(stock);
+    return getAlmacenMateriales();
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       TIPOS_MATERIAL_ALMACEN: TIPOS_MATERIAL_ALMACEN,
@@ -104,7 +128,9 @@
       saveAlmacenMateriales: saveAlmacenMateriales,
       addMaterialesAlmacen: addMaterialesAlmacen,
       getMovimientosAlmacen: getMovimientosAlmacen,
-      getTotalMateriales: getTotalMateriales
+      getTotalMateriales: getTotalMateriales,
+      setStockMaterialCero: setStockMaterialCero,
+      aplicarAportacionesRetiradas: aplicarAportacionesRetiradas
     };
   } else {
     global.TIPOS_MATERIAL_ALMACEN = TIPOS_MATERIAL_ALMACEN;
@@ -113,5 +139,7 @@
     global.addMaterialesAlmacen = addMaterialesAlmacen;
     global.getMovimientosAlmacen = getMovimientosAlmacen;
     global.getTotalMateriales = getTotalMateriales;
+    global.setStockMaterialCero = setStockMaterialCero;
+    global.aplicarAportacionesRetiradas = aplicarAportacionesRetiradas;
   }
 })(typeof window !== 'undefined' ? window : this);

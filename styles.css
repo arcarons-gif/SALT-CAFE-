@@ -1945,6 +1945,8 @@ button.login-recovery-link {
 
 .gestion-card-nav-personalizacion .gestion-card-icon { filter: drop-shadow(0 0 6px #94a3b8) drop-shadow(0 0 12px #64748b) drop-shadow(0 0 20px #475569); }
 .gestion-card-nav-personalizacion .gestion-card-label { text-shadow: 0 0 8px #94a3b8, 0 0 14px #64748b, 0 0 22px #475569; }
+.gestion-card-nav-materiales-recuperados .gestion-card-icon { filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px #0891b2) drop-shadow(0 0 20px #0e7490); }
+.gestion-card-nav-materiales-recuperados .gestion-card-label { text-shadow: 0 0 8px #06b6d4, 0 0 14px #0891b2, 0 0 22px #0e7490; }
 
 /* Banner de vídeo en bucle (zona inferior Gestión) */
 .gestion-banner-wrap {
@@ -2764,7 +2766,17 @@ button.login-recovery-link {
 .almacen-detalle-table { font-size: 0.9rem; }
 .almacen-detalle-cant { text-align: right; font-variant-numeric: tabular-nums; }
 .almacen-detalle-total { margin-top: 1rem; font-size: 1rem; }
+.economia-table-almacen .almacen-input-aportaciones,
+.economia-table-almacen .almacen-input-retiradas { width: 5rem; max-width: 100%; padding: 0.35rem 0.5rem; text-align: right; }
+.economia-table-almacen .almacen-acciones-cel { white-space: nowrap; }
+.economia-table-almacen .almacen-btn-aplicar,
+.economia-table-almacen .almacen-btn-reset { margin-right: 0.25rem; }
 .almacen-registro-hint { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; }
+.materiales-recuperados-desc { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+.materiales-recuperados-form-wrap { margin-bottom: 1.5rem; }
+.materiales-recuperados-form-wrap .form-almacen-materiales .field { margin-bottom: 0.75rem; }
+.materiales-recuperados-form-wrap .form-almacen-materiales input[type="number"] { width: 100%; max-width: 12rem; }
+.materiales-recuperados-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
 .form-almacen-materiales .field { margin-bottom: 0.75rem; }
 .form-almacen-materiales .field input[type="number"] { width: 100%; max-width: 12rem; }
 .economia-empty-hint { color: var(--text-muted); font-size: 0.9rem; padding: 0.5rem 0; }

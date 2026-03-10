@@ -16,7 +16,7 @@ Servidor para sincronizar **usuarios** y **fichajes** entre varios dispositivos.
 2. **Instalar dependencias y arrancar (una vez la primera, luego solo arrancar):**
    - **Recomendado** (evita el error “ejecución de scripts deshabilitada”): haz doble clic en **`install-and-run.cmd`** o en PowerShell:
      ```powershell
-     cd g:\cursor\fivem\benny-calculator\server
+     cd g:\cursor\fivem\SALTLAB-calculator\server
      .\install-and-run.cmd
      ```
    - Si prefieres usar el .ps1: `.\install-and-run.ps1` (y si falla por política de ejecución, ejecuta antes: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`).
@@ -31,7 +31,7 @@ Servidor para sincronizar **usuarios** y **fichajes** entre varios dispositivos.
 ### Opción 2: Node instalado en el sistema (en el PATH)
 
 ```powershell
-cd g:\cursor\fivem\benny-calculator\server
+cd g:\cursor\fivem\SALTLAB-calculator\server
 npm install
 npm start
 ```

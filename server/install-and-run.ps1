@@ -5,7 +5,7 @@
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Ruta al node.exe del repo (desde server -> benny-calculator -> fivem -> cursor)
+# Ruta al node.exe del repo (desde server -> SALTLAB-calculator -> fivem -> cursor)
 $nodeExe = Join-Path $scriptDir "..\..\..\node.exe"
 if ($env:NODE_EXE -and (Test-Path $env:NODE_EXE)) {
     $nodeExe = $env:NODE_EXE

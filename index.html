@@ -813,6 +813,10 @@
           <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
           <span class="gestion-card-label">Personalización</span>
         </button>
+        <button type="button" class="gestion-card gestion-card-nav gestion-card-nav-materiales-recuperados" data-gestion-nav="materiales-recuperados" id="gestionCardMaterialesRecuperados" title="Materiales recuperados de reparaciones">
+          <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+          <span class="gestion-card-label">Materiales recuperados</span>
+        </button>
         <button type="button" class="gestion-card gestion-card-reset gestion-card-shape-circle" data-tab="reset" id="gestionCardReset" title="Reset / Limpiar datos (solo admin)">
           <span class="gestion-card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -988,6 +992,7 @@
             <h3 class="economia-historial-titulo">Historial de pedidos</h3>
             <p class="economia-historial-desc">Consulta todos los pedidos de compra. Entra en uno con <strong>Ver</strong> y usa <strong>Repetir compra</strong> para registrar un pedido nuevo exactamente igual.</p>
             <div class="economia-panel-toolbar economia-historial-filtros">
+              <button type="button" class="btn btn-register btn-enviar-registro-discord" title="Envía el resumen financiero al canal de Discord">Enviar registro al canal de Discord</button>
               <div class="economia-filtro-wrap">
                 <label for="filtroHistorialTipo" class="economia-filtro-label">Estado:</label>
                 <select id="filtroHistorialTipo" class="input-buscar-registro economia-select-tipo">
@@ -1027,7 +1032,7 @@
             <div class="economia-panel-toolbar">
               <button type="button" class="btn btn-register" id="btnRegistrarMaterialesRecuperados">+ Registrar materiales recuperados</button>
             </div>
-            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Material</th><th>Unidad</th><th>Cantidad en almacén</th></tr></thead><tbody id="listaAlmacenMateriales"></tbody></table></div>
+            <div class="economia-table-wrap"><table class="economia-table economia-table-almacen"><thead><tr><th>Material</th><th>Unidad</th><th>Cantidad en almacén</th><th>Aportaciones</th><th>Retiradas</th><th>Acciones</th></tr></thead><tbody id="listaAlmacenMateriales"></tbody></table></div>
             <h4 class="economia-almacen-movimientos-titulo">Registro de materiales recuperados</h4>
             <p class="economia-almacen-registro-desc">Cada línea es una entrada manual: fecha, materiales añadidos y quien registró.</p>
             <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Materiales añadidos</th><th>Registrado por</th></tr></thead><tbody id="listaAlmacenMovimientos"></tbody></table></div>
@@ -1074,6 +1079,7 @@
           <div id="economiaGastos" class="economia-subpanel" style="display:none">
             <div class="economia-panel-toolbar">
               <button type="button" class="btn btn-register" id="btnNuevoGasto">+ Registrar gasto</button>
+              <button type="button" class="btn btn-register btn-enviar-registro-discord" title="Envía el resumen financiero al canal de Discord">Enviar registro al canal de Discord</button>
               <div class="economia-filtro-wrap">
                 <input type="text" id="filtroEconomiaGastos" class="input-buscar-registro" placeholder="Buscar por concepto, categoría, registrado por…" autocomplete="off">
               </div>
@@ -1084,6 +1090,7 @@
             <div class="economia-previsiones-header">
               <label>Mes:</label>
               <input type="month" id="economiaPrevisionMes" class="economia-input-mes">
+              <button type="button" class="btn btn-register btn-enviar-registro-discord" title="Envía el resumen financiero al canal de Discord">Enviar registro al canal de Discord</button>
             </div>
             <div id="economiaPrevisionesContenido" class="economia-previsiones-contenido"></div>
           </div>
@@ -1093,6 +1100,7 @@
               <h3 class="economia-financiera-titulo">Resultado del negocio (EBITA taller)</h3>
               <p class="economia-financiera-formula">Ingresos − Costes − Gastos = EBITA</p>
               <div id="economiaFinancieraResumen" class="economia-financiera-resumen"></div>
+              <button type="button" class="btn btn-register btn-enviar-registro-discord" id="btnEnviarRegistroDiscord" title="Envía el resumen financiero al canal de Discord">Enviar registro al canal de Discord</button>
             </section>
             <section class="economia-financiera-section">
               <h3 class="economia-financiera-titulo">Reparto de beneficios</h3>
@@ -1737,6 +1745,22 @@
           </div>
           <div id="listaMaterialEntregadoFicha" class="usuario-material-entregado-lista"></div>
         </section>
+      </div>
+    </div>
+
+    <!-- Pantalla Materiales recuperados (todos los usuarios) -->
+    <div id="pantallaMaterialesRecuperados" class="pantalla-secundaria" style="display:none">
+      <div class="pantalla-secundaria-header">
+        <button type="button" class="btn btn-home" id="btnMaterialesRecuperadosHome" aria-label="Volver">← Volver</button>
+        <h2 class="pantalla-secundaria-titulo">Materiales recuperados</h2>
+      </div>
+      <div class="pantalla-secundaria-body scrollbar-on-scroll">
+        <p class="materiales-recuperados-desc">Indica las cantidades de cada material que devuelves al almacén tras las reparaciones (los mismos tipos que se usan al registrar una reparación).</p>
+        <div id="formMaterialesRecuperadosEmpleadoWrap" class="materiales-recuperados-form-wrap"></div>
+        <div class="materiales-recuperados-actions">
+          <button type="button" class="btn btn-outline" id="btnMaterialesRecupGuardarAlmacen">Guardar en almacén</button>
+          <button type="button" class="btn btn-register" id="btnMaterialesRecupEnviarDiscord">Enviar registro al canal de Discord</button>
+        </div>
       </div>
     </div>
 

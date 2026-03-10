@@ -1,14 +1,14 @@
  NORMATIVA INTERNA – SALTLAB CAFE MOTORSPORT
 
 >  SALTLAB CAFE MOTORSPORT es un comercio LEGAL.
-> Todo el personal debe actuar con profesionalismo, discreción y respeto a la normativa vigente.
+> Todo el personal debe actuar con profesionalidad, educación y respeto a la normativa vigente.
 
 ---
 
  1. COMPORTAMIENTO Y CONDUCTA
-Queda totalmente prohibido armar jaleo, conflictos o altercados, aunque se pertenezca a una banda.,
-Dentro del taller se actúa exclusivamente como trabajador del comercio, no como miembro de ninguna organización.,
-Cualquier comportamiento que comprometa la imagen del taller será sancionado IC.,
+Queda totalmente prohibido llevar a cabo cualquier tipo de actividad ilegal o relacionada con bandas en el taller, tampoco se tolerarán conflictos o altercados, aunque se pertenezca a una banda.,
+Dentro del taller se actúa única y exclusivamente como trabajador del taller; bajo ningún concepto como miembro de ninguna organización.,
+Cualquier comportamiento que incumpla la normativa o que los admin consideren que comprometa la imagen del taller será sancionado IC., Además de perder inmediatamente el empleo y ser automáticamente vetado como cliente o futuro trabajador en el taller. En caso de ser necesario se recurrirá a informar a las autoridades policiales. 
 
 ---
 
@@ -16,13 +16,14 @@ Cualquier comportamiento que comprometa la imagen del taller será sancionado IC
 Está prohibido portar colores, símbolos o vestimenta de bandas mientras se esté:
 De servicio,
 Trabajando dentro o fuera del taller,
+Es de obligatorio cumplimiento el uso del uniforme indicado en el canal UNIFORMES, tanto para hombres como para mujeres. cualquier detección de una actividad profesional sin el correspondiente uniforme, se traducirá en una sanción IC. 
 ,
-SALTLAB CAFE MOTORSPORT debe mantenerse como un espacio neutral y profesional.,
+SALTLAB CAFE MOTORSPORT debe mantenerse como un espacio neutral y profesional., 
 
 ---
 
  3. NORMATIVA DE COMERCIO
-Todos los trabajadores deben conocer y respetar la normativa general de comercios.,
+Todos los trabajadores deben conocer y respetar la normativa general de comercios., Está indicada en este mismo canal de NORMATIVAS. 
 El taller no pertenece a ninguna banda ni puede ser usado como punto de abuso, refugio o ventaja ilegal.,
 
 ---
@@ -34,16 +35,18 @@ Ser utilizado únicamente para tareas del taller,
 ,
 Existe control de materiales.,
  Cero tolerancia al hurto o uso indebido de piezas, herramientas o recursos.,
+La herramienta desarrollada por los admin tiene un complejo control de stock de absolutamente todas las piezas o materiales que pueda tener acceso un empleado, por lo tanto se ruega total transparencia en todo este aspecto, cualquier hurto detectado, será notificado a las autoridades policiales además de significar la pérdida del empleo inmediatamente. 
 
 ---
 
  5. REGISTRO Y CONTROL DE ALMACÉN
 Al finalizar cualquier servicio, todo mecánico deberá:
 Dirigirse al almacén designado,
-Guardar correctamente todos los materiales recuperados de reparaciones,
+Guardar correctamente todos los materiales recuperados de reparaciones, Siempre y cuando no se haya registrado todo el material recuperado en los propios registros de reparación. 
 Registrar el estado del almacén mediante una fotografía,
+Se deberán de entregar obligatoriamente las herramientas de diagnosis y de tuning al finalizar el turno, estas no se pueden sacar del taller bajo ningún concepto u autorización expresa de los admin. 
 ,
-Este registro deberá realizarse en el canal habilitado para ello.,
+Este registro deberá realizarse en el canal INVENTARIO
 El objetivo es mantener un control real y actualizado del material del taller.,
 El incumplimiento de este procedimiento podrá conllevar sanciones IC.,
 
@@ -52,6 +55,7 @@ El incumplimiento de este procedimiento podrá conllevar sanciones IC.,
  6. SERVICIO DE GRÚA
 Para ofrecer asistencia con grúa debe haber mínimo 2 mecánicos de servicio activos.,
 No se prestará servicio de grúa si no se cumple este requisito.,
+Se debe de llevar obligatoriamente el uniforme del taller. 
 
 ---
 
@@ -62,11 +66,11 @@ Compañeros de trabajo,
 Amigos o conocidos,
 ,
 Se aplicarán descuentos correspondientes, pero nunca trabajos gratuitos.,
-
+El incumplimiento de esta norma puede conllevar sanciones IC. 
 ---
 
  8. HORARIOS Y MÍNIMO DE SERVICIO
-Cada trabajador debe cumplir un mínimo de 5 horas semanales de de servicio.,
+Cada trabajador debe cumplir un mínimo de 5 horas semanales de servicio.,
 En caso de no poder cumplir:
 Se debe justificar,
 O indicar previamente el horario disponible para cumplir el mínimo,

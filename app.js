@@ -206,7 +206,7 @@ function applyPreferencias(prefs) {
   }
 }
 
-const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaVacantes', 'pantallaBandejaEntrada', 'pantallaResultadosCalculadora', 'pantallaTunnings', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion'];
+const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaVacantes', 'pantallaBandejaEntrada', 'pantallaResultadosCalculadora', 'pantallaTunnings', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion', 'pantallaMaterialesRecuperados'];
 
 const MEDIA_PENDING_STORAGE = 'benny_media_pending';
 const MEDIA_APPROVED_STORAGE = 'benny_media_approved';
@@ -1420,6 +1420,10 @@ function vincularAdmin() {
         if (typeof abrirPantallaVacantes === 'function') abrirPantallaVacantes();
         return;
       }
+      if (nav === 'materiales-recuperados') {
+        if (typeof abrirPantallaMaterialesRecuperados === 'function') abrirPantallaMaterialesRecuperados();
+        return;
+      }
       if (nav && gestionNavToBtn[nav]) {
         var btn = document.getElementById(gestionNavToBtn[nav]);
         if (btn) btn.click();
@@ -1695,6 +1699,73 @@ function getCostesTotales() {
 function getGastosTotales() {
   var gastos = typeof getGastos === 'function' ? getGastos() : [];
   return gastos.reduce(function (sum, g) { return sum + (parseFloat(g.importe) || 0); }, 0);
+}
+
+function getResumenFinancieroTexto() {
+  var ingresos = getIngresosTotales();
+  var costes = getCostesTotales();
+  var gastos = getGastosTotales();
+  var ebita = ingresos - costes - gastos;
+  var fecha = new Date().toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+  return '📊 **Resumen financiero — SALTLAB Calculator**\n' +
+    'Fecha: ' + fecha + '\n\n' +
+    '• **Ingresos** (facturado reparaciones/tuneos): ' + ingresos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €\n' +
+    '• **Costes** (compras recibidas): ' + costes.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €\n' +
+    '• **Gastos** (alquiler, salarios, etc.): ' + gastos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €\n' +
+    '• **EBITA taller**: ' + ebita.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function enviarEntregaADiscord(datos) {
+  var apiBase = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').replace(/\/$/, '') : '';
+  if (!apiBase) return;
+  var quien = (datos.entregadoPorNombre || '—').toString().trim();
+  var material = (datos.materialLabel || datos.materialConcepto || '—').toString().trim();
+  var trabajador = (datos.trabajadorNombre || '—').toString().trim();
+  var cantidad = datos.cantidad != null ? Number(datos.cantidad) : 1;
+  var unidad = (datos.unidad || 'ud').toString().trim();
+  var fecha = datos.fecha ? (function () {
+    try { return new Date(datos.fecha).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return datos.fecha; }
+  })() : '—';
+  var content = '🔧 **Entrega de herramientas**\n' +
+    '**Entregado por:** ' + quien + '\n' +
+    '**Material:** ' + material + '\n' +
+    '**Cantidad:** ' + cantidad + ' ' + unidad + '\n' +
+    '**Entregado a:** ' + trabajador + '\n' +
+    '**Fecha:** ' + fecha;
+  fetch(apiBase + '/api/discord-entregas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content })
+  }).catch(function () {});
+}
+
+function enviarRegistroDiscord() {
+  var apiBase = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').replace(/\/$/, '') : '';
+  if (!apiBase) {
+    alert('No está configurada la URL del backend (SALTLAB_API_URL). Necesitas el servidor en marcha para enviar a Discord.');
+    return;
+  }
+  var btns = document.querySelectorAll('.btn-enviar-registro-discord');
+  btns.forEach(function (b) { b.disabled = true; b.textContent = 'Enviando…'; });
+  var content = getResumenFinancieroTexto();
+  var url = apiBase + '/api/discord-economia';
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content })
+  }).then(function (r) {
+    if (r.ok) {
+      alert('Registro enviado al canal de Discord.');
+    } else {
+      return r.json().then(function (data) {
+        throw new Error(data.error || 'Error ' + r.status);
+      }).catch(function () { throw new Error('Error ' + r.status); });
+    }
+  }).catch(function (e) {
+    alert('No se pudo enviar al Discord. ¿Está el servidor (backend) en marcha? ' + (e.message || e));
+  }).finally(function () {
+    btns.forEach(function (b) { b.disabled = false; b.textContent = 'Enviar registro al canal de Discord'; });
+  });
 }
 
 function renderEconomiaFinanciera() {
@@ -2314,9 +2385,45 @@ function renderAlmacenMateriales() {
     tbody.innerHTML = '';
     TIPOS_MATERIAL_ALMACEN.forEach(function (t) {
       var tr = document.createElement('tr');
+      tr.setAttribute('data-almacen-material-id', t.id);
       var q = stock[t.id] != null ? stock[t.id] : 0;
-      tr.innerHTML = '<td>' + escapeHtml(t.nombre) + '</td><td>' + escapeHtml(t.unidad) + '</td><td>' + Number(q).toLocaleString('es-ES') + '</td>';
+      tr.innerHTML =
+        '<td>' + escapeHtml(t.nombre) + '</td>' +
+        '<td>' + escapeHtml(t.unidad) + '</td>' +
+        '<td class="almacen-detalle-cant almacen-cantidad-actual">' + Number(q).toLocaleString('es-ES') + '</td>' +
+        '<td><input type="number" class="almacen-input-aportaciones" min="0" step="1" value="0" data-material-id="' + escapeHtmlAttr(t.id) + '" placeholder="0"></td>' +
+        '<td><input type="number" class="almacen-input-retiradas" min="0" step="1" value="0" data-material-id="' + escapeHtmlAttr(t.id) + '" placeholder="0"></td>' +
+        '<td class="almacen-acciones-cel">' +
+          '<button type="button" class="btn btn-outline btn-sm almacen-btn-aplicar" data-material-id="' + escapeHtmlAttr(t.id) + '" title="Aplicar aportaciones y retiradas">Aplicar</button> ' +
+          '<button type="button" class="btn btn-outline btn-sm almacen-btn-reset" data-material-id="' + escapeHtmlAttr(t.id) + '" title="Poner cantidad a cero">Reset</button>' +
+        '</td>';
       tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.almacen-btn-aplicar').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-material-id');
+        if (!id) return;
+        var row = btn.closest('tr');
+        var inpA = row ? row.querySelector('.almacen-input-aportaciones') : null;
+        var inpR = row ? row.querySelector('.almacen-input-retiradas') : null;
+        var a = inpA ? parseFloat(inpA.value) || 0 : 0;
+        var r = inpR ? parseFloat(inpR.value) || 0 : 0;
+        if (a === 0 && r === 0) return;
+        if (typeof aplicarAportacionesRetiradas === 'function') aplicarAportacionesRetiradas(id, a, r);
+        if (inpA) inpA.value = '0';
+        if (inpR) inpR.value = '0';
+        if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
+        if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      });
+    });
+    tbody.querySelectorAll('.almacen-btn-reset').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-material-id');
+        if (!id || !confirm('¿Poner la cantidad de este material a cero?')) return;
+        if (typeof setStockMaterialCero === 'function') setStockMaterialCero(id);
+        if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
+        if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      });
     });
   }
   if (tbodyMov && typeof getMovimientosAlmacen === 'function') {
@@ -2526,6 +2633,79 @@ function renderFormRegistrarMaterialesRecuperados() {
     div.className = 'field';
     div.innerHTML = '<label>' + escapeHtml(t.nombre) + ' (' + escapeHtml(t.unidad) + ')</label><input type="number" id="almacen_q_' + escapeHtmlAttr(t.id) + '" min="0" step="1" value="0" data-material-id="' + escapeHtmlAttr(t.id) + '">';
     form.appendChild(div);
+  });
+}
+
+function renderFormMaterialesRecuperadosEmpleado() {
+  var wrap = document.getElementById('formMaterialesRecuperadosEmpleadoWrap');
+  if (!wrap || typeof TIPOS_MATERIAL_ALMACEN === 'undefined') return;
+  wrap.innerHTML = '';
+  var form = document.createElement('form');
+  form.id = 'formMaterialesRecuperadosEmpleado';
+  form.className = 'form-almacen-materiales materiales-recuperados-form';
+  TIPOS_MATERIAL_ALMACEN.forEach(function (t) {
+    var div = document.createElement('div');
+    div.className = 'field';
+    div.innerHTML = '<label>' + escapeHtml(t.nombre) + ' (' + escapeHtml(t.unidad) + ')</label><input type="number" id="materialesRecup_q_' + escapeHtmlAttr(t.id) + '" min="0" step="1" value="0" data-material-id="' + escapeHtmlAttr(t.id) + '">';
+    form.appendChild(div);
+  });
+  wrap.appendChild(form);
+}
+
+function getMaterialesRecuperadosFormData() {
+  var session = typeof getSession === 'function' ? getSession() : null;
+  var empleadoNombre = session ? (session.nombre || session.username || '') : '';
+  var movimiento = {};
+  if (typeof TIPOS_MATERIAL_ALMACEN !== 'undefined') {
+    TIPOS_MATERIAL_ALMACEN.forEach(function (t) {
+      var inp = document.getElementById('materialesRecup_q_' + t.id);
+      var val = inp ? parseFloat(inp.value) : 0;
+      if (val > 0) movimiento[t.id] = val;
+    });
+  }
+  return { movimiento: movimiento, empleadoNombre: empleadoNombre };
+}
+
+function abrirPantallaMaterialesRecuperados() {
+  cerrarTodasPantallasSecundarias();
+  if (typeof renderFormMaterialesRecuperadosEmpleado === 'function') renderFormMaterialesRecuperadosEmpleado();
+  if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaMaterialesRecuperados');
+}
+
+function enviarMaterialesRecuperadosADiscord(datos) {
+  var apiBase = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').replace(/\/$/, '') : '';
+  if (!apiBase) {
+    alert('No está configurada la URL del backend. Necesitas el servidor en marcha para enviar a Discord.');
+    return;
+  }
+  var empleado = (datos.empleadoNombre || '—').toString().trim();
+  var lineas = [];
+  if (typeof TIPOS_MATERIAL_ALMACEN !== 'undefined' && datos.movimiento && Object.keys(datos.movimiento).length > 0) {
+    TIPOS_MATERIAL_ALMACEN.forEach(function (t) {
+      var q = datos.movimiento[t.id];
+      if (typeof q === 'number' && q > 0) lineas.push(t.nombre + ': ' + q + ' ' + (t.unidad || 'ud'));
+    });
+  }
+  if (lineas.length === 0) {
+    alert('Indica al menos una cantidad mayor que 0.');
+    return;
+  }
+  if (typeof addMaterialesAlmacen === 'function') addMaterialesAlmacen(datos.movimiento);
+  var fecha = new Date().toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+  var content = '📦 **Materiales recuperados**\n**Empleado:** ' + empleado + '\n**Fecha:** ' + fecha + '\n\n' + lineas.join('\n');
+  var btn = document.getElementById('btnMaterialesRecupEnviarDiscord');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  fetch(apiBase + '/api/discord-materiales', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content })
+  }).then(function (r) {
+    if (r.ok) alert('Registro enviado al canal de Discord.');
+    else return r.json().then(function (data) { throw new Error(data.error || 'Error ' + r.status); }).catch(function () { throw new Error('Error ' + r.status); });
+  }).catch(function (e) {
+    alert('No se pudo enviar al Discord. ¿Está el servidor en marcha? ' + (e.message || e));
+  }).finally(function () {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar registro al canal de Discord'; }
   });
 }
 
@@ -2852,6 +3032,18 @@ function vincularEconomia() {
     var ta = document.getElementById('economiaRepartoBeneficios');
     if (ta) try { localStorage.setItem(REPARTO_BENEFICIOS_STORAGE, (ta.value || '').trim()); alert('Reparto de beneficios guardado.'); } catch (e) { alert('No se pudo guardar.'); }
   });
+  var panelEconomia = document.getElementById('panelEconomia');
+  if (panelEconomia && !panelEconomia.dataset.discordBtnBound) {
+    panelEconomia.dataset.discordBtnBound = '1';
+    panelEconomia.addEventListener('click', function (ev) {
+      var el = ev.target;
+      var btn = el.closest && el.closest('.btn-enviar-registro-discord');
+      if (btn) {
+        ev.preventDefault();
+        enviarRegistroDiscord();
+      }
+    });
+  }
   var btnCompra = document.getElementById('btnNuevaCompra');
   var btnInv = document.getElementById('btnNuevoInventario');
   var btnGasto = document.getElementById('btnNuevoGasto');
@@ -2912,7 +3104,7 @@ function vincularEconomia() {
     var partsT = (selTrab && selTrab.value) ? selTrab.value.split('|') : [];
     var partsM = (selMat && selMat.value) ? selMat.value.split('|') : [];
     var session = typeof getSession === 'function' ? getSession() : null;
-    addEntregaMaterial({
+    var item = {
       fecha: (document.getElementById('entregaFecha') && document.getElementById('entregaFecha').value) || new Date().toISOString(),
       trabajadorId: partsT[0] || '',
       trabajadorNombre: partsT[1] || (selTrab && selTrab.selectedOptions[0] ? selTrab.selectedOptions[0].textContent : ''),
@@ -2922,7 +3114,9 @@ function vincularEconomia() {
       unidad: (document.getElementById('entregaUnidad') && document.getElementById('entregaUnidad').value) || 'ud',
       entregadoPorId: session ? (session.id || session.username || '') : '',
       entregadoPorNombre: session ? (session.nombre || session.username || '') : (document.getElementById('entregaEntregadoPor') && document.getElementById('entregaEntregadoPor').value) || ''
-    });
+    };
+    addEntregaMaterial(item);
+    if (typeof enviarEntregaADiscord === 'function') enviarEntregaADiscord(item);
     document.getElementById('modalEntregaMaterial').classList.remove('active');
     if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial();
     if (window._entregaDesdeFichaUserId && typeof renderMaterialEntregadoEnFicha === 'function') {
@@ -2997,6 +3191,22 @@ function vincularEconomia() {
     if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
     if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
     alert('Materiales registrados en el almacén.');
+  });
+  var btnMaterialesRecupHome = document.getElementById('btnMaterialesRecuperadosHome');
+  if (btnMaterialesRecupHome) btnMaterialesRecupHome.addEventListener('click', function () { if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias(); });
+  var btnMaterialesRecupGuardar = document.getElementById('btnMaterialesRecupGuardarAlmacen');
+  if (btnMaterialesRecupGuardar) btnMaterialesRecupGuardar.addEventListener('click', function () {
+    var datos = typeof getMaterialesRecuperadosFormData === 'function' ? getMaterialesRecuperadosFormData() : { movimiento: {} };
+    if (Object.keys(datos.movimiento).length === 0) { alert('Indica al menos una cantidad mayor que 0.'); return; }
+    if (typeof addMaterialesAlmacen === 'function') addMaterialesAlmacen(datos.movimiento);
+    if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+    if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
+    alert('Materiales guardados en el almacén.');
+  });
+  var btnMaterialesRecupDiscord = document.getElementById('btnMaterialesRecupEnviarDiscord');
+  if (btnMaterialesRecupDiscord) btnMaterialesRecupDiscord.addEventListener('click', function () {
+    var datos = typeof getMaterialesRecuperadosFormData === 'function' ? getMaterialesRecuperadosFormData() : { movimiento: {}, empleadoNombre: '' };
+    if (typeof enviarMaterialesRecuperadosADiscord === 'function') enviarMaterialesRecuperadosADiscord(datos);
   });
   var formCompra = document.getElementById('formCompra');
   if (formCompra) formCompra.addEventListener('submit', function (e) {
