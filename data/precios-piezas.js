@@ -1,7 +1,7 @@
 /**
  * Precios de venta y coste por artículo de reparación/tuneo.
- * - Partes chasis (carrocería): 30 €/ud.
- * - Partes esenciales: 65 €/ud.
+ * - Partes chasis (carrocería): coste 15$/ud (documento).
+ * - Partes esenciales: coste 40$/ud (documento).
  * - Swap motor: % valor vehículo (25%).
  * - Piezas performance: % valor vehículo (5%).
  * - Piezas cosmetic: % valor vehículo (5%).
@@ -11,8 +11,8 @@
   var STORAGE = 'benny_precios_piezas';
 
   var DEFAULTS = {
-    chasis: { coste: 0, precioVenta: 30 },
-    esenciales: { coste: 0, precioVenta: 65 },
+    chasis: { coste: 15, precioVenta: 30 },
+    esenciales: { coste: 40, precioVenta: 65 },
     swapMotor: { coste: 0, precioVentaPorcentaje: 25 },
     performance: { coste: 0, precioVentaPorcentaje: 5 },
     cosmetic: { coste: 0, precioVentaPorcentaje: 5 },

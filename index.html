@@ -41,26 +41,6 @@
           <p id="loginError" class="login-error"></p>
           <button type="submit" class="btn btn-login">Entrar</button>
         </form>
-        <p class="login-recovery-wrap">
-          <button type="button" class="btn-link login-recovery-link" id="loginOlvidasteCredenciales">¿Olvidaste las credenciales?</button>
-        </p>
-        <p class="login-recovery-wrap">
-          <button type="button" class="btn-link login-recovery-link" id="loginCrearUsuario">Crear usuario</button>
-        </p>
-        <p class="login-demo-wrap">
-          <button type="button" class="btn btn-demo" id="loginDemo">Demo</button>
-        </p>
-        <div class="login-servidor-wrap">
-          <button type="button" class="btn-link login-servidor-link" id="loginConfigurarServidor">Configurar URL del servidor</button>
-          <div id="loginServidorPanel" class="login-servidor-panel" style="display:none">
-            <label for="loginServidorUrl">URL del servidor (ej. http://192.168.1.10:3001)</label>
-            <input type="text" id="loginServidorUrl" class="login-input" placeholder="http://localhost:3001" autocomplete="off">
-            <div class="login-servidor-actions">
-              <button type="button" class="btn btn-sm" id="loginServidorGuardar">Guardar</button>
-              <span id="loginServidorEstado" class="login-servidor-estado"></span>
-            </div>
-          </div>
-        </div>
         <p class="login-saltlab">SALTLAB CAFE · FLAVOR MEETS THE SEA</p>
       </div>
     </div>
@@ -384,25 +364,8 @@
                 <label><input type="checkbox" id="tuneMotor"> SWAP DE MOTOR</label>
               </div>
               <div class="tuning-sections">
-                <span class="tuning-sections-label">Piezas (0–30):</span>
-                <div class="tuning-row">
-                  <label>PERFORMANCE</label>
-                  <select id="piezasPerformance" class="input-piezas-select" aria-label="Piezas performance">
-                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
-                  </select>
-                </div>
-                <div class="tuning-row">
-                  <label>CUSTOM</label>
-                  <select id="piezasCustom" class="input-piezas-select" aria-label="Piezas custom">
-                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
-                  </select>
-                </div>
-                <div class="tuning-row">
-                  <label>COSMETIC</label>
-                  <select id="piezasCosmetic" class="input-piezas-select" aria-label="Piezas cosmetic">
-                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
-                  </select>
-                </div>
+                <span class="tuning-sections-label">Indica la categoría y las piezas utilizadas en el tuneo (costes del documento):</span>
+                <div id="tuningPiezasPorCategoria" class="tuning-piezas-por-categoria"></div>
               </div>
             </div>
             <div id="wrapRepairSection" class="section repair-section repair-section-destacado">
@@ -418,11 +381,19 @@
                     <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
                   </select>
                 </div>
+                <div id="desglosePartesChasisWrap" class="desglose-piezas-wrap" style="display:none">
+                  <label class="desglose-piezas-label">Tipo de cada pieza de chasis utilizada</label>
+                  <div id="desglosePartesChasisList" class="desglose-piezas-list"></div>
+                </div>
                 <div class="field">
                   <label>Partes esenciales <span class="field-hint">(0–6)</span></label>
                   <select id="partesEsenciales" class="input-piezas-select input-cantidad" aria-label="Partes esenciales">
                     <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
                   </select>
+                </div>
+                <div id="desglosePartesEsencialesWrap" class="desglose-piezas-wrap" style="display:none">
+                  <label class="desglose-piezas-label">Tipo de cada pieza esencial utilizada</label>
+                  <div id="desglosePartesEsencialesList" class="desglose-piezas-list"></div>
                 </div>
               </div>
               <div class="field total-repair">
@@ -470,6 +441,7 @@
               <h3>PRESUPUESTO</h3>
               <div id="wrapPresupuestoTuneo" class="presupuesto-tuneo-lines">
                 <div class="budget-line"><span>MOTOR</span><span id="presupuestoMotor">$0</span></div>
+                <div class="budget-line"><span>KITS</span><span id="presupuestoKits">$0</span></div>
                 <div class="budget-line"><span>PERFORMANCE</span><span id="presupuestoPerformance">$0</span></div>
                 <div class="budget-line"><span>CUSTOM</span><span id="presupuestoCustom">$0</span></div>
                 <div class="budget-line"><span>COSMETIC</span><span id="presupuestoCosmetic">$0</span></div>
@@ -801,6 +773,12 @@
           </span>
           <span class="gestion-card-label">Economía</span>
         </button>
+        <button type="button" class="gestion-card gestion-card-stock gestion-card-shape-circle" data-tab="stock" title="Stock">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          </span>
+          <span class="gestion-card-label">Stock</span>
+        </button>
         <button type="button" class="gestion-card gestion-card-usuarios gestion-card-shape-circle" data-tab="usuarios" title="Empleados">
           <span class="gestion-card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="6" r="2.2"/><path d="M3.5 4.5h4"/><path d="M5 8.2v3.5l-1.2 1.8 1.2 1 1.2-1-1.2-1.8V8.2z"/><circle cx="18.5" cy="6" r="2.2"/><path d="M16.5 4.5h4"/><path d="M18 8.2v3.5l-1.2 1.8 1.2 1 1.2-1-1.2-1.8V8.2z"/><path d="M12 7v10M12 17l-2.5 2.2v1.2h5v-1.2l-2.5-2.2"/></svg>
@@ -961,19 +939,21 @@
           </div>
         </div>
         <div id="panelEconomia" class="admin-panel economia-panel" style="display:none">
-          <p class="economia-permisos-nota">Control de existencias: Varios (comida, bebida), Carrocería, Componentes esenciales, Tuning, Maquinaria. Solo administradores o empleados con permiso <strong>Compras y existencias</strong> pueden gestionar compras e inventario (el permiso se otorga en la ficha del empleado).</p>
-          <div class="economia-tabs">
+          <p class="economia-permisos-nota" id="economiaPermisosNota">Control de existencias: Varios (comida, bebida), Carrocería, Componentes esenciales, Tuning, Maquinaria. Solo administradores o empleados con permiso <strong>Compras y existencias</strong> pueden gestionar compras e inventario (el permiso se otorga en la ficha del empleado).</p>
+          <div class="economia-tabs" id="economiaTabs">
             <button type="button" class="economia-tab active" data-economia-tab="resumen">Resumen</button>
-            <button type="button" class="economia-tab" data-economia-tab="compras">Compras pendientes</button>
-            <button type="button" class="economia-tab" data-economia-tab="inventario">Inventario</button>
-            <button type="button" class="economia-tab" data-economia-tab="limites">Límites de stock</button>
             <button type="button" class="economia-tab" data-economia-tab="gastos">Gastos</button>
             <button type="button" class="economia-tab" data-economia-tab="previsiones">Previsiones</button>
             <button type="button" class="economia-tab" data-economia-tab="historial">Historial de pedidos</button>
             <button type="button" class="economia-tab" data-economia-tab="entregas">Entregas a trabajadores</button>
-            <button type="button" class="economia-tab" data-economia-tab="almacen">Almacén materiales</button>
-            <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="piezas">Precios piezas</button>
             <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="financiera">Gestión financiera</button>
+          </div>
+          <div class="economia-tabs stock-tabs" id="stockTabs" style="display:none">
+            <button type="button" class="economia-tab stock-tab active" data-stock-tab="compras">Compras pendientes</button>
+            <button type="button" class="economia-tab stock-tab" data-stock-tab="inventario">Inventario</button>
+            <button type="button" class="economia-tab stock-tab" data-stock-tab="limites">Límites de stock</button>
+            <button type="button" class="economia-tab stock-tab" data-stock-tab="almacen">Almacén materiales</button>
+            <button type="button" class="economia-tab stock-tab economia-tab-admin-only" data-stock-tab="piezas">Precios piezas</button>
           </div>
           <div id="economiaResumen" class="economia-subpanel">
             <div id="economiaDashboardBar" class="economia-dashboard-bar">
@@ -1053,12 +1033,28 @@
             <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Materiales añadidos</th><th>Registrado por</th></tr></thead><tbody id="listaAlmacenMovimientos"></tbody></table></div>
           </div>
           <div id="economiaPiezas" class="economia-subpanel" style="display:none">
-            <h3 class="economia-piezas-titulo">Coste, precio de venta y margen por artículo</h3>
+            <h3 class="economia-piezas-titulo">Coste, precio de venta y margen por artículo (reparación / tuneo general)</h3>
             <p class="economia-historial-desc">Control del coste, precio de venta y margen por artículo. Chasis: 30 €/ud. Esenciales: 65 €/ud. Swap motor: 25% valor veh. Performance y cosmetic: 5% valor veh. (por pieza). Full tuning: 40% valor veh. Solo administradores.</p>
             <div class="economia-table-wrap">
               <table class="economia-table economia-table-piezas">
                 <thead><tr><th>Artículo</th><th>Coste (€)</th><th>Precio venta</th><th>Margen (€)</th><th>Margen %</th><th></th></tr></thead>
                 <tbody id="listaPreciosPiezas"></tbody>
+              </table>
+            </div>
+            <h3 class="economia-piezas-titulo">Piezas de tuneo: coste y precio de venta</h3>
+            <p class="economia-historial-desc">Coste de compra para el taller y precio de venta al cliente por cada pieza. El total del presupuesto en la calculadora usa el precio de venta de las piezas seleccionadas.</p>
+            <div class="economia-table-wrap" id="wrapPreciosPiezasTuneo">
+              <table class="economia-table economia-table-piezas">
+                <thead><tr><th>Categoría</th><th>Artículo</th><th>Coste ($)</th><th>Precio venta ($)</th><th>Margen ($)</th><th>Margen %</th><th></th></tr></thead>
+                <tbody id="listaPreciosPiezasTuneo"></tbody>
+              </table>
+            </div>
+            <h3 class="economia-piezas-titulo">Maquinaria</h3>
+            <p class="economia-historial-desc">Costes de compra de maquinaria del taller: tablet de tuning (1500$), Grúa de motor (800$), máquina de diagnosis (1000$).</p>
+            <div class="economia-table-wrap">
+              <table class="economia-table economia-table-piezas">
+                <thead><tr><th>Concepto</th><th>Coste ($)</th></tr></thead>
+                <tbody id="listaPreciosMaquinaria"></tbody>
               </table>
             </div>
           </div>
@@ -2202,6 +2198,8 @@
   <script src="data/normativas.js"></script>
   <script src="data/economia.js"></script>
   <script src="data/precios-piezas.js"></script>
+  <script src="data/piezas-tuning.js"></script>
+  <script src="data/stock-piezas-reparacion.js"></script>
   <script src="data/almacen-materiales.js"></script>
   <script src="data/entregas-material.js"></script>
   <script src="data/clientes-seed.js"></script>

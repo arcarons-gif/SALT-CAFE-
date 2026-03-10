@@ -15,6 +15,8 @@ const CONFIG = {
   kitReparacionPrecio: 650,
   /** Webhook Discord: cada registro de reparación/tuneo se envía a este canal */
   discordWebhookUrl: 'https://discord.com/api/webhooks/1477415887605731449/bV0MEE81JWF0YEVZ5RRZv1dBtGV9g7evSqTcNVuImswTJ4eu5sFeXlQB4Ek3QvMHffW5',
+  /** Webhook Discord: resultado de fichaje (salida) con horas y acumuladas */
+  discordWebhookFichajes: 'https://discord.com/api/webhooks/1480963729481797693/P5VHPrywjMlEuS9xsSR0sr4PnGodDEelziPuN_fWNMS1S4p17oxMSrShFsbuUsNh5rLn',
 };
 
 // Estado (servicios: cache en memoria para evitar parse repetido; se invalida al guardar o al sincronizar)
@@ -460,9 +462,6 @@ const el = {
   fullTuning: document.getElementById('fullTuning'),
   fullTuningPrecio: document.getElementById('fullTuningPrecio'),
   tuneMotor: document.getElementById('tuneMotor'),
-  piezasPerformance: document.getElementById('piezasPerformance'),
-  piezasCustom: document.getElementById('piezasCustom'),
-  piezasCosmetic: document.getElementById('piezasCosmetic'),
   reparacion: document.getElementById('reparacion'),
   partesChasis: document.getElementById('partesChasis'),
   partesEsenciales: document.getElementById('partesEsenciales'),
@@ -473,6 +472,7 @@ const el = {
   matriculaCalcDisplay: document.getElementById('matriculaCalcDisplay'),
   matriculaCalcModelo: document.getElementById('matriculaCalcModelo'),
   presupuestoMotor: document.getElementById('presupuestoMotor'),
+  presupuestoKits: document.getElementById('presupuestoKits'),
   presupuestoPerformance: document.getElementById('presupuestoPerformance'),
   presupuestoCustom: document.getElementById('presupuestoCustom'),
   presupuestoCosmetic: document.getElementById('presupuestoCosmetic'),
@@ -819,8 +819,32 @@ function mostrarResumenReparacion(s) {
   if (s.descuento != null && s.descuento > 0) rows.push({ label: 'Descuento', value: s.descuento + '%' });
   if (s.partesChasis != null || s.partesEsenciales != null || s.kitReparacion) {
     if (s.kitReparacion) rows.push({ label: 'Kit reparación', value: 'Sí' });
-    if (s.partesChasis != null) rows.push({ label: 'Partes chasis', value: String(s.partesChasis) });
-    if (s.partesEsenciales != null) rows.push({ label: 'Partes esenciales', value: String(s.partesEsenciales) });
+    if (s.partesChasis != null) {
+      var valorChasis = String(s.partesChasis);
+      if (Array.isArray(s.piezasChasisDesglose) && s.piezasChasisDesglose.length) {
+        var nombresChasis = typeof TIPOS_PIEZAS_CHASIS !== 'undefined' ? TIPOS_PIEZAS_CHASIS : [];
+        var countsCh = {};
+        s.piezasChasisDesglose.forEach(function (id) { countsCh[id] = (countsCh[id] || 0) + 1; });
+        valorChasis = Object.keys(countsCh).map(function (id) {
+          var n = nombresChasis.find(function (t) { return t.id === id; });
+          return (countsCh[id] || 0) + ' ' + (n ? n.nombre : id);
+        }).join(', ');
+      }
+      rows.push({ label: 'Partes chasis', value: valorChasis });
+    }
+    if (s.partesEsenciales != null) {
+      var valorEsenciales = String(s.partesEsenciales);
+      if (Array.isArray(s.piezasEsencialesDesglose) && s.piezasEsencialesDesglose.length) {
+        var nombresEs = typeof TIPOS_PIEZAS_ESENCIALES !== 'undefined' ? TIPOS_PIEZAS_ESENCIALES : [];
+        var countsEs = {};
+        s.piezasEsencialesDesglose.forEach(function (id) { countsEs[id] = (countsEs[id] || 0) + 1; });
+        valorEsenciales = Object.keys(countsEs).map(function (id) {
+          var n = nombresEs.find(function (t) { return t.id === id; });
+          return (countsEs[id] || 0) + ' ' + (n ? n.nombre : id);
+        }).join(', ');
+      }
+      rows.push({ label: 'Partes esenciales', value: valorEsenciales });
+    }
   }
   body.innerHTML = '<div class="resumen-reparacion-filas">' + rows.map(function (r) {
     return '<div class="resumen-reparacion-row"><span class="resumen-reparacion-label">' + escapeHtml(r.label) + '</span><span class="resumen-reparacion-value">' + escapeHtml(r.value) + '</span></div>';
@@ -1001,7 +1025,8 @@ function manejarLogout() {
   var session = getSession();
   if (session && typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username)) {
     if (typeof limpiarEntradasAbiertasAntiguas === 'function') limpiarEntradasAbiertasAntiguas();
-    if (typeof cerrarUltimoFichaje === 'function') cerrarUltimoFichaje(session.username, new Date().toISOString());
+    var cerrado = typeof cerrarUltimoFichaje === 'function' ? cerrarUltimoFichaje(session.username, new Date().toISOString()) : null;
+    if (cerrado && typeof enviarRegistroFichajeADiscord === 'function') enviarRegistroFichajeADiscord(cerrado, session);
   }
   logout();
   document.getElementById('loginScreen').style.display = 'flex';
@@ -1321,18 +1346,24 @@ function vincularAdmin() {
     var puedeReset = hasPermission(s, 'gestionarUsuarios');
     document.querySelectorAll('.admin-tab').forEach(function (tab) {
       var t = tab.dataset.tab;
-      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'reset' && puedeReset);
+      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'stock' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'reset' && puedeReset);
       tab.style.display = visible ? '' : 'none';
     });
     document.querySelectorAll('.gestion-card').forEach(function (card) {
       if (card.getAttribute('data-gestion-nav')) return;
       var t = card.dataset.tab;
-      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'usuarios-tabla' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset) || (t === 'indicadores' && puedeUsuarios);
+      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'usuarios-tabla' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'stock' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset) || (t === 'indicadores' && puedeUsuarios);
       card.style.display = visible ? '' : 'none';
     });
-    document.querySelectorAll('.economia-tab').forEach(function (tab) {
+    var economiaTabsEl = document.getElementById('economiaTabs');
+    if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (tab) {
       var t = tab.dataset.economiaTab;
-      var soloAdmin = (t === 'gastos' || t === 'previsiones' || t === 'piezas' || t === 'financiera');
+      var soloAdmin = (t === 'gastos' || t === 'previsiones' || t === 'financiera');
+      tab.style.display = (soloAdmin && !hasPermission(s, 'gestionarUsuarios')) ? 'none' : '';
+    });
+    document.querySelectorAll('.stock-tab').forEach(function (tab) {
+      var t = tab.dataset.stockTab;
+      var soloAdmin = (t === 'piezas');
       tab.style.display = (soloAdmin && !hasPermission(s, 'gestionarUsuarios')) ? 'none' : '';
     });
   }
@@ -1340,7 +1371,7 @@ function vincularAdmin() {
   var gestionMenuEl = document.getElementById('gestionMenu');
   var gestionContenidoEl = document.getElementById('gestionContenido');
   var gestionContenidoTituloEl = document.getElementById('gestionContenidoTitulo');
-  var titulosGestion = { usuarios: 'Empleados', 'usuarios-tabla': 'Usuarios', convenios: 'Convenios', economia: 'Economía', 'solicitudes-graficas': 'Solicitudes', organigrama: 'Organigrama', reset: 'Reset / Limpiar datos', indicadores: 'Indicadores' };
+  var titulosGestion = { usuarios: 'Empleados', 'usuarios-tabla': 'Usuarios', convenios: 'Convenios', economia: 'Economía', stock: 'Stock', 'solicitudes-graficas': 'Solicitudes', organigrama: 'Organigrama', reset: 'Reset / Limpiar datos', indicadores: 'Indicadores' };
 
   function abrirPantallaGestion() {
     cerrarTodasPantallasSecundarias();
@@ -1604,25 +1635,47 @@ function vincularResetDatos() {
 }
 
 // ========== ECONOMÍA (compras, inventario, gastos, previsiones, almacén) ==========
+var ECONOMIA_SUBTABS = ['resumen', 'gastos', 'previsiones', 'historial', 'entregas', 'financiera'];
+var STOCK_SUBTABS = ['compras', 'inventario', 'limites', 'almacen', 'piezas'];
+
 function mostrarSubpanelEconomia(subtab) {
-  var tabs = ['resumen', 'compras', 'inventario', 'limites', 'gastos', 'previsiones', 'historial', 'entregas', 'almacen', 'piezas', 'financiera'];
-  tabs.forEach(function (t) {
+  ECONOMIA_SUBTABS.forEach(function (t) {
     var id = t === 'resumen' ? 'economiaResumen' : 'economia' + (t.charAt(0).toUpperCase() + t.slice(1));
     var el = document.getElementById(id);
     if (el) el.style.display = t === subtab ? '' : 'none';
   });
-  document.querySelectorAll('.economia-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.economiaTab === subtab); });
+  STOCK_SUBTABS.forEach(function (t) {
+    var id = 'economia' + (t.charAt(0).toUpperCase() + t.slice(1));
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var economiaTabsEl = document.getElementById('economiaTabs');
+  if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.economiaTab === subtab); });
   if (subtab === 'resumen') renderEconomiaResumen();
-  if (subtab === 'compras') renderComprasPendientes();
-  if (subtab === 'inventario') renderInventario();
-  if (subtab === 'limites') renderLimitesStock();
   if (subtab === 'gastos') renderGastos();
   if (subtab === 'previsiones') renderPrevisiones();
   if (subtab === 'historial') renderHistorialPedidos();
   if (subtab === 'entregas') renderEntregasMaterial();
+  if (subtab === 'financiera') renderEconomiaFinanciera();
+}
+
+function mostrarSubpanelStock(subtab) {
+  ECONOMIA_SUBTABS.forEach(function (t) {
+    var id = t === 'resumen' ? 'economiaResumen' : 'economia' + (t.charAt(0).toUpperCase() + t.slice(1));
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  STOCK_SUBTABS.forEach(function (t) {
+    var id = 'economia' + (t.charAt(0).toUpperCase() + t.slice(1));
+    var el = document.getElementById(id);
+    if (el) el.style.display = t === subtab ? '' : 'none';
+  });
+  document.querySelectorAll('.stock-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.stockTab === subtab); });
+  if (subtab === 'compras') renderComprasPendientes();
+  if (subtab === 'inventario') renderInventario();
+  if (subtab === 'limites') renderLimitesStock();
   if (subtab === 'almacen') renderAlmacenMateriales();
   if (subtab === 'piezas') renderPreciosPiezas();
-  if (subtab === 'financiera') renderEconomiaFinanciera();
 }
 
 var REPARTO_BENEFICIOS_STORAGE = 'benny_economia_reparto_beneficios';
@@ -2378,6 +2431,77 @@ function renderPreciosPiezas() {
       renderPreciosPiezas();
     });
   });
+  var tbodyTuneo = document.getElementById('listaPreciosPiezasTuneo');
+  if (tbodyTuneo && typeof PIEZAS_TUNING === 'object' && typeof CATEGORIAS_TUNEO !== 'undefined' && typeof getPreciosPiezasTuneo === 'function' && typeof savePreciosPiezasTuneo === 'function') {
+    var preciosTuneo = getPreciosPiezasTuneo();
+    tbodyTuneo.innerHTML = '';
+    CATEGORIAS_TUNEO.forEach(function (cat) {
+      var piezas = PIEZAS_TUNING[cat.id] || [];
+      piezas.forEach(function (p) {
+        var stored = preciosTuneo[p.id] || {};
+        var costeVal = stored.coste != null ? stored.coste : (p.coste != null ? p.coste : 0);
+        var ventaVal = stored.precioVenta != null ? stored.precioVenta : (p.coste != null ? p.coste * 2 : 0);
+        var margenEur = ventaVal - costeVal;
+        var margenPct = costeVal > 0 ? ((margenEur / costeVal) * 100).toFixed(1) + '%' : '—';
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-pieza-id', p.id || '');
+        tr.innerHTML =
+          '<td>' + escapeHtml(cat.nombre) + '</td>' +
+          '<td>' + escapeHtml(p.nombre || p.id) + '</td>' +
+          '<td><input type="number" class="input-pieza-tuneo-coste" min="0" step="1" value="' + costeVal + '" data-pieza-id="' + escapeHtmlAttr(p.id) + '"></td>' +
+          '<td><input type="number" class="input-pieza-tuneo-venta" min="0" step="1" value="' + ventaVal + '" data-pieza-id="' + escapeHtmlAttr(p.id) + '"></td>' +
+          '<td class="economia-piezas-margen-eur">' + margenEur.toFixed(2) + ' $</td>' +
+          '<td class="economia-piezas-margen-pct">' + margenPct + '</td>' +
+          '<td><button type="button" class="btn btn-outline btn-sm btn-guardar-pieza-tuneo" data-pieza-id="' + escapeHtmlAttr(p.id) + '">Guardar</button></td>';
+        tbodyTuneo.appendChild(tr);
+      });
+    });
+    tbodyTuneo.querySelectorAll('.input-pieza-tuneo-coste, .input-pieza-tuneo-venta').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var row = inp.closest('tr');
+        if (!row) return;
+        var costeInp = row.querySelector('.input-pieza-tuneo-coste');
+        var ventaInp = row.querySelector('.input-pieza-tuneo-venta');
+        var coste = parseFloat(costeInp && costeInp.value) || 0;
+        var venta = parseFloat(ventaInp && ventaInp.value) || 0;
+        var margenEur = venta - coste;
+        var margenPct = coste > 0 ? ((margenEur / coste) * 100).toFixed(1) + '%' : '—';
+        var margenEurEl = row.querySelector('.economia-piezas-margen-eur');
+        var margenPctEl = row.querySelector('.economia-piezas-margen-pct');
+        if (margenEurEl) margenEurEl.textContent = margenEur.toFixed(2) + ' $';
+        if (margenPctEl) margenPctEl.textContent = margenPct;
+      });
+    });
+    tbodyTuneo.querySelectorAll('.btn-guardar-pieza-tuneo').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-pieza-id');
+        if (!id) return;
+        var row = btn.closest('tr');
+        var costeInp = row && row.querySelector('.input-pieza-tuneo-coste');
+        var ventaInp = row && row.querySelector('.input-pieza-tuneo-venta');
+        var coste = parseFloat(costeInp && costeInp.value) || 0;
+        var venta = parseFloat(ventaInp && ventaInp.value) || 0;
+        var precios = getPreciosPiezasTuneo();
+        precios[id] = { coste: coste, precioVenta: venta };
+        savePreciosPiezasTuneo(precios);
+        renderPreciosPiezas();
+      });
+    });
+  }
+  var tbodyMaq = document.getElementById('listaPreciosMaquinaria');
+  if (tbodyMaq) {
+    var maquinaria = [
+      { nombre: 'tablet de tuning', coste: 1500 },
+      { nombre: 'Grúa de motor', coste: 800 },
+      { nombre: 'máquina de diagnosis', coste: 1000 }
+    ];
+    tbodyMaq.innerHTML = '';
+    maquinaria.forEach(function (m) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + escapeHtml(m.nombre) + '</td><td>' + (m.coste != null ? Number(m.coste).toLocaleString('es-ES') + ' $' : '0') + '</td>';
+      tbodyMaq.appendChild(tr);
+    });
+  }
 }
 
 function renderDetalleMaterialesAlmacenModal() {
@@ -2716,8 +2840,12 @@ function abrirModalGasto(id) {
 }
 
 function vincularEconomia() {
-  document.querySelectorAll('.economia-tab').forEach(function (tab) {
+  var economiaTabsEl = document.getElementById('economiaTabs');
+  if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (tab) {
     tab.addEventListener('click', function () { mostrarSubpanelEconomia(tab.dataset.economiaTab); });
+  });
+  document.querySelectorAll('.stock-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () { mostrarSubpanelStock(tab.dataset.stockTab); });
   });
   var btnReparto = document.getElementById('btnGuardarRepartoBeneficios');
   if (btnReparto) btnReparto.addEventListener('click', function () {
@@ -5084,11 +5212,13 @@ function vincularFichajes() {
       if (!session) return;
       limpiarEntradasAbiertasAntiguas();
       const now = new Date().toISOString();
-      if (cerrarUltimoFichaje(session.username, now)) {
+      const fichajeCerrado = cerrarUltimoFichaje(session.username, now);
+      if (fichajeCerrado) {
         renderListaFichajesReciente(session.username);
         renderFichajesDashboard(session.username);
         actualizarEstadoBotonEntrada();
         if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+        if (typeof enviarRegistroFichajeADiscord === 'function') enviarRegistroFichajeADiscord(fichajeCerrado, session);
         alert('Salida registrada a las ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
       } else {
         alert('No puedes fichar salida sin una entrada previa. Pulsa primero «Entrada» cuando empieces el turno.');
@@ -5114,11 +5244,13 @@ function vincularFichajes() {
       var abierta = typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(userId);
       if (abierta) {
         var now = new Date().toISOString();
-        if (typeof cerrarUltimoFichaje === 'function' && cerrarUltimoFichaje(userId, now)) {
+        var fichajeCerrado = typeof cerrarUltimoFichaje === 'function' ? cerrarUltimoFichaje(userId, now) : null;
+        if (fichajeCerrado) {
           renderListaFichajesReciente(userId);
           renderFichajesDashboard(userId);
           actualizarEstadoBotonEntrada();
           if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+          if (typeof enviarRegistroFichajeADiscord === 'function') enviarRegistroFichajeADiscord(fichajeCerrado, session);
           alert('Salida registrada a las ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
         } else {
           alert('No puedes fichar salida sin una entrada previa.');
@@ -5693,6 +5825,8 @@ function mostrarPanelAdmin(tab) {
   const panelUsuariosTabla = document.getElementById('panelUsuariosTabla');
   const panelConvenios = document.getElementById('panelConvenios');
   const panelEconomia = document.getElementById('panelEconomia');
+  const economiaTabs = document.getElementById('economiaTabs');
+  const stockTabs = document.getElementById('stockTabs');
   const panelSolicitudes = document.getElementById('panelSolicitudesGraficas');
   const panelReset = document.getElementById('panelReset');
   if (panelUsuarios) panelUsuarios.style.display = tab === 'usuarios' ? '' : 'none';
@@ -5702,8 +5836,16 @@ function mostrarPanelAdmin(tab) {
   }
   if (panelConvenios) panelConvenios.style.display = tab === 'convenios' ? '' : 'none';
   if (panelEconomia) {
-    panelEconomia.style.display = tab === 'economia' ? '' : 'none';
-    if (tab === 'economia') mostrarSubpanelEconomia('resumen');
+    panelEconomia.style.display = (tab === 'economia' || tab === 'stock') ? '' : 'none';
+    if (tab === 'economia') {
+      if (economiaTabs) economiaTabs.style.display = '';
+      if (stockTabs) stockTabs.style.display = 'none';
+      mostrarSubpanelEconomia('resumen');
+    } else if (tab === 'stock') {
+      if (economiaTabs) economiaTabs.style.display = 'none';
+      if (stockTabs) stockTabs.style.display = '';
+      mostrarSubpanelStock('compras');
+    }
   }
   if (panelSolicitudes) {
     panelSolicitudes.style.display = tab === 'solicitudes-graficas' ? '' : 'none';
@@ -7391,15 +7533,81 @@ function actualizarImagenVehiculo(url) {
   }
 }
 
+/** Margen de venta sobre coste de piezas de tuneo (2 = 100% margen). */
+var MARGEN_VENTA_PIEZAS_TUNEO = 2;
+
+/** Devuelve las piezas de tuneo seleccionadas por categoría (checkboxes). Suma precio de venta (lo que se cobra al cliente). */
+function getSelectedPiezasTuneo() {
+  var result = { kits: 0, performance: 0, custom: 0, cosmetics: 0, totalCoste: 0, piezas: [] };
+  if (typeof PIEZAS_TUNING === 'undefined' || typeof getPiezaById !== 'function') return result;
+  var container = document.getElementById('tuningPiezasPorCategoria');
+  if (!container) return result;
+  var getPrecioVenta = typeof getPrecioVentaPiezaTuneo === 'function' ? getPrecioVentaPiezaTuneo : function () { return 0; };
+  var checkboxes = container.querySelectorAll('.tuning-pieza-checkbox:checked');
+  checkboxes.forEach(function (cb) {
+    var cat = cb.getAttribute('data-categoria');
+    var piezaId = (cb.getAttribute('data-pieza-id') || '').trim();
+    if (!cat || !piezaId) return;
+    var pieza = getPiezaById(cat, piezaId);
+    if (!pieza) return;
+    var precioVenta = getPrecioVenta(cat, piezaId);
+    result[cat] = (result[cat] || 0) + precioVenta;
+    result.totalCoste += (typeof pieza.coste === 'number' ? pieza.coste : 0);
+    result.piezas.push({ categoria: cat, piezaId: pieza.id, nombre: pieza.nombre, coste: pieza.coste, precioVenta: precioVenta });
+  });
+  return result;
+}
+
+function renderTuningPiezasPorCategoria() {
+  var container = document.getElementById('tuningPiezasPorCategoria');
+  if (!container || typeof CATEGORIAS_TUNEO === 'undefined' || typeof PIEZAS_TUNING === 'undefined') return;
+  container.innerHTML = '';
+  CATEGORIAS_TUNEO.forEach(function (cat) {
+    var catId = cat.id;
+    var piezas = PIEZAS_TUNING[catId] || [];
+    var block = document.createElement('div');
+    block.className = 'tuning-categoria-block';
+    block.setAttribute('data-categoria', catId);
+    var titulo = document.createElement('div');
+    titulo.className = 'tuning-categoria-titulo';
+    titulo.textContent = cat.nombre;
+    var listWrap = document.createElement('div');
+    listWrap.className = 'tuning-categoria-piezas-list tuning-categoria-checkboxes';
+    piezas.forEach(function (p) {
+      var label = document.createElement('label');
+      label.className = 'tuning-pieza-checkbox-field checkbox-field';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'tuning-pieza-checkbox';
+      cb.setAttribute('data-categoria', catId);
+      cb.setAttribute('data-pieza-id', p.id || '');
+      cb.addEventListener('change', function () { if (typeof actualizarVistaDebounced === 'function') actualizarVistaDebounced(); });
+      var span = document.createElement('span');
+      span.className = 'tuning-pieza-checkbox-label';
+      span.textContent = p.nombre || p.id;
+      label.appendChild(cb);
+      label.appendChild(span);
+      listWrap.appendChild(label);
+    });
+    block.appendChild(titulo);
+    block.appendChild(listWrap);
+    container.appendChild(block);
+  });
+}
+
+function clearTuningPiezasLists() {
+  var container = document.getElementById('tuningPiezasPorCategoria');
+  if (!container) return;
+  container.querySelectorAll('.tuning-pieza-checkbox').forEach(function (cb) { cb.checked = false; });
+}
+
 function calcularPrecios() {
   const desc = parseFloat(el.descuentoPorcentaje.value) || 0;
   const base = vehiculoActual ? vehiculoActual.precioBase : (CONFIG.baseReparacionSinModelo || 50000);
 
-  let motor = 0, performance = 0, custom = 0, cosmetic = 0;
+  let motor = 0, kits = 0, performance = 0, custom = 0, cosmetic = 0;
 
   if (vehiculoActual) {
-    var numPerf = parseInt(el.piezasPerformance?.value, 10) || 0;
-    var numCosm = parseInt(el.piezasCosmetic?.value, 10) || 0;
     if (el.fullTuning.checked) {
       const fullTuningTotal = typeof getPrecioVentaFullTuning === 'function' ? getPrecioVentaFullTuning(base) : Math.floor(base * 0.4);
       const cuarta = Math.floor(fullTuningTotal / 4);
@@ -7410,9 +7618,11 @@ function calcularPrecios() {
       if (el.tuneMotor.checked) motor += Math.floor(base * CONFIG.factorPiezaTuneo);
     } else {
       if (el.tuneMotor.checked) motor = Math.floor(base * CONFIG.factorPiezaTuneo);
-      performance = typeof getPrecioVentaPerformance === 'function' ? getPrecioVentaPerformance(base, numPerf) : Math.floor(base * CONFIG.factorPiezaTuneo * numPerf);
-      custom = Math.floor(base * CONFIG.factorPiezaTuneo * (parseInt(el.piezasCustom?.value, 10) || 0));
-      cosmetic = typeof getPrecioVentaCosmetic === 'function' ? getPrecioVentaCosmetic(base, numCosm) : Math.floor(base * CONFIG.factorPiezaTuneo * numCosm);
+      var sel = getSelectedPiezasTuneo();
+      kits = sel.kits || 0;
+      performance = sel.performance || 0;
+      custom = sel.custom || 0;
+      cosmetic = sel.cosmetics || 0;
     }
   }
 
@@ -7435,15 +7645,82 @@ function calcularPrecios() {
   let kitReparacion = 0;
   if (kitActivo) kitReparacion = CONFIG.kitReparacionPrecio || 650;
 
-  const subtotal = motor + performance + custom + cosmetic + reparacion + kitReparacion;
+  const subtotal = motor + kits + performance + custom + cosmetic + reparacion + kitReparacion;
   const descuentoEfectivo = kitActivo ? 0 : desc;
   const total = Math.floor(subtotal * (1 - descuentoEfectivo / 100));
 
   return {
-    motor, performance, custom, cosmetic, reparacion,
+    motor, kits, performance, custom, cosmetic, reparacion,
     kitReparacion, subtotal, total, descuento: descuentoEfectivo,
     kitActivo: !!kitActivo,
   };
+}
+
+function renderDesglosePiezasReparacion(kitActivo) {
+  var wrapChasis = document.getElementById('desglosePartesChasisWrap');
+  var listChasis = document.getElementById('desglosePartesChasisList');
+  var wrapEsenciales = document.getElementById('desglosePartesEsencialesWrap');
+  var listEsenciales = document.getElementById('desglosePartesEsencialesList');
+  if (!listChasis || !listEsenciales) return;
+  var tiposChasis = typeof TIPOS_PIEZAS_CHASIS !== 'undefined' ? TIPOS_PIEZAS_CHASIS : [];
+  var tiposEsenciales = typeof TIPOS_PIEZAS_ESENCIALES !== 'undefined' ? TIPOS_PIEZAS_ESENCIALES : [];
+  if (kitActivo) {
+    if (wrapChasis) wrapChasis.style.display = 'none';
+    if (wrapEsenciales) wrapEsenciales.style.display = 'none';
+    listChasis.innerHTML = '';
+    listEsenciales.innerHTML = '';
+    return;
+  }
+  var numChasis = parseInt(el.partesChasis && el.partesChasis.value, 10) || 0;
+  var numEsenciales = parseInt(el.partesEsenciales && el.partesEsenciales.value, 10) || 0;
+  if (numChasis > 0 && wrapChasis && listChasis) {
+    wrapChasis.style.display = 'block';
+    listChasis.innerHTML = '';
+    for (var i = 0; i < numChasis; i++) {
+      var sel = document.createElement('select');
+      sel.className = 'input-piezas-select desglose-piezas-select';
+      sel.setAttribute('data-desglose-index', String(i));
+      sel.setAttribute('data-desglose-tipo', 'chasis');
+      sel.innerHTML = '<option value="">— Seleccionar tipo —</option>' + tiposChasis.map(function (t) {
+        return '<option value="' + (t.id || '').replace(/"/g, '&quot;') + '">' + (t.nombre || t.id) + '</option>';
+      }).join('');
+      var label = document.createElement('label');
+      label.className = 'desglose-piezas-item-label';
+      label.textContent = 'Pieza chasis ' + (i + 1) + ':';
+      var div = document.createElement('div');
+      div.className = 'desglose-piezas-item';
+      div.appendChild(label);
+      div.appendChild(sel);
+      listChasis.appendChild(div);
+    }
+  } else {
+    if (wrapChasis) wrapChasis.style.display = 'none';
+    listChasis.innerHTML = '';
+  }
+  if (numEsenciales > 0 && wrapEsenciales && listEsenciales) {
+    wrapEsenciales.style.display = 'block';
+    listEsenciales.innerHTML = '';
+    for (var j = 0; j < numEsenciales; j++) {
+      var selE = document.createElement('select');
+      selE.className = 'input-piezas-select desglose-piezas-select';
+      selE.setAttribute('data-desglose-index', String(j));
+      selE.setAttribute('data-desglose-tipo', 'esenciales');
+      selE.innerHTML = '<option value="">— Seleccionar tipo —</option>' + tiposEsenciales.map(function (t) {
+        return '<option value="' + (t.id || '').replace(/"/g, '&quot;') + '">' + (t.nombre || t.id) + '</option>';
+      }).join('');
+      var labelE = document.createElement('label');
+      labelE.className = 'desglose-piezas-item-label';
+      labelE.textContent = 'Pieza esencial ' + (j + 1) + ':';
+      var divE = document.createElement('div');
+      divE.className = 'desglose-piezas-item';
+      divE.appendChild(labelE);
+      divE.appendChild(selE);
+      listEsenciales.appendChild(divE);
+    }
+  } else {
+    if (wrapEsenciales) wrapEsenciales.style.display = 'none';
+    listEsenciales.innerHTML = '';
+  }
 }
 
 var _cacheVistaEl = null;
@@ -7501,6 +7778,7 @@ function actualizarVista() {
   if (v.wrapRep) v.wrapRep.style.display = (rep || tuneoRep) ? '' : 'none';
 
   el.presupuestoMotor.textContent = '$' + p.motor.toLocaleString('es-ES');
+  if (el.presupuestoKits) el.presupuestoKits.textContent = '$' + (p.kits || 0).toLocaleString('es-ES');
   el.presupuestoPerformance.textContent = '$' + p.performance.toLocaleString('es-ES');
   el.presupuestoCustom.textContent = '$' + p.custom.toLocaleString('es-ES');
   el.presupuestoCosmetic.textContent = '$' + p.cosmetic.toLocaleString('es-ES');
@@ -7543,6 +7821,7 @@ function actualizarVista() {
 
   var wrapRepairParts = document.getElementById('wrapRepairParts');
   if (wrapRepairParts) wrapRepairParts.style.display = kitActivoVista ? 'none' : '';
+  if (typeof renderDesglosePiezasReparacion === 'function') renderDesglosePiezasReparacion(p.kitActivo);
 
   var wrapPresupuestoKit = document.getElementById('wrapPresupuestoKit');
   var presupuestoKit = document.getElementById('presupuestoKit');
@@ -7571,7 +7850,7 @@ function actualizarVista() {
   actualizarVisibilidadRegistroServicios();
   renderStatsVehiculo(matricula !== '-' ? matricula : '');
 
-  const tieneTuneo = p.motor > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
   const modTuneo = el.reparacion.checked && tieneTuneo ? '+ Reparación' : (tieneTuneo ? 'Tuning' : '-');
 
   if (v.tplMatricula) v.tplMatricula.textContent = matricula;
@@ -7646,9 +7925,7 @@ function resetear() {
   el.nombreIC.value = '';
   el.fullTuning.checked = false;
   el.tuneMotor.checked = false;
-  if (el.piezasPerformance) el.piezasPerformance.value = '0';
-  if (el.piezasCustom) el.piezasCustom.value = '0';
-  if (el.piezasCosmetic) el.piezasCosmetic.value = '0';
+  if (typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
   aplicarDeshabilitarPiezasPorFullTuning();
   el.reparacion.checked = false;
   if (el.partesChasis) el.partesChasis.value = '0';
@@ -7671,9 +7948,7 @@ function irAPantallaPrincipal() {
   el.nombreIC.value = '';
   el.fullTuning.checked = false;
   el.tuneMotor.checked = false;
-  if (el.piezasPerformance) el.piezasPerformance.value = '0';
-  if (el.piezasCustom) el.piezasCustom.value = '0';
-  if (el.piezasCosmetic) el.piezasCosmetic.value = '0';
+  if (typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
   aplicarDeshabilitarPiezasPorFullTuning();
   el.reparacion.checked = false;
   if (el.partesChasis) el.partesChasis.value = '0';
@@ -7687,9 +7962,7 @@ function irAPantallaPrincipal() {
 function limpiarUnidadesCalculadora() {
   el.fullTuning.checked = false;
   el.tuneMotor.checked = false;
-  if (el.piezasPerformance) el.piezasPerformance.value = '0';
-  if (el.piezasCustom) el.piezasCustom.value = '0';
-  if (el.piezasCosmetic) el.piezasCosmetic.value = '0';
+  if (typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
   aplicarDeshabilitarPiezasPorFullTuning();
   if (el.reparacion) el.reparacion.checked = (tipoServicio === 'reparacion' || tipoServicio === 'tuneoReparacion');
   if (el.partesChasis) el.partesChasis.value = '0';
@@ -7721,6 +7994,39 @@ function ensureClienteEnBBDDSiFalta(matricula) {
     categoria: (vehiculoActual && vehiculoActual.categoria) || '',
   };
   addOrUpdateClienteBBDD(data);
+}
+
+/** Formatea ms en "X horas y Y minutos" (ej. "1 horas y 10 minutos"). */
+function formatHorasYMinutos(ms) {
+  if (ms == null || ms < 0) return '0 horas y 0 minutos';
+  var totalMin = Math.floor(ms / 60000);
+  var h = Math.floor(totalMin / 60);
+  var m = totalMin % 60;
+  return h + ' horas y ' + m + ' minutos';
+}
+
+/** Envía el resultado de fichaje (al fichar salida) al webhook de Discord. Semana: lunes 00:00 a domingo 23:59. */
+function enviarRegistroFichajeADiscord(fichaje, session) {
+  var url = (typeof CONFIG !== 'undefined' && CONFIG.discordWebhookFichajes) ? CONFIG.discordWebhookFichajes : '';
+  if (!url || !fichaje || !fichaje.entrada || !fichaje.salida) return;
+  var nombreIC = (session && (session.nombre || session.username)) ? (session.nombre || session.username) : (fichaje.userId || '—');
+  var dEntrada = new Date(fichaje.entrada);
+  var dSalida = new Date(fichaje.salida);
+  var horaEntrada = String(dEntrada.getHours()).padStart(2, '0') + ':' + String(dEntrada.getMinutes()).padStart(2, '0');
+  var horaSalida = String(dSalida.getHours()).padStart(2, '0') + ':' + String(dSalida.getMinutes()).padStart(2, '0');
+  var msTurno = dSalida.getTime() - dEntrada.getTime();
+  var horasTotalTurno = formatHorasYMinutos(msTurno);
+  var horasSemanaDecimal = typeof getHorasSemana === 'function' ? getHorasSemana(fichaje.userId, dSalida) : 0;
+  var totalMinSemana = Math.round(horasSemanaDecimal * 60);
+  var horasAcumuladas = formatHorasYMinutos(totalMinSemana * 60000);
+  var texto = '**Resultado fichaje**\n' +
+    '- Nombre IC: ' + nombreIC + '\n' +
+    '- Hora de Entrada: ' + horaEntrada + '\n' +
+    '- Hora de Salida: ' + horaSalida + '\n' +
+    '- Horas total: ' + horasTotalTurno + '\n' +
+    '- Horas totales acumuladas: ' + horasAcumuladas;
+  var body = JSON.stringify({ content: texto });
+  fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
 
 /** Envía el registro de reparación/tuneo al webhook de Discord. No bloquea la UI. */
@@ -7758,7 +8064,7 @@ function enviarRegistroServicioADiscord(servicio) {
 /** Abre el modal de fotos antes/después para registrar un tuneo. */
 function abrirModalFotosTuneo() {
   const p = calcularPrecios();
-  const tieneTuneo = p.motor > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
   if (!tieneTuneo) {
     alert('No hay ningún tuneo seleccionado.');
     return;
@@ -7890,7 +8196,7 @@ function vincularModalFotosTuneo() {
  */
 function registrarTuneo(fotoAntes, fotoDespues) {
   const p = calcularPrecios();
-  const tieneTuneo = p.motor > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
   if (!tieneTuneo) {
     alert('No hay ningún tuneo seleccionado.');
     return;
@@ -7903,7 +8209,10 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   guardarMatricula(mat);
   ensureClienteEnBBDDSiFalta(mat);
   const session = getSession();
+  const nombreRegistrador = session ? (session.nombre || session.username || '') : '';
+  if (el.mecanico) el.mecanico.value = nombreRegistrador || '—';
   const modLabel = el.fullTuning?.checked ? 'Full Tuning' : (el.reparacion?.checked ? 'Reparación + Tuneo' : 'Tuneo');
+  var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
   const servicio = {
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
@@ -7911,22 +8220,22 @@ function registrarTuneo(fotoAntes, fotoDespues) {
     modelo: vehiculoActual?.nombreIC || '-',
     modificacion: modLabel,
     importe: p.total,
-    empleado: el.mecanico.value || 'BASE',
+    empleado: nombreRegistrador || el.mecanico?.value || '—',
     convenio: el.negocios.value,
     descuento: p.descuento,
     userId: session ? session.username : null,
+    piezasTuneo: piezasSel.piezas || [],
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
-  var nombreReg = (typeof getSession === 'function' && getSession()) ? (getSession().nombre || getSession().username || '') : '';
-  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreReg);
+  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistrador);
   if (fotoAntes && fotoDespues && typeof addTunning === 'function') {
     addTunning({
       matricula: mat,
       modelo: servicio.modelo,
       fecha: servicio.fecha,
-      usuario: nombreReg || (session ? session.username : ''),
+      usuario: nombreRegistrador || (session ? session.username : ''),
       fotoAntes: fotoAntes,
       fotoDespues: fotoDespues,
       importe: p.total,
@@ -7956,14 +8265,46 @@ function registrarReparacion() {
   guardarMatricula(mat);
   ensureClienteEnBBDDSiFalta(mat);
   const session = getSession();
+  const nombreRegistradorRep = session ? (session.nombre || session.username || '') : '';
+  if (el.mecanico) el.mecanico.value = nombreRegistradorRep || '—';
   var partesChasisReg = 0;
   var partesEsencialesReg = 0;
+  var piezasChasisDesglose = [];
+  var piezasEsencialesDesglose = [];
   if (p.kitActivo) {
     partesChasisReg = 10;
     partesEsencialesReg = 6;
   } else {
     partesChasisReg = parseInt(el.partesChasis?.value, 10) || 0;
     partesEsencialesReg = parseInt(el.partesEsenciales?.value, 10) || 0;
+    if (partesChasisReg > 0 || partesEsencialesReg > 0) {
+      var selectsChasis = document.querySelectorAll('.desglose-piezas-select[data-desglose-tipo="chasis"]');
+      var selectsEsenciales = document.querySelectorAll('.desglose-piezas-select[data-desglose-tipo="esenciales"]');
+      var idx;
+      for (idx = 0; idx < selectsChasis.length; idx++) {
+        var val = (selectsChasis[idx].value || '').trim();
+        if (!val) {
+          alert('Indica el tipo de cada pieza de chasis utilizada (pieza ' + (idx + 1) + ').');
+          return;
+        }
+        piezasChasisDesglose.push(val);
+      }
+      for (idx = 0; idx < selectsEsenciales.length; idx++) {
+        var valE = (selectsEsenciales[idx].value || '').trim();
+        if (!valE) {
+          alert('Indica el tipo de cada pieza esencial utilizada (pieza ' + (idx + 1) + ').');
+          return;
+        }
+        piezasEsencialesDesglose.push(valE);
+      }
+      if (typeof restarStockPiezas === 'function') {
+        var result = restarStockPiezas(piezasChasisDesglose, piezasEsencialesDesglose);
+        if (!result || !result.ok) {
+          alert(result && result.error ? result.error : 'No hay stock suficiente para las piezas indicadas.');
+          return;
+        }
+      }
+    }
   }
   const servicio = {
     tipo: 'REPARACIÓN',
@@ -7972,7 +8313,7 @@ function registrarReparacion() {
     modelo: vehiculoActual?.nombreIC || '-',
     modificacion: p.kitActivo ? 'Reparación (kit)' : 'Reparación',
     importe: p.total,
-    empleado: el.mecanico.value || 'BASE',
+    empleado: nombreRegistradorRep || el.mecanico?.value || '—',
     convenio: el.negocios.value,
     descuento: p.descuento,
     userId: session ? session.username : null,
@@ -7980,12 +8321,13 @@ function registrarReparacion() {
     partesEsenciales: partesEsencialesReg,
     partesServicio: 0,
     kitReparacion: p.kitActivo || false,
+    piezasChasisDesglose: piezasChasisDesglose,
+    piezasEsencialesDesglose: piezasEsencialesDesglose,
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
-  var nombreReg = (typeof getSession === 'function' && getSession()) ? (getSession().nombre || getSession().username || '') : '';
-  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreReg);
+  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistradorRep);
   if (session && typeof hasPermission === 'function' && !hasPermission(session, 'gestionarUsuarios')) {
     addAvisoBandejaEntrada(session.username, {
       tipo: 'reparacion_registrada',
@@ -8034,6 +8376,14 @@ function getResultadoCalculadoraTitulo(s) {
   return '🚗 PLANTILLA TUNEO';
 }
 
+function nombreEmpleadoRegistro(s) {
+  const uid = (s.userId || s.empleado || '').toString().trim();
+  if (!uid) return (s.empleado || '—').toString();
+  const users = typeof getUsers === 'function' ? getUsers() : [];
+  const u = users.find(function (x) { return (x.username || x.id || '') === uid; });
+  return u ? (u.nombre || u.username || uid) : (s.empleado || uid || '—');
+}
+
 function renderListaResultadosCalculadora() {
   const cont = document.getElementById('listaResultadosCalculadora');
   if (!cont) return;
@@ -8045,6 +8395,7 @@ function renderListaResultadosCalculadora() {
     const titulo = getResultadoCalculadoraTitulo(s);
     const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
     const descuentoPct = s.descuento != null ? Number(s.descuento) : 0;
+    const empleadoNombre = nombreEmpleadoRegistro(s);
     return `
       <div class="resultado-calculadora-card" data-result-index="${i}">
         <h4 class="resultado-calculadora-titulo">${escapeHtml(titulo)}</h4>
@@ -8054,7 +8405,7 @@ function renderListaResultadosCalculadora() {
         <p><strong>Importe:</strong> ${(s.importe || 0).toLocaleString('es-ES')}$</p>
         <p><strong>Descuento aplicado:</strong> ${descuentoPct}%</p>
         <p><strong>Convenio:</strong> ${escapeHtml(s.convenio || '—')}</p>
-        <p><strong>Empleado que realizó el servicio:</strong> ${escapeHtml(s.empleado || '—')}</p>
+        <p><strong>Registrado por:</strong> ${escapeHtml(empleadoNombre)}</p>
         <p class="resultado-calculadora-hora">— ${hora}</p>
         <button type="button" class="btn btn-copy-register btn-copiar-resultado" data-index="${i}" title="Copiar este registro">📋 Copiar registro</button>
       </div>
@@ -8070,6 +8421,7 @@ function renderListaResultadosCalculadora() {
       const titulo = getResultadoCalculadoraTitulo(s);
       const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
       const descuentoPct = s.descuento != null ? Number(s.descuento) : 0;
+      const empleadoNombre = nombreEmpleadoRegistro(s);
       const texto = [
         titulo,
         'Matrícula: ' + (s.matricula || '—'),
@@ -8078,7 +8430,7 @@ function renderListaResultadosCalculadora() {
         'Importe: ' + (s.importe != null ? s.importe.toLocaleString('es-ES') + '$' : '—'),
         'Descuento aplicado: ' + descuentoPct + '%',
         'Convenio: ' + (s.convenio || '—'),
-        'Empleado: ' + (s.empleado || '—'),
+        'Registrado por: ' + empleadoNombre,
         hora !== '—' ? hora : '',
       ].filter(Boolean).join('\n');
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -8356,11 +8708,12 @@ function limpiarRegistro() {
 function aplicarDeshabilitarPiezasPorFullTuning() {
   if (!el.fullTuning) return;
   const deshabilitar = el.fullTuning.checked;
-  [el.piezasPerformance, el.piezasCustom, el.piezasCosmetic].forEach(sel => {
-    if (!sel) return;
-    sel.disabled = deshabilitar;
-    if (deshabilitar) sel.value = '0';
-  });
+  var wrap = document.getElementById('tuningPiezasPorCategoria');
+  if (wrap) {
+    wrap.classList.toggle('tuning-piezas-disabled', deshabilitar);
+    wrap.querySelectorAll('.tuning-pieza-checkbox').forEach(function (el) { el.disabled = deshabilitar; });
+    if (deshabilitar && typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
+  }
 }
 
 function vincularEventos() {
@@ -8374,13 +8727,13 @@ function vincularEventos() {
   });
   var usarKitRep = document.getElementById('usarKitReparacion');
   if (usarKitRep) usarKitRep.addEventListener('change', actualizarVista);
-  [el.piezasPerformance, el.piezasCustom, el.piezasCosmetic,
-   el.partesChasis, el.partesEsenciales,
-   el.descuentoPorcentaje].forEach(inp => {
+  [el.partesChasis, el.partesEsenciales, el.descuentoPorcentaje].forEach(inp => {
     if (!inp) return;
     inp.addEventListener('input', actualizarVistaDebounced);
     inp.addEventListener('change', actualizarVistaDebounced);
   });
+  var tuningWrap = document.getElementById('tuningPiezasPorCategoria');
+  if (tuningWrap) tuningWrap.addEventListener('change', function () { actualizarVistaDebounced(); });
   const placaServicio = document.getElementById('placaServicio');
   if (placaServicio) {
     placaServicio.addEventListener('input', () => { actualizarVisibilidadPlacaServicio(); actualizarVisibilidadRegistroServicios(); });
@@ -8404,6 +8757,7 @@ function vincularEventos() {
   el.modalRegistro.addEventListener('click', e => {
     if (e.target === el.modalRegistro) el.modalRegistro.classList.remove('active');
   });
+  if (typeof renderTuningPiezasPorCategoria === 'function') renderTuningPiezasPorCategoria();
 }
 
 // Arranque: comprobar sesión y mostrar login o app

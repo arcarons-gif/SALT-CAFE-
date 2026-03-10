@@ -1869,6 +1869,7 @@ button.login-recovery-link {
 .gestion-card-usuarios,
 .gestion-card-convenios,
 .gestion-card-economia,
+.gestion-card-stock,
 .gestion-card-solicitudes,
 .gestion-card-organigrama,
 .gestion-card-reset,
@@ -1890,6 +1891,11 @@ button.login-recovery-link {
 .gestion-card-economia .gestion-card-icon svg { color: #fff; }
 .gestion-card-economia .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; text-shadow: 0 0 8px #22c55e, 0 0 14px #22c55e, 0 0 22px #16a34a; box-shadow: none; }
 .gestion-card-economia .gestion-card-label::after { display: none; }
+
+.gestion-card-stock .gestion-card-icon { filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px #0891b2) drop-shadow(0 0 20px #0e7490); }
+.gestion-card-stock .gestion-card-icon svg { color: #fff; }
+.gestion-card-stock .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; text-shadow: 0 0 8px #06b6d4, 0 0 14px #0891b2, 0 0 22px #0e7490; box-shadow: none; }
+.gestion-card-stock .gestion-card-label::after { display: none; }
 
 .gestion-card-solicitudes .gestion-card-icon { filter: drop-shadow(0 0 6px #a78bfa) drop-shadow(0 0 12px #7c3aed) drop-shadow(0 0 20px #6d28d9); }
 .gestion-card-solicitudes .gestion-card-label { bottom: auto; top: 100%; margin-bottom: 0; margin-top: 0.5rem; background: transparent; color: #fff; box-shadow: none; text-shadow: 0 0 8px #a78bfa, 0 0 14px #7c3aed, 0 0 22px #6d28d9; }
@@ -2738,9 +2744,12 @@ button.login-recovery-link {
 .economia-table th { color: var(--benny-gold-light); font-weight: 600; }
 
 .economia-piezas-titulo { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.economia-piezas-seccion-titulo { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--accent); }
 .economia-table-piezas .input-pieza-coste,
 .economia-table-piezas .input-pieza-venta,
-.economia-table-piezas .input-pieza-venta-pct { width: 5rem; padding: 0.35rem 0.5rem; font-size: 0.9rem; }
+.economia-table-piezas .input-pieza-venta-pct,
+.economia-table-piezas .input-pieza-tuneo-coste,
+.economia-table-piezas .input-pieza-tuneo-venta { width: 5rem; padding: 0.35rem 0.5rem; font-size: 0.9rem; }
 .economia-piezas-venta-sufijo { font-size: 0.85rem; color: var(--text-muted); margin-left: 0.25rem; }
 .economia-piezas-margen-eur,
 .economia-piezas-margen-pct { font-variant-numeric: tabular-nums; }
@@ -4114,6 +4123,59 @@ button.login-recovery-link {
 .section-destacado-hint { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
 .repair-section-destacado, .vehicle-section-destacado { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; background: var(--bg-card); }
 .tuning-sections-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600; }
+.tuning-piezas-por-categoria { margin-top: 0.75rem; }
+.tuning-piezas-por-categoria.tuning-piezas-disabled { opacity: 0.6; pointer-events: none; }
+.tuning-categoria-block {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.tuning-categoria-titulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.tuning-categoria-piezas-list { margin-bottom: 0.5rem; }
+.tuning-categoria-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.tuning-pieza-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.tuning-pieza-checkbox-field input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.tuning-pieza-checkbox-label {
+  flex: 1;
+}
+.tuning-pieza-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.tuning-pieza-row .tuning-pieza-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 280px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+.tuning-btn-add-pieza { margin-top: 0.25rem; }
+.tuning-btn-quitar { flex-shrink: 0; }
 .input-piezas { min-width: 4rem; font-weight: 600; }
 .input-piezas-select.input-cantidad,
 .repair-parts .input-piezas-select {
@@ -4139,6 +4201,43 @@ button.login-recovery-link {
   font-size: 0.9rem;
 }
 .repair-pieces-total-label { color: var(--text-muted); margin-right: 0.5rem; }
+
+/* Desglose de tipo de pieza por unidad (chasis / esenciales) */
+.repair-parts .desglose-piezas-wrap { grid-column: 1 / -1; }
+.desglose-piezas-wrap {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.desglose-piezas-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.desglose-piezas-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.desglose-piezas-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.desglose-piezas-item-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.desglose-piezas-select {
+  min-width: 8rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
 
 .stats-vehiculo-section { margin-top: 1.25rem; }
 .stats-vehiculo-section h3 { margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-muted); }

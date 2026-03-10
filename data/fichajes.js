@@ -49,15 +49,16 @@ function addFichaje(userId, entrada, salida) {
   return id;
 }
 
-/** Cierra el último fichaje abierto del usuario (añade salida) */
+/** Cierra el último fichaje abierto del usuario (añade salida). Devuelve el fichaje cerrado o null. */
 function cerrarUltimoFichaje(userId, salida) {
   const list = getFichajes();
   const idx = list.map((f, i) => [f, i]).filter(([f]) => f.userId === userId && !f.salida).pop();
-  if (!idx) return false;
+  if (!idx) return null;
   const [f, i] = idx;
-  list[i] = { ...f, salida };
+  const cerrado = { ...f, salida };
+  list[i] = cerrado;
   saveFichajes(list);
-  return true;
+  return cerrado;
 }
 
 /** Obtiene el inicio (lunes 00:00) y fin (domingo 23:59:59) de la semana de una fecha */

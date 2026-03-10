@@ -1,0 +1,8 @@
+PENDIENTE CALCULADORA:
+
+en el usuario demo, quitar lo de cambiar usuario. Solo tienen que poder cambiar de usuario los usuarios con el rol de administrador.
+
+ACTUALIZAR PRECIOS PIEZAS, MAQUINARIA, ETC. CAPTURAS GUARDADAS
+MATRICULAS Y FOTOS DE COCHES DE SAVANNAH Y ALGUNO DE TYRONE
+CARA DE TYRONE PARA FICHA PERFIL
+

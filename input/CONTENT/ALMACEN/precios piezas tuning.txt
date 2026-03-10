@@ -1,0 +1,45 @@
+kits: 
+
+- NOS 10 Disparos (1lb) - 7500$
+- Botella NOS vacía (1lb) - 2000$
+- Tinte de purga NOS - 12500$
+
+Performance:
+
+- Motor de vehículo - 200$
+- Frenos de vehículo - 1100$
+- Transmisión de vehículo - 100$
+- Suspensión de vehículo - 100$
+- Blindaje de vehículo - 100$
+- Turbo de vehículo - 100$
+
+Cosmetics: 
+
+- Escape de vehículo - 25$
+- Extras de vehículo - 25$
+- Exterior de vehículo - 25$
+- Interior de vehículo - 25$
+- Guardabarros de vehículo - 25$
+- Chasis de vehículo - 25$
+- Parachoques Delantero - 25$ 
+- Parrilla de vehículo - 25$
+- Capó de vehículo - 25$
+- Bocina de vehículo - 25$
+- Luces de vehículo - 25$
+- Vinilo de vehículo - 25$
+- Neón de vehículo - 25$
+- Matrícula de vehículo - 25$
+- Parachoques trasero - 25$
+- Pintura de vehículo - 25$
+- Llanta de vehículo - 25$
+- Techo de vehículo - 25$
+- Faldón lateral - 25$
+- Alerón de vehículo - 25$
+- Humo de neumáticos - 25$
+- Tinte de ventanas - 25$
+
+Custom:
+
+- Neumáticos de drift - 50$
+- Neumáticos de serie - 50$
+
