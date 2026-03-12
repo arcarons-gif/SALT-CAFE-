@@ -2688,7 +2688,7 @@ button.login-recovery-link {
 .inventario-td-concepto-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inventario-td-stock { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; font-size: 0.85rem; }
 .inventario-td-acciones { white-space: nowrap; text-align: right; }
-.inventario-td-acciones .inventario-input-add, .inventario-td-acciones .inventario-input-remove { width: 2.25rem; padding: 0.2rem 0.25rem; font-size: 0.78rem; text-align: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-app); color: var(--text); margin: 0 0.2rem; }
+.inventario-td-acciones .inventario-input-add, .inventario-td-acciones .inventario-input-remove { width: 4rem; min-width: 3rem; padding: 0.35rem 0.4rem; font-size: 0.9rem; text-align: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-app); color: var(--text); margin: 0 0.2rem; }
 .inventario-btn-round { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border: none; border-radius: 50%; font-size: 1.1rem; font-weight: 700; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: opacity 0.15s, transform 0.1s; }
 .inventario-btn-round:hover { opacity: 0.9; transform: scale(1.05); }
 .inventario-btn-round:active { transform: scale(0.95); }

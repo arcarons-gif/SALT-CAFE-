@@ -3055,9 +3055,9 @@ function renderInventario() {
         '<td class="inventario-td-concepto">' + imgHtml + '<span class="inventario-td-concepto-texto">' + escapeHtml(c.nombre || id) + alerta + '</span></td>' +
         '<td class="inventario-td-stock">' + cant + ' ud</td>' +
         '<td class="inventario-td-acciones">' +
-        '<input type="number" class="inventario-input-add" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a añadir">' +
+        '<input type="number" class="inventario-input-add" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a añadir" inputmode="numeric">' +
         '<button type="button" class="inventario-btn-round inventario-btn-add" data-concepto="' + escapeHtmlAttr(id) + '" title="Sumar al stock" aria-label="Añadir">+</button>' +
-        '<input type="number" class="inventario-input-remove" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a retirar">' +
+        '<input type="number" class="inventario-input-remove" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a retirar" inputmode="numeric">' +
         '<button type="button" class="inventario-btn-round inventario-btn-remove" data-concepto="' + escapeHtmlAttr(id) + '" title="Restar del stock" aria-label="Retirar">−</button>' +
         '</td>';
       tbody.appendChild(tr);
@@ -3070,7 +3070,12 @@ function renderInventario() {
       var row = btn.closest('tr');
       var input = row ? row.querySelector('.inventario-input-add') : null;
       var n = input && input.value !== '' ? (parseInt(input.value, 10) || 1) : 1;
-      if (id && typeof addStock === 'function') { addStock(id, n); renderInventario(); if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen(); if (typeof renderLimitesStock === 'function') renderLimitesStock(); }
+      if (!id || typeof addStock !== 'function') return;
+      addStock(id, n);
+      var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
+      if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
+      if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      if (typeof renderLimitesStock === 'function') renderLimitesStock();
     });
   });
   wrap.querySelectorAll('.inventario-btn-remove').forEach(function (btn) {
@@ -3079,11 +3084,15 @@ function renderInventario() {
       var row = btn.closest('tr');
       var input = row ? row.querySelector('.inventario-input-remove') : null;
       var n = input && input.value !== '' ? (parseInt(input.value, 10) || 1) : 1;
-      if (id && typeof removeStock === 'function') {
-        var actual = typeof getStock === 'function' ? getStock(id) : 0;
-        if (n > actual) n = actual;
-        if (n > 0) { removeStock(id, n); renderInventario(); if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen(); if (typeof renderLimitesStock === 'function') renderLimitesStock(); }
-      }
+      if (!id || typeof removeStock !== 'function') return;
+      var actual = typeof getStock === 'function' ? getStock(id) : 0;
+      if (n > actual) n = actual;
+      if (n <= 0) return;
+      removeStock(id, n);
+      var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
+      if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
+      if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      if (typeof renderLimitesStock === 'function') renderLimitesStock();
     });
   });
 }
@@ -3531,6 +3540,15 @@ function vincularEconomia() {
     if (typeof renderFormRegistrarMaterialesRecuperados === 'function') renderFormRegistrarMaterialesRecuperados();
     document.getElementById('modalRegistrarMaterialesRecuperados').classList.add('active');
   });
+  var btnAlmacenTodoCero = document.getElementById('btnAlmacenPonerTodoCero');
+  if (btnAlmacenTodoCero && typeof setStockMaterialCero === 'function' && typeof TIPOS_MATERIAL_ALMACEN !== 'undefined') {
+    btnAlmacenTodoCero.addEventListener('click', function () {
+      if (!confirm('¿Poner todas las cantidades del almacén a 0? Esto no se puede deshacer.')) return;
+      TIPOS_MATERIAL_ALMACEN.forEach(function (t) { setStockMaterialCero(t.id); });
+      if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
+      if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+    });
+  }
   var formRegistrarMat = document.getElementById('formRegistrarMaterialesRecuperados');
   if (formRegistrarMat && typeof addMaterialesAlmacen === 'function') formRegistrarMat.addEventListener('submit', function (e) {
     e.preventDefault();

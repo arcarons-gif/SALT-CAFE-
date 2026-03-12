@@ -20,18 +20,18 @@
     { id: 'acid', nombre: 'ÁCIDO', unidad: 'g' }
   ];
 
-  /** Valores iniciales de stock (según captura) */
+  /** Valores iniciales de stock: todo a 0 para partir de cero. */
   var SEED_STOCK = {
-    acero: 58756,
-    aluminio: 28146,
-    cobre: 4676,
-    laton: 3556,
-    chatarra_e: 2654,
-    goma: 3154,
-    plastico: 4744,
-    aceite_sint: 5459,
-    fibra_carbono: 62,
-    acid: 109
+    acero: 0,
+    aluminio: 0,
+    cobre: 0,
+    laton: 0,
+    chatarra_e: 0,
+    goma: 0,
+    plastico: 0,
+    aceite_sint: 0,
+    fibra_carbono: 0,
+    acid: 0
   };
 
   function getAlmacenMateriales() {
@@ -101,14 +101,21 @@
   }
 
   /**
-   * Pone la cantidad de un material a cero.
+   * Pone la cantidad de un material a cero (local y servidor).
+   * Envía el delta negativo al backend para que el servidor también quede a 0.
    */
   function setStockMaterialCero(id) {
     var stock = getAlmacenMateriales();
     if (!TIPOS_MATERIAL_ALMACEN.some(function (t) { return t.id === id; })) return stock;
+    var valorActual = typeof stock[id] === 'number' ? stock[id] : 0;
     stock[id] = 0;
     saveAlmacenMateriales(stock);
-    return stock;
+    if (valorActual !== 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeAlmacen === 'function') {
+      var mov = {};
+      mov[id] = -valorActual;
+      window.backendApi.mergeAlmacen(mov);
+    }
+    return getAlmacenMateriales();
   }
 
   /**
