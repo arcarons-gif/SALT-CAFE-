@@ -84,6 +84,7 @@ app.get('/', (req, res) => {
         <li>/api/users – GET (lista) / POST (guardar)</li>
         <li>/api/fichajes – GET (lista) / POST (guardar)</li>
         <li>/api/servicios – GET (lista) / POST (guardar reparaciones/tuneos)</li>
+        <li>/api/datos-completos – GET (todos los datos sincronizados)</li>
         <li>/api/repo-export – POST (guardar saltlab-datos-completos.json en server/data/)</li>
         <li>/api/discord-economia – POST (envía resumen financiero al webhook de Discord)</li>
         <li>/api/discord-entregas – POST (envía registro de entrega de herramientas al webhook de Discord)</li>
@@ -117,6 +118,7 @@ app.post('/api/users', (req, res) => {
       return res.status(400).json({ error: 'Se espera { users: [...] }' });
     }
     writeUsers(users);
+    writeDatosCompletosMerge({ users });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -154,6 +156,7 @@ app.post('/api/fichajes', (req, res) => {
       salida: f.salida || null,
     }));
     writeFichajes(normalized);
+    writeDatosCompletosMerge({ fichajes: normalized });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -179,10 +182,54 @@ app.post('/api/servicios', (req, res) => {
       return res.status(400).json({ error: 'Se espera { servicios: [...] }' });
     }
     writeServicios(servicios);
+    writeDatosCompletosMerge({ servicios });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: String(e.message) });
+  }
+});
+
+const datosCompletosPath = path.join(dataDir, 'saltlab-datos-completos.json');
+
+function readDatosCompletos() {
+  try {
+    ensureDataDir();
+    if (!fs.existsSync(datosCompletosPath)) return {};
+    const raw = fs.readFileSync(datosCompletosPath, 'utf8');
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' ? data : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeDatosCompletosMerge(merge) {
+  if (!merge || typeof merge !== 'object') return;
+  try {
+    const data = readDatosCompletos();
+    if (merge.users !== undefined) data.users = merge.users;
+    if (merge.fichajes !== undefined) data.fichajes = merge.fichajes;
+    if (merge.servicios !== undefined) data.servicios = merge.servicios;
+    data._exportadoAt = new Date().toISOString();
+    ensureDataDir();
+    fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.error('writeDatosCompletosMerge', e);
+  }
+}
+
+// Obtener todos los datos sincronizados (para que todos los clientes vean lo mismo)
+app.get('/api/datos-completos', (req, res) => {
+  try {
+    let data = readDatosCompletos();
+    if (Object.keys(data).length === 0) {
+      data = { users: readUsers(), fichajes: readFichajes(), servicios: readServicios(), _exportadoAt: new Date().toISOString() };
+    }
+    res.json(data || {});
+  } catch (e) {
+    console.error(e);
+    res.json({});
   }
 });
 
@@ -194,8 +241,7 @@ app.post('/api/repo-export', (req, res) => {
       return res.status(400).json({ error: 'Se espera un objeto JSON' });
     }
     ensureDataDir();
-    const outPath = path.join(dataDir, 'saltlab-datos-completos.json');
-    fs.writeFileSync(outPath, JSON.stringify(data, null, 2), 'utf8');
+    fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
     res.json({ ok: true });
   } catch (e) {
     console.error(e);

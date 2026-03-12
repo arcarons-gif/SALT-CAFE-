@@ -8,7 +8,7 @@
   const FICHAJES_STORAGE = 'benny_fichajes';
   const SERVICIOS_STORAGE = 'benny_servicios';
   const API_URL_STORAGE = 'saltlab_api_url';
-  const POLL_INTERVAL_MS = 5000;
+  const POLL_INTERVAL_MS = 3000;
   const DEFAULT_API_URL = 'http://localhost:3001';
 
   function getStoredApiUrl() {
@@ -121,21 +121,19 @@
   async function fetchAndApplyServicios() {
     try {
       const servicios = await fetchJson(getBaseUrl() + '/api/servicios');
-      if (servicios.length > 0) {
-        const prev = localStorage.getItem(SERVICIOS_STORAGE);
-        const next = JSON.stringify(servicios);
-        localStorage.setItem(SERVICIOS_STORAGE, next);
-        if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
-        return prev !== next;
+      var list = Array.isArray(servicios) ? servicios : [];
+      var prev = localStorage.getItem(SERVICIOS_STORAGE);
+      var next = JSON.stringify(list);
+      localStorage.setItem(SERVICIOS_STORAGE, next);
+      if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
+      if (list.length === 0) {
+        var local = [];
+        try {
+          local = JSON.parse(prev || '[]');
+        } catch (_) {}
+        if (local.length > 0) await syncServiciosToServer(local);
       }
-      var local = [];
-      try {
-        local = JSON.parse(localStorage.getItem(SERVICIOS_STORAGE) || '[]');
-      } catch (_) {}
-      if (local.length > 0) {
-        await syncServiciosToServer(local);
-      }
-      return false;
+      return prev !== next;
     } catch {
       return false;
     }
@@ -195,17 +193,38 @@
     }
   }
 
+  /** Obtiene todos los datos sincronizados del servidor (toda la app al momento) */
+  async function fetchDatosCompletos() {
+    var base = getBaseUrl();
+    if (!base) return null;
+    try {
+      var data = await fetchJson(base + '/api/datos-completos');
+      if (data && typeof data === 'object' && Object.keys(data).length > 0 && (Array.isArray(data.users) || data._exportadoAt || data.servicios)) {
+        return data;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   var pollTimer = null;
 
   function startPolling() {
     if (pollTimer) return;
     pollTimer = setInterval(async () => {
-      if (!(await isAvailable())) return;
-      const usersChanged = await fetchAndApplyUsers();
-      const fichajesChanged = await fetchAndApplyFichajes();
-      const serviciosChanged = await fetchAndApplyServicios();
-      if (usersChanged || fichajesChanged || serviciosChanged) {
-        window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { users: usersChanged, fichajes: fichajesChanged, servicios: serviciosChanged } }));
+      if (!(await isAvailable(8000))) return;
+      var full = await fetchDatosCompletos();
+      if (full && typeof window.aplicarDatosCompletosFromServer === 'function') {
+        window.aplicarDatosCompletosFromServer(full);
+        window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { fullSync: true } }));
+      } else {
+        await fetchAndApplyUsers();
+        await fetchAndApplyFichajes();
+        await fetchAndApplyServicios();
+        window.dispatchEvent(new CustomEvent('benny-backend-sync', {
+          detail: { users: true, fichajes: true, servicios: true }
+        }));
       }
     }, POLL_INTERVAL_MS);
   }
@@ -228,9 +247,14 @@
       return false;
     }
     window._backendRetry = 0;
-    await fetchAndApplyUsers();
-    await fetchAndApplyFichajes();
-    await fetchAndApplyServicios();
+    var full = await fetchDatosCompletos();
+    if (full && typeof window.aplicarDatosCompletosFromServer === 'function') {
+      window.aplicarDatosCompletosFromServer(full);
+    } else {
+      await fetchAndApplyUsers();
+      await fetchAndApplyFichajes();
+      await fetchAndApplyServicios();
+    }
     startPolling();
     return true;
   }
@@ -255,6 +279,7 @@
     fetchAndApplyUsers,
     fetchAndApplyFichajes,
     fetchAndApplyServicios,
+    fetchDatosCompletos,
     syncUsersToServer,
     syncFichajesToServer,
     syncServiciosToServer,

@@ -1788,6 +1788,64 @@ function getDatosCompletosParaExportar() {
   return out;
 }
 
+/** Mapeo export key -> [localStorage key, esString] para aplicar datos del servidor */
+var DATOS_COMPLETOS_STORAGE_MAP = [
+  ['users', 'benny_users', false],
+  ['fichajes', 'benny_fichajes', false],
+  ['servicios', 'benny_servicios', false],
+  ['repartoBeneficios', 'benny_economia_reparto_beneficios', true],
+  ['clientesBBDD', 'benny_clientes_bbdd', false],
+  ['clientesPendientes', 'benny_clientes_pendientes', false],
+  ['clientesFotos', 'benny_clientes_fotos', false],
+  ['economiaCompras', 'benny_economia_compras', false],
+  ['economiaInventario', 'benny_economia_inventario', false],
+  ['economiaGastos', 'benny_economia_gastos', false],
+  ['economiaPrevisiones', 'benny_economia_previsiones', false],
+  ['economiaLimitesStock', 'benny_economia_limites_stock', false],
+  ['tunnings', 'benny_tunnings', false],
+  ['mediaPending', 'benny_media_pending', false],
+  ['mediaApproved', 'benny_media_approved', false],
+  ['vacantes', 'benny_vacantes_solicitudes', false],
+  ['bandejaEntrada', 'benny_bandeja_entrada', false],
+  ['normativasTestRegistro', 'benny_normativas_test_registro', false],
+  ['organigrama', 'benny_organigrama', false],
+  ['convenios', 'benny_convenios', false],
+  ['conveniosEmpleados', 'benny_convenios_empleados', false],
+  ['conveniosPlacas', 'benny_convenios_placas', false],
+  ['almacenMateriales', 'benny_almacen_materiales', false],
+  ['almacenMovimientos', 'benny_almacen_movimientos', false],
+  ['preciosPiezas', 'benny_precios_piezas', false],
+  ['stockPiezasReparacion', 'benny_stock_piezas_reparacion', false],
+  ['matriculas', 'benny_matriculas', false],
+  ['vehiculosRegistro', 'benny_vehiculos_registro', false],
+  ['entregasMaterial', 'benny_entregas_material', false],
+  ['preciosPiezasTuneo', 'benny_precios_piezas_tuneo', false]
+];
+
+/** Aplica el payload de datos completos del servidor a localStorage y invalida cachés (sincronización total) */
+function aplicarDatosCompletosFromServer(payload) {
+  if (!payload || typeof payload !== 'object') return;
+  var i, key, storageKey, isString, val;
+  for (i = 0; i < DATOS_COMPLETOS_STORAGE_MAP.length; i++) {
+    key = DATOS_COMPLETOS_STORAGE_MAP[i][0];
+    storageKey = DATOS_COMPLETOS_STORAGE_MAP[i][1];
+    isString = DATOS_COMPLETOS_STORAGE_MAP[i][2];
+    if (!payload.hasOwnProperty(key)) continue;
+    val = payload[key];
+    try {
+      if (isString) localStorage.setItem(storageKey, typeof val === 'string' ? val : '');
+      else localStorage.setItem(storageKey, JSON.stringify(val !== undefined && val !== null ? val : []));
+    } catch (e) { /* ignore */ }
+  }
+  if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
+  if (typeof window.invalidateFichajesCache === 'function') window.invalidateFichajesCache();
+  if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
+  if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache();
+  if (typeof window.invalidateEconomiaCaches === 'function') window.invalidateEconomiaCaches();
+  registroServicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+}
+if (typeof window !== 'undefined') window.aplicarDatosCompletosFromServer = aplicarDatosCompletosFromServer;
+
 /** Descarga un JSON como archivo para guardar en server/data/ del repositorio */
 function descargarJsonParaRepositorio(nombreArchivo, datos) {
   var json = typeof datos === 'string' ? datos : JSON.stringify(datos, null, 2);
@@ -7817,6 +7875,52 @@ function init() {
   window.addEventListener('benny-backend-sync', function (e) {
     var detail = (e && e.detail) || {};
     requestAnimationFrame(function () {
+      if (detail.fullSync) {
+        // Sincronización total: refrescar toda la vista para que todos vean exactamente lo mismo
+        registroServicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+        if (typeof paso !== 'undefined') {
+          if (paso === 'inicio') {
+            if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+            if (typeof renderMainDashboard === 'function') renderMainDashboard();
+            if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
+          }
+          if (typeof actualizarVista === 'function') actualizarVista();
+        }
+        refrescarVistaPorUsuariosSync();
+        var session = getSession();
+        if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
+        if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+        // Economía y stock
+        if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+        if (typeof renderInventario === 'function') renderInventario();
+        if (typeof renderComprasPendientes === 'function') renderComprasPendientes();
+        if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
+        if (typeof renderGastos === 'function') renderGastos();
+        if (typeof renderLimitesStock === 'function') renderLimitesStock();
+        if (typeof renderHistorialPedidos === 'function') renderHistorialPedidos();
+        if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial();
+        if (typeof renderPrevisiones === 'function') renderPrevisiones();
+        if (typeof renderEconomiaFinanciera === 'function') renderEconomiaFinanciera();
+        // Gestión, convenios, organigrama
+        if (typeof renderListaConvenios === 'function') renderListaConvenios();
+        if (typeof renderConveniosEmpleadosYPlacas === 'function') renderConveniosEmpleadosYPlacas();
+        if (typeof renderOrganigrama === 'function') renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
+        if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+        if (typeof renderAprobacionesPendientes === 'function') renderAprobacionesPendientes();
+        if (typeof renderIndicadoresPanel === 'function') renderIndicadoresPanel();
+        // Clientes, vacantes, bandeja, resultados
+        if (typeof renderTablaClientesBBDD === 'function') renderTablaClientesBBDD();
+        if (typeof renderFichasClientes === 'function') renderFichasClientes();
+        if (typeof renderListaVetados === 'function') renderListaVetados();
+        if (typeof renderPendientesRegistro === 'function') renderPendientesRegistro();
+        if (typeof renderListaVacantes === 'function') renderListaVacantes();
+        if (typeof renderListaBandejaEntrada === 'function') renderListaBandejaEntrada();
+        if (typeof renderListaResultadosCalculadora === 'function') renderListaResultadosCalculadora();
+        if (typeof renderTunningsGallery === 'function') renderTunningsGallery();
+        if (typeof renderRegistroTestNormativas === 'function') renderRegistroTestNormativas();
+        window.dispatchEvent(new CustomEvent('benny-full-sync-done'));
+        return;
+      }
       if (detail.users) refrescarVistaPorUsuariosSync();
       if (detail.fichajes) {
         var session = getSession();
@@ -7828,25 +7932,47 @@ function init() {
         if (typeof paso !== 'undefined' && paso === 'inicio') {
           registroServicios = getRegistroServicios();
           if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+          if (typeof renderMainDashboard === 'function') renderMainDashboard();
           if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
         }
       }
     });
   });
-  // Al volver a la pestaña, refrescar desde el backend (fichajes y servicios de otros usuarios) y pintar
+  // Al volver a la pestaña, refrescar todos los datos desde el backend
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') return;
-    if (window.backendApi && window.backendApi.fetchAndApplyFichajes && window.backendApi.fetchAndApplyServicios) {
-      Promise.all([
-        window.backendApi.fetchAndApplyFichajes(),
-        window.backendApi.fetchAndApplyServicios()
-      ]).then(function () {
+    var api = window.backendApi;
+    if (!api) return;
+    if (api.fetchDatosCompletos && typeof window.aplicarDatosCompletosFromServer === 'function') {
+      api.fetchDatosCompletos().then(function (full) {
+        if (full) {
+          window.aplicarDatosCompletosFromServer(full);
+          window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { fullSync: true } }));
+        } else if (api.fetchAndApplyFichajes && api.fetchAndApplyServicios) {
+          Promise.all([api.fetchAndApplyFichajes(), api.fetchAndApplyServicios()]).then(function () {
+            if (typeof invalidateServiciosCache === 'function') invalidateServiciosCache();
+            registroServicios = getRegistroServicios();
+            var session = getSession();
+            if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
+            if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+            if (typeof paso !== 'undefined' && paso === 'inicio') {
+              if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+              if (typeof renderMainDashboard === 'function') renderMainDashboard();
+              if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
+            }
+          }).catch(function () {});
+        }
+      }).catch(function () {});
+    } else if (api.fetchAndApplyFichajes && api.fetchAndApplyServicios) {
+      Promise.all([api.fetchAndApplyFichajes(), api.fetchAndApplyServicios()]).then(function () {
+        if (typeof invalidateServiciosCache === 'function') invalidateServiciosCache();
+        registroServicios = getRegistroServicios();
         var session = getSession();
         if (session && typeof renderListaFichajesReciente === 'function') renderListaFichajesReciente(session.username);
         if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
-        registroServicios = getRegistroServicios();
         if (typeof paso !== 'undefined' && paso === 'inicio') {
           if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
+          if (typeof renderMainDashboard === 'function') renderMainDashboard();
           if (typeof renderStatsVehiculo === 'function') renderStatsVehiculo('');
         }
       }).catch(function () {});
