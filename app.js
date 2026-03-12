@@ -5910,7 +5910,6 @@ function vincularFichajes() {
     });
   }
 
-  var pantallaFichajes = document.getElementById('pantallaFichajes');
   if (pantallaFichajes && !pantallaFichajes.dataset.fichajeEditarBound) {
     pantallaFichajes.dataset.fichajeEditarBound = '1';
     pantallaFichajes.addEventListener('click', function (e) {
