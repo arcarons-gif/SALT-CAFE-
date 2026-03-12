@@ -9,11 +9,11 @@ var API_URL_LOCAL = 'http://localhost:3001';
 
 /**
  * Backend cuando la app se abre desde GitHub Pages (production).
- * Sustituye por la URL de tu backend en Render (ej. https://saltlab-calculator-api.onrender.com).
+ * Sustituye por la URL de tu backend en Render (ej. https://salt-cafe.onrender.com).
  * Así todos los que abran https://arcarons-gif.github.io/SALT-CAFE-/ usarán el mismo backend
  * y los datos se sincronizarán aunque tu PC esté apagado.
  */
-var API_URL_PRODUCCION = 'https://saltlab-calculator-api.onrender.com';
+var API_URL_PRODUCCION = 'https://salt-cafe.onrender.com';
 
 if (typeof window !== 'undefined') {
   var esProduccion = /arcarons-gif\.github\.io|github\.io/i.test(window.location.hostname || '');

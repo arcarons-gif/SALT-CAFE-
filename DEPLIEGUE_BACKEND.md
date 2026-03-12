@@ -1,5 +1,31 @@
 # Cómo tener la app siempre disponible (sin depender de tu PC)
 
+## Enlace para que todo el mundo se conecte
+
+**Todos los usuarios deben entrar siempre por este enlace (la app, no el backend):**
+
+### **https://arcarons-gif.github.io/SALT-CAFE-/**
+
+Ahí se carga la calculadora; la app se conecta sola al backend en Render si en `js/config.js` está bien puesta la URL de producción. Nadie tiene que escribir la URL del servidor a mano salvo que en **Personalización** hayan cambiado algo.
+
+---
+
+## Si unos usuarios no ven los cambios de otros
+
+Comprueba lo siguiente:
+
+1. **Misma URL para todos:** Todo el mundo debe abrir **https://arcarons-gif.github.io/SALT-CAFE-/** (el enlace de arriba). No abrir `index.html` en local ni otra URL distinta.
+
+2. **URL del backend correcta en el repo:** En el [panel de Render](https://dashboard.render.com) entra en tu Web Service y mira la URL que te da (ej. `https://saltlab-calculator-api.onrender.com` o `https://srv-xxxx.onrender.com`). En el repositorio, en **`js/config.js`**, la variable **`API_URL_PRODUCCION`** debe ser **exactamente** esa URL (sin barra al final). Si en Render el servicio tiene otro nombre, cambia `API_URL_PRODUCCION` y haz commit + push.
+
+3. **Personalización:** Si alguien tiene en la app **Personalización → URL del servidor API** con otro valor (o vacío cuando el backend está en otra URL), esa cuenta usará esa URL y puede no ver los mismos datos. Para usar el backend de todos, que dejen ese campo vacío y **Guardar**, o que pongan la misma URL que en `API_URL_PRODUCCION`.
+
+4. **Backend despierto:** En plan gratuito, Render “duerme” el servicio tras inactividad. La primera carga puede tardar 30–50 s; si falla, espera un poco y recarga.
+
+5. **Caché del navegador:** Si has cambiado `js/config.js` hace poco, algunos pueden tener la versión antigua. Que prueben **recarga forzada** (Ctrl+F5 o Cmd+Shift+R) o abran la app en ventana de incógnito.
+
+---
+
 ## Por qué no se puede “abrir el backend” al abrir el enlace
 
 - **GitHub Pages** (donde está https://arcarons-gif.github.io/SALT-CAFE-/) solo sirve **archivos estáticos** (HTML, CSS, JS).
