@@ -13,9 +13,15 @@
 
   function getStoredApiUrl() {
     try {
-      var url = (localStorage.getItem(API_URL_STORAGE) || '').trim();
-      if (url) return url;
       var predefined = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').trim() : '';
+      var url = (localStorage.getItem(API_URL_STORAGE) || '').trim();
+      // En producción (GitHub Pages): usar siempre la URL de config para que todos sincronicen,
+      // salvo que el usuario haya puesto explícitamente otra URL válida (no localhost).
+      var isProduction = typeof window !== 'undefined' && window.location && /github\.io/i.test((window.location.hostname || ''));
+      if (isProduction && predefined) {
+        if (!url || /localhost|127\.0\.0\.1/i.test(url)) return predefined;
+      }
+      if (url) return url;
       return predefined || null;
     } catch (_) {
       return null;
@@ -50,11 +56,16 @@
     return res.json();
   }
 
-  async function isAvailable() {
+  async function isAvailable(timeoutMs) {
     var base = getBaseUrl();
     if (!base) return false;
     try {
-      const r = await fetch(base + '/api/health', { method: 'GET' });
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var id = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs || 25000) : null;
+      var opts = { method: 'GET' };
+      if (ctrl) opts.signal = ctrl.signal;
+      const r = await fetch(base + '/api/health', opts);
+      if (id) clearTimeout(id);
       return r.ok;
     } catch {
       return false;
@@ -201,7 +212,22 @@
 
   async function init() {
     if (!getStoredApiUrl()) return false;
-    if (!(await isAvailable())) return false;
+    if (!(await isAvailable(25000))) {
+      // En producción el backend (Render) puede estar "despertando"; reintentar una vez a los 8 s
+      var isProd = typeof window !== 'undefined' && window.location && /github\.io/i.test((window.location.hostname || ''));
+      if (isProd && typeof window !== 'undefined') {
+        window._backendRetry = (window._backendRetry || 0) + 1;
+        if (window._backendRetry <= 2) {
+          setTimeout(function () {
+            window.backendApi && window.backendApi.init().then(function (ok) {
+              if (ok && typeof actualizarVista === 'function') actualizarVista();
+            });
+          }, 8000);
+        }
+      }
+      return false;
+    }
+    window._backendRetry = 0;
     await fetchAndApplyUsers();
     await fetchAndApplyFichajes();
     await fetchAndApplyServicios();

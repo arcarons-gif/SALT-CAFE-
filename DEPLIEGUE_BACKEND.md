@@ -22,7 +22,9 @@ Comprueba lo siguiente:
 
 4. **Backend despierto:** En plan gratuito, Render “duerme” el servicio tras inactividad. La primera carga puede tardar 30–50 s; si falla, espera un poco y recarga.
 
-5. **Caché del navegador:** Si has cambiado `js/config.js` hace poco, algunos pueden tener la versión antigua. Que prueben **recarga forzada** (Ctrl+F5 o Cmd+Shift+R) o abran la app en ventana de incógnito.
+5. **Caché del navegador:** Si has cambiado `js/config.js` o `js/backend-api.js` hace poco, algunos pueden tener la versión antigua. **Que todos hagan recarga forzada** (Ctrl+F5 en Windows, Cmd+Shift+R en Mac) o abran la app en ventana de incógnito. Así se asegura de que la app use la URL de producción y no una guardada antes en Personalización.
+
+6. **Cambio de lógica (desde esta actualización):** Al abrir desde GitHub Pages, la app usa **siempre** la URL de producción (`js/config.js` → `API_URL_PRODUCCION`) aunque alguien tuviera antes otra URL o vacío en Personalización. Así todos los que entren por el enlace público comparten el mismo backend. Sube los cambios (commit + push) y pide a todos que recarguen con Ctrl+F5.
 
 ---
 
