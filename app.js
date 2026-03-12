@@ -1133,17 +1133,16 @@ function arranqueAuth() {
     if (window.backendApi && window.backendApi.getStoredApiUrl()) {
       var el = document.getElementById('loginConectando');
       if (el) el.style.display = 'block';
-      window.backendApi.init().then(function () {
-        continuar();
-      }).catch(function () {
-        continuar();
-      });
+      var done = false;
+      function seguir() { if (!done) { done = true; continuar(); } }
+      var timeoutId = setTimeout(seguir, 15000);
+      window.backendApi.init().then(function () { clearTimeout(timeoutId); seguir(); }).catch(function () { clearTimeout(timeoutId); seguir(); });
     } else {
       continuar();
     }
   }
   if (typeof ensureSeedUsers === 'function') {
-    ensureSeedUsers().then(trasBackend);
+    ensureSeedUsers().then(trasBackend).catch(function () { trasBackend(); });
   } else {
     trasBackend();
   }
