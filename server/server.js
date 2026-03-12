@@ -84,6 +84,7 @@ app.get('/', (req, res) => {
         <li>/api/users – GET (lista) / POST (guardar)</li>
         <li>/api/fichajes – GET (lista) / POST (guardar)</li>
         <li>/api/servicios – GET (lista) / POST (guardar reparaciones/tuneos)</li>
+        <li>/api/repo-export – POST (guardar saltlab-datos-completos.json en server/data/)</li>
         <li>/api/discord-economia – POST (envía resumen financiero al webhook de Discord)</li>
         <li>/api/discord-entregas – POST (envía registro de entrega de herramientas al webhook de Discord)</li>
         <li>/api/discord-materiales – POST (envía registro de materiales recuperados al webhook de Discord)</li>
@@ -178,6 +179,23 @@ app.post('/api/servicios', (req, res) => {
       return res.status(400).json({ error: 'Se espera { servicios: [...] }' });
     }
     writeServicios(servicios);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+// Guardar exportación completa en server/data/ (automatizar guardado en repo)
+app.post('/api/repo-export', (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({ error: 'Se espera un objeto JSON' });
+    }
+    ensureDataDir();
+    const outPath = path.join(dataDir, 'saltlab-datos-completos.json');
+    fs.writeFileSync(outPath, JSON.stringify(data, null, 2), 'utf8');
     res.json({ ok: true });
   } catch (e) {
     console.error(e);

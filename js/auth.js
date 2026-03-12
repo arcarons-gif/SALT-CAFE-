@@ -133,16 +133,23 @@ async function verifyPassword(password, storedHash, salt) {
   return hash === storedHash;
 }
 
+let _cachedUsers = null;
 function getUsers() {
+  if (_cachedUsers !== null) return _cachedUsers;
   try {
     const data = localStorage.getItem(AUTH_STORAGE);
-    if (!data) return [];
+    if (!data) return (_cachedUsers = []);
     const users = JSON.parse(data);
-    return Array.isArray(users) ? users : [];
+    _cachedUsers = Array.isArray(users) ? users : [];
+    return _cachedUsers;
   } catch {
-    return [];
+    return (_cachedUsers = []);
   }
 }
+function invalidateUsersCache() {
+  _cachedUsers = null;
+}
+if (typeof window !== 'undefined') window.invalidateUsersCache = invalidateUsersCache;
 
 /**
  * Migración: deja solo los usuarios predefinidos (admin, Savannah, Tyrone) y elimina el resto.
@@ -208,6 +215,7 @@ async function ensureSeedUsers() {
 }
 
 function saveUsers(users) {
+  _cachedUsers = Array.isArray(users) ? users : null;
   localStorage.setItem(AUTH_STORAGE, JSON.stringify(users));
 }
 

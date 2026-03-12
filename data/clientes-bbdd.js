@@ -59,7 +59,19 @@ function removeFotoMatricula(matricula, index) {
   return fotos[mat] || [];
 }
 
+/** Sustituye todas las fotos de un vehículo (p. ej. para reordenar y poner una como portada). */
+function setFotosMatricula(matricula, urls) {
+  const mat = normalizarMatricula(matricula);
+  if (!mat) return [];
+  const fotos = getClientesFotos();
+  fotos[mat] = Array.isArray(urls) ? urls : [];
+  saveClientesFotos(fotos);
+  return fotos[mat];
+}
+
+let _cachedClientesBBDD = null;
 function getClientesBBDD() {
+  if (_cachedClientesBBDD !== null) return _cachedClientesBBDD;
   try {
     const raw = localStorage.getItem(CLIENTES_BBDD_STORAGE);
     const arr = raw ? JSON.parse(raw) : [];
@@ -72,16 +84,22 @@ function getClientesBBDD() {
       }
     });
     if (changed) saveClientesBBDD(list);
+    _cachedClientesBBDD = list;
     return list;
   } catch (e) {
     console.warn('getClientesBBDD', e);
     return [];
   }
 }
+function invalidateClientesBBDDCache() {
+  _cachedClientesBBDD = null;
+}
+if (typeof window !== 'undefined') window.invalidateClientesBBDDCache = invalidateClientesBBDDCache;
 
 function saveClientesBBDD(arr) {
   try {
     const list = Array.isArray(arr) ? arr : [];
+    _cachedClientesBBDD = list;
     localStorage.setItem(CLIENTES_BBDD_STORAGE, JSON.stringify(list));
   } catch (e) {
     console.warn('saveClientesBBDD', e);

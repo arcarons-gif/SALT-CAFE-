@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SALTLAB Calculator</title>
+  <link rel="icon" type="image/png" href="assets/saltlab-logo.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -509,6 +510,10 @@
       </div>
     </aside>
     </div>
+    <footer class="footer-principal" id="footerPrincipal" aria-label="Información del desarrollador">
+      <p class="footer-principal-cta">¿Te gusta la aplicación? ¿Te interesaría adquirir una herramienta web personalizada para tu negocio virtual o real? Somos programadores, nos dedicamos a desarrollar herramientas maravillosas que cubren necesidades del mundo real. ¡Contacta con nosotros para más información y presupuesto!</p>
+      <p class="footer-principal-legal">Herramienta registrada. Creada por AAC en 2026. Cualquier robo o plagio será denunciado ante la ley.</p>
+    </footer>
     </div><!-- /pantallaPrincipal -->
 
     <!-- Menú lateral: Fichajes, Organigrama, Gestión, etc. -->
@@ -603,6 +608,7 @@
       </div>
       <div class="pantalla-fichajes-body scrollbar-on-scroll">
         <div id="panelMiFichaje" class="fichajes-panel">
+          <p class="fichajes-hint fichajes-solo-propio" id="fichajesHintSoloPropio" style="display:none">Solo ves tu propia información de fichajes (mínimo de horas, acumulado y registro).</p>
           <section class="fichajes-registro">
             <h4>Fichar</h4>
             <p class="fichajes-hint">Marca cuándo empiezas y cuándo terminas tu turno. Al pulsar Entrada o Salida se guarda la fecha y hora actual.</p>
@@ -633,10 +639,12 @@
             <h4>Tu semana y reparaciones</h4>
             <div class="fichajes-stats">
               <div class="stat-card stat-horas">
-                <span class="stat-label">Horas esta semana</span>
+                <span class="stat-label">Mínimo a realizar esta semana</span>
+                <span class="stat-value stat-horas-minimo" id="textHorasMinimo">5 h</span>
+                <span class="stat-label stat-horas-acumulado-label">Acumulado total esta semana</span>
                 <div class="stat-bar-wrap">
                   <div class="stat-bar" id="barHorasSemana" style="width:0%"></div>
-                  <span class="stat-value" id="textHorasSemana">0h / 5h mín.</span>
+                  <span class="stat-value" id="textHorasSemana">0 h</span>
                 </div>
               </div>
               <div class="stat-card stat-tiempo">
@@ -652,7 +660,7 @@
                 </div>
               </div>
             </div>
-            <div class="ranking-section">
+            <div class="ranking-section" id="rankingSectionFichajes">
               <h4>Ranking por reparaciones (esta semana)</h4>
               <div id="rankingList" class="ranking-list"></div>
             </div>
@@ -1064,13 +1072,13 @@
             </div>
           </div>
           <div id="economiaInventario" class="economia-subpanel" style="display:none">
+            <p class="economia-inventario-desc">Control de existencias por pieza. Añade o ajusta el stock de cada concepto; los datos se agrupan por categoría.</p>
             <div class="economia-panel-toolbar">
-              <button type="button" class="btn btn-register" id="btnNuevoInventario">+ Nuevo pedido</button>
               <div class="economia-filtro-wrap">
-                <input type="text" id="filtroEconomiaInventario" class="input-buscar-registro" placeholder="Buscar por solicitante, concepto…" autocomplete="off">
+                <input type="text" id="filtroEconomiaInventario" class="input-buscar-registro" placeholder="Buscar por concepto o grupo…" autocomplete="off">
               </div>
             </div>
-            <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Solicitante</th><th>Concepto</th><th>Cant. a pedir</th><th>Cantidad</th><th>Mín.</th><th>Máx.</th><th>Últ. actualización</th><th></th></tr></thead><tbody id="listaInventario"></tbody></table></div>
+            <div id="inventarioPorGrupos" class="inventario-por-grupos"></div>
           </div>
           <div id="economiaLimites" class="economia-subpanel" style="display:none">
             <p class="economia-limites-desc">Define el stock mínimo y máximo para cada tipo de producto. Cuando el stock actual esté por debajo del mínimo, aparecerá en Compras pendientes.</p>
@@ -1123,6 +1131,17 @@
           </div>
         </div>
         <div id="panelReset" class="admin-panel panel-reset-datos" style="display:none">
+          <div class="panel-export-repo">
+            <h4 class="panel-export-repo-titulo">Guardar datos en el repositorio (evitar que se pierdan al hacer push)</h4>
+            <p class="panel-export-repo-desc">Requisitos para guardado automático en <code>server/data/</code>: <strong>1)</strong> Servidor en ejecución (en la carpeta <code>server/</code>, p. ej. <code>node server.js</code> o el script <code>run-server.cmd</code>). <strong>2)</strong> En la app, <strong>Personalización</strong> → <strong>«URL del servidor API»</strong> con la misma URL del servidor (ej. <code>http://localhost:3001</code>). Si ambos se cumplen, al guardar cualquier dato a los ~2 s se guardan directamente en <code>server/data/</code> (sobrescribiendo): <code>users.json</code>, <code>fichajes.json</code>, <code>servicios.json</code>, <code>saltlab-datos-completos.json</code>. Sin diálogo de descarga. Si el servidor no está configurado, se descargan los JSON para guardarlos a mano. Luego commit + push.</p>
+            <div class="panel-export-repo-buttons">
+              <button type="button" class="btn btn-outline btn-sm" id="btnExportUsersJson" title="Guarda como server/data/users.json">Descargar users.json</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnExportFichajesJson" title="Guarda como server/data/fichajes.json">Descargar fichajes.json</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnExportServiciosJson" title="Guarda como server/data/servicios.json">Descargar servicios.json</button>
+              <button type="button" class="btn btn-register btn-sm" id="btnExportTodoRepo" title="Descarga users, fichajes, servicios y saltlab-datos-completos.json">Descargar todo</button>
+            </div>
+          </div>
+          <h4 class="panel-reset-titulo">Reset / Limpiar datos</h4>
           <p class="panel-reset-desc">Elimina datos de prueba por sección. Solo administradores. Los cambios son inmediatos.</p>
           <div class="panel-reset-buttons">
             <button type="button" class="btn btn-outline btn-reset-section" id="btnResetFichajes" data-reset="fichajes">Reset Fichajes</button>
@@ -1542,6 +1561,44 @@
       </div>
     </div>
 
+    <!-- Modal Galería fotos empleado (preview, miniatura ficha, registro reparación, eliminar) -->
+    <div id="modalGaleriaFotosEmpleado" class="modal" aria-hidden="true" style="display:none">
+      <div class="modal-backdrop" id="modalGaleriaFotosEmpleadoBackdrop"></div>
+      <div class="modal-content modal-galeria-fotos-empleado">
+        <div class="modal-header">
+          <h3 id="modalGaleriaFotosEmpleadoTitulo">Galería de fotos</h3>
+          <button type="button" class="modal-close" id="modalGaleriaFotosEmpleadoClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="galeria-fotos-empleado-desc">Elige la foto principal (previsualización, miniatura en la ficha y en el registro de reparación), la de fondo de pantalla de la ficha, o elimina las que no quieras.</p>
+          <input type="file" id="galeriaFotosEmpleadoInput" accept="image/*" multiple class="hidden">
+          <div class="galeria-fotos-empleado-toolbar">
+            <button type="button" class="btn btn-outline btn-sm" id="btnGaleriaFotosEmpleadoAnadir">+ Añadir foto</button>
+          </div>
+          <div id="galeriaFotosEmpleadoGrid" class="galeria-fotos-empleado-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Galería fotos vehículo (por matrícula) -->
+    <div id="modalGaleriaFotosVehiculo" class="modal" aria-hidden="true" style="display:none">
+      <div class="modal-backdrop" id="modalGaleriaFotosVehiculoBackdrop"></div>
+      <div class="modal-content modal-galeria-fotos-empleado">
+        <div class="modal-header">
+          <h3 id="modalGaleriaFotosVehiculoTitulo">Galería de fotos del vehículo</h3>
+          <button type="button" class="modal-close" id="modalGaleriaFotosVehiculoClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="galeria-fotos-empleado-desc">La primera foto se usa como previsualización. Usa «Portada» para poner una como principal o «Eliminar» para quitar.</p>
+          <input type="file" id="galeriaFotosVehiculoInput" accept="image/*" multiple class="hidden">
+          <div class="galeria-fotos-empleado-toolbar">
+            <button type="button" class="btn btn-outline btn-sm" id="btnGaleriaFotosVehiculoAnadir">+ Añadir foto</button>
+          </div>
+          <div id="galeriaFotosVehiculoGrid" class="galeria-fotos-empleado-grid"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Añadir fotos del tuneo (desde aviso bandeja de entrada) -->
     <div id="modalAvisoFotosTuneo" class="modal" aria-hidden="true">
       <div class="modal-backdrop" id="modalAvisoFotosTuneoBackdrop"></div>
@@ -1630,9 +1687,12 @@
       <div class="pantalla-secundaria-header ficha-empleado-header">
         <button type="button" class="btn btn-home" id="btnFichaEmpleadoHome" aria-label="Volver">← Volver</button>
         <div class="ficha-empleado-header-info">
-          <div class="ficha-empleado-foto-wrap" id="fichaEmpleadoFotoWrap">
-            <img id="fichaEmpleadoFotoImg" src="" alt="" style="display:none">
-            <span id="fichaEmpleadoFotoIniciales" class="ficha-empleado-iniciales">—</span>
+          <div class="ficha-empleado-foto-y-boton">
+            <div class="ficha-empleado-foto-wrap" id="fichaEmpleadoFotoWrap">
+              <img id="fichaEmpleadoFotoImg" src="" alt="" style="display:none">
+              <span id="fichaEmpleadoFotoIniciales" class="ficha-empleado-iniciales">—</span>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm ficha-empleado-btn-galeria" id="btnFichaEmpleadoFotoGaleria" title="Abrir galería de fotos">Galería</button>
           </div>
           <div class="ficha-empleado-titulo-wrap">
             <h2 id="fichaEmpleadoTitulo" class="pantalla-secundaria-titulo ficha-empleado-titulo">Ficha del empleado</h2>
@@ -1726,9 +1786,10 @@
           </section>
           <section class="ficha-empleado-seccion ficha-seccion-fotos" id="fichaSeccionFotos">
             <h3 class="ficha-seccion-titulo"><span class="ficha-seccion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>Fotografías</h3>
-            <p class="ficha-seccion-desc">Añade fotos a la ficha. Puedes elegir una como fondo de pantalla al editar.</p>
+            <p class="ficha-seccion-desc">Abre la galería para ver todas las fotos, elegir la principal (preview, miniatura y registro de reparación), la de fondo, o eliminar.</p>
             <input type="file" id="fichaEmpleadoFotoInput" accept="image/*" multiple class="hidden">
             <div class="ficha-fotos-toolbar">
+              <button type="button" class="btn btn-outline btn-sm" id="btnFichaEmpleadoAbrirGaleria">Abrir galería de fotos</button>
               <button type="button" class="btn btn-outline btn-sm" id="btnFichaEmpleadoAnadirFoto">+ Añadir foto</button>
             </div>
             <div id="fichaEmpleadoFotosLista" class="ficha-fotos-lista"></div>
@@ -1766,8 +1827,7 @@
         <p class="materiales-recuperados-desc">Indica las cantidades de cada material que devuelves al almacén tras las reparaciones (los mismos tipos que se usan al registrar una reparación).</p>
         <div id="formMaterialesRecuperadosEmpleadoWrap" class="materiales-recuperados-form-wrap"></div>
         <div class="materiales-recuperados-actions">
-          <button type="button" class="btn btn-outline" id="btnMaterialesRecupGuardarAlmacen">Guardar en almacén</button>
-          <button type="button" class="btn btn-register" id="btnMaterialesRecupEnviarDiscord">Enviar registro al canal de Discord</button>
+          <button type="button" class="btn btn-register" id="btnMaterialesRecupGuardarRegistro">Guardar registro</button>
         </div>
       </div>
     </div>

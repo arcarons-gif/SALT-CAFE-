@@ -3,6 +3,16 @@
  * Lógica de cálculo de costes de reparación y tuneo + Control de usuarios
  */
 
+/** Debounce: ejecuta fn tras ms desde la última llamada (para búsquedas/filtros). */
+function debounce(fn, ms) {
+  var t = null;
+  return function () {
+    var self = this, args = arguments;
+    if (t) clearTimeout(t);
+    t = setTimeout(function () { t = null; fn.apply(self, args); }, ms);
+  };
+}
+
 // Factores de precio (ajusta según tu Excel)
 const CONFIG = {
   factorPiezaTuneo: 0.0015,      // precioBase * factor por pieza (Motor, Perf, Custom, Cosmetic)
@@ -37,6 +47,7 @@ function getRegistroServicios() {
 function invalidateServiciosCache() {
   _cachedServicios = null;
 }
+if (typeof window !== 'undefined') window.invalidateServiciosCache = invalidateServiciosCache;
 function saveRegistroServicios(arr) {
   try {
     let list = Array.isArray(arr) ? arr : [];
@@ -48,19 +59,23 @@ function saveRegistroServicios(arr) {
     if (window.backendApi && typeof window.backendApi.syncServiciosToServer === 'function') {
       window.backendApi.syncServiciosToServer(list);
     }
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   } catch (e) {
     console.warn('saveRegistroServicios', e);
   }
 }
 
 const BANDEJA_ENTRADA_STORAGE = 'benny_bandeja_entrada';
+var _cachedBandejaEntrada = null;
 function getBandejaEntradaAll() {
+  if (_cachedBandejaEntrada !== null) return _cachedBandejaEntrada;
   try {
-    const raw = localStorage.getItem(BANDEJA_ENTRADA_STORAGE);
-    const data = raw ? JSON.parse(raw) : {};
-    return typeof data === 'object' && data !== null ? data : {};
+    var raw = localStorage.getItem(BANDEJA_ENTRADA_STORAGE);
+    var data = raw ? JSON.parse(raw) : {};
+    _cachedBandejaEntrada = typeof data === 'object' && data !== null ? data : {};
+    return _cachedBandejaEntrada;
   } catch (e) {
-    return {};
+    return (_cachedBandejaEntrada = {});
   }
 }
 function getBandejaEntrada(username) {
@@ -81,8 +96,10 @@ function addAvisoBandejaEntrada(username, aviso) {
   });
   if (list.length > BANDEJA_ENTRADA_MAX) list.length = BANDEJA_ENTRADA_MAX;
   all[username] = list;
+  _cachedBandejaEntrada = all;
   try {
     localStorage.setItem(BANDEJA_ENTRADA_STORAGE, JSON.stringify(all));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   } catch (e) {
     console.warn('addAvisoBandejaEntrada', e);
   }
@@ -96,8 +113,10 @@ function updateAvisoBandejaEntrada(username, avisoId, updates) {
   if (idx === -1) return;
   list[idx] = Object.assign({}, list[idx], updates);
   all[username] = list;
+  _cachedBandejaEntrada = all;
   try {
     localStorage.setItem(BANDEJA_ENTRADA_STORAGE, JSON.stringify(all));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   } catch (e) {
     console.warn('updateAvisoBandejaEntrada', e);
   }
@@ -220,7 +239,10 @@ function getPendingMedia() {
   } catch (e) { return []; }
 }
 function savePendingMedia(arr) {
-  try { localStorage.setItem(MEDIA_PENDING_STORAGE, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (e) {}
+  try {
+    localStorage.setItem(MEDIA_PENDING_STORAGE, JSON.stringify(Array.isArray(arr) ? arr : []));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
+  } catch (e) {}
 }
 function addPendingMedia(item) {
   const list = getPendingMedia();
@@ -242,7 +264,10 @@ function getApprovedMedia() {
   } catch (e) { return []; }
 }
 function saveApprovedMedia(arr) {
-  try { localStorage.setItem(MEDIA_APPROVED_STORAGE, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (e) {}
+  try {
+    localStorage.setItem(MEDIA_APPROVED_STORAGE, JSON.stringify(Array.isArray(arr) ? arr : []));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
+  } catch (e) {}
 }
 function addApprovedMedia(src) {
   const list = getApprovedMedia();
@@ -333,6 +358,7 @@ function addRegistroTestNormativas(entrada) {
     arr.unshift(entrada);
     if (arr.length > NORMATIVAS_TEST_REGISTRO_MAX) arr.length = NORMATIVAS_TEST_REGISTRO_MAX;
     localStorage.setItem(NORMATIVAS_TEST_REGISTRO_STORAGE, JSON.stringify(arr));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   } catch (e) {}
 }
 
@@ -1548,6 +1574,90 @@ function vincularAdmin() {
       renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
     }
   });
+  var btnFotoGaleria = document.getElementById('btnFichaEmpleadoFotoGaleria');
+  if (btnFotoGaleria) {
+    btnFotoGaleria.addEventListener('click', function () {
+      var id = document.getElementById('usuarioId') && document.getElementById('usuarioId').value;
+      if (id && typeof openGaleriaFotosEmpleado === 'function') openGaleriaFotosEmpleado(id);
+    });
+  }
+  var btnFichaAbrirGaleria = document.getElementById('btnFichaEmpleadoAbrirGaleria');
+  if (btnFichaAbrirGaleria) {
+    btnFichaAbrirGaleria.addEventListener('click', function () {
+      var id = document.getElementById('usuarioId') && document.getElementById('usuarioId').value;
+      if (id && typeof openGaleriaFotosEmpleado === 'function') openGaleriaFotosEmpleado(id);
+    });
+  }
+  var modalGaleriaClose = document.getElementById('modalGaleriaFotosEmpleadoClose');
+  var modalGaleriaBackdrop = document.getElementById('modalGaleriaFotosEmpleadoBackdrop');
+  if (modalGaleriaClose) modalGaleriaClose.addEventListener('click', function () { if (typeof cerrarGaleriaFotosEmpleado === 'function') cerrarGaleriaFotosEmpleado(); });
+  if (modalGaleriaBackdrop) modalGaleriaBackdrop.addEventListener('click', function () { if (typeof cerrarGaleriaFotosEmpleado === 'function') cerrarGaleriaFotosEmpleado(); });
+  var modalGaleriaVehClose = document.getElementById('modalGaleriaFotosVehiculoClose');
+  var modalGaleriaVehBackdrop = document.getElementById('modalGaleriaFotosVehiculoBackdrop');
+  if (modalGaleriaVehClose) modalGaleriaVehClose.addEventListener('click', function () { if (typeof cerrarGaleriaFotosVehiculo === 'function') cerrarGaleriaFotosVehiculo(); });
+  if (modalGaleriaVehBackdrop) modalGaleriaVehBackdrop.addEventListener('click', function () { if (typeof cerrarGaleriaFotosVehiculo === 'function') cerrarGaleriaFotosVehiculo(); });
+  var btnGaleriaVehAnadir = document.getElementById('btnGaleriaFotosVehiculoAnadir');
+  var inputGaleriaVehFoto = document.getElementById('galeriaFotosVehiculoInput');
+  if (btnGaleriaVehAnadir && inputGaleriaVehFoto) {
+    btnGaleriaVehAnadir.addEventListener('click', function () { inputGaleriaVehFoto.value = ''; inputGaleriaVehFoto.click(); });
+    inputGaleriaVehFoto.addEventListener('change', function () {
+      var files = this.files;
+      if (!files || files.length === 0) return;
+      var modal = document.getElementById('modalGaleriaFotosVehiculo');
+      var mat = modal && modal.dataset.galeriaMatricula;
+      var uid = modal && modal.dataset.galeriaUserId;
+      if (!mat) return;
+      var fotos = typeof getFotosByMatricula === 'function' ? getFotosByMatricula(mat) : [];
+      fotos = fotos.slice();
+      var readNext = function (i) {
+        if (i >= files.length) {
+          if (typeof setFotosMatricula === 'function') setFotosMatricula(mat, fotos);
+          if (typeof renderGaleriaFotosVehiculo === 'function') renderGaleriaFotosVehiculo(mat);
+          if (uid && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(uid);
+          inputGaleriaVehFoto.value = '';
+          return;
+        }
+        var file = files[i];
+        if (!file.type.startsWith('image/')) { readNext(i + 1); return; }
+        var reader = new FileReader();
+        reader.onload = function () { fotos.push(reader.result); readNext(i + 1); };
+        reader.readAsDataURL(file);
+      };
+      readNext(0);
+    });
+  }
+  var btnGaleriaAnadir = document.getElementById('btnGaleriaFotosEmpleadoAnadir');
+  var inputGaleriaFoto = document.getElementById('galeriaFotosEmpleadoInput');
+  if (btnGaleriaAnadir && inputGaleriaFoto) {
+    btnGaleriaAnadir.addEventListener('click', function () { inputGaleriaFoto.value = ''; inputGaleriaFoto.click(); });
+    inputGaleriaFoto.addEventListener('change', function () {
+      var files = this.files;
+      if (!files || files.length === 0) return;
+      var modal = document.getElementById('modalGaleriaFotosEmpleado');
+      var id = modal && modal.dataset.galeriaUserId;
+      if (!id) return;
+      var users = getUsers();
+      var u = users.find(function (x) { return x.id === id; });
+      var fotos = (u && Array.isArray(u.fotosFicha)) ? u.fotosFicha.slice() : [];
+      var session = getSession();
+      if (!session || typeof updateUser !== 'function') return;
+      var readNext = function (i) {
+        if (i >= files.length) {
+          updateUser(id, { fotosFicha: fotos }, session.username).then(function () {
+            if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
+          }).catch(function () {});
+          inputGaleriaFoto.value = '';
+          return;
+        }
+        var file = files[i];
+        if (!file.type.startsWith('image/')) { readNext(i + 1); return; }
+        var reader = new FileReader();
+        reader.onload = function () { fotos.push(reader.result); readNext(i + 1); };
+        reader.readAsDataURL(file);
+      };
+      readNext(0);
+    });
+  }
   var btnFichaAnadirFoto = document.getElementById('btnFichaEmpleadoAnadirFoto');
   var inputFichaFoto = document.getElementById('fichaEmpleadoFotoInput');
   if (btnFichaAnadirFoto && inputFichaFoto) {
@@ -1611,16 +1721,18 @@ function ejecutarReset(seccion) {
   if (seccion === 'economia' || seccion === 'todo') {
     try {
       localStorage.setItem('benny_economia_compras', '[]');
-      localStorage.setItem('benny_economia_inventario', '[]');
+      localStorage.setItem('benny_economia_inventario', '{}');
       localStorage.setItem('benny_economia_gastos', '[]');
       localStorage.setItem('benny_economia_previsiones', '{}');
       localStorage.setItem('benny_economia_limites_stock', '{}');
       localStorage.setItem('benny_economia_reparto_beneficios', '');
+      if (typeof window.invalidateEconomiaCaches === 'function') window.invalidateEconomiaCaches();
     } catch (e) {}
   }
   if (seccion === 'clientes' || seccion === 'todo') {
     try {
       localStorage.setItem('benny_clientes_bbdd', '[]');
+      if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache();
       localStorage.setItem('benny_clientes_pendientes', '[]');
       localStorage.setItem('benny_clientes_fotos', '{}');
     } catch (e) {}
@@ -1645,6 +1757,92 @@ function ejecutarReset(seccion) {
   alert('Datos reseteados.');
 }
 
+/** Recopila todos los datos de la app para exportar al repositorio */
+function getDatosCompletosParaExportar() {
+  function get(key, def) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw != null ? JSON.parse(raw) : def;
+    } catch (e) { return def; }
+  }
+  var out = {
+    users: typeof getUsers === 'function' ? getUsers() : get('benny_users', []),
+    fichajes: typeof getFichajes === 'function' ? getFichajes() : get('benny_fichajes', []),
+    servicios: typeof getRegistroServicios === 'function' ? getRegistroServicios() : get('benny_servicios', []),
+    repartoBeneficios: (function () { try { return localStorage.getItem('benny_economia_reparto_beneficios') || ''; } catch (e) { return ''; } })()
+  };
+  var keys = [
+    ['clientesBBDD', 'benny_clientes_bbdd', []], ['clientesPendientes', 'benny_clientes_pendientes', []], ['clientesFotos', 'benny_clientes_fotos', {}],
+    ['economiaCompras', 'benny_economia_compras', []], ['economiaInventario', 'benny_economia_inventario', {}], ['economiaGastos', 'benny_economia_gastos', []],
+    ['economiaPrevisiones', 'benny_economia_previsiones', {}], ['economiaLimitesStock', 'benny_economia_limites_stock', {}],
+    ['tunnings', 'benny_tunnings', []], ['mediaPending', 'benny_media_pending', []], ['mediaApproved', 'benny_media_approved', []],
+    ['vacantes', 'benny_vacantes_solicitudes', []], ['bandejaEntrada', 'benny_bandeja_entrada', {}], ['normativasTestRegistro', 'benny_normativas_test_registro', []],
+    ['organigrama', 'benny_organigrama', null], ['convenios', 'benny_convenios', []], ['conveniosEmpleados', 'benny_convenios_empleados', []], ['conveniosPlacas', 'benny_convenios_placas', []],
+    ['almacenMateriales', 'benny_almacen_materiales', {}], ['almacenMovimientos', 'benny_almacen_movimientos', []],
+    ['preciosPiezas', 'benny_precios_piezas', null], ['stockPiezasReparacion', 'benny_stock_piezas_reparacion', null],
+    ['matriculas', 'benny_matriculas', []], ['vehiculosRegistro', 'benny_vehiculos_registro', []], ['entregasMaterial', 'benny_entregas_material', []],
+    ['preciosPiezasTuneo', 'benny_precios_piezas_tuneo', {}]
+  ];
+  for (var i = 0; i < keys.length; i++) out[keys[i][0]] = get(keys[i][1], keys[i][2]);
+  out._exportadoAt = new Date().toISOString();
+  return out;
+}
+
+/** Descarga un JSON como archivo para guardar en server/data/ del repositorio */
+function descargarJsonParaRepositorio(nombreArchivo, datos) {
+  var json = typeof datos === 'string' ? datos : JSON.stringify(datos, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreArchivo;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Temporizador para exportación automática al repo (debounce) */
+var _exportacionRepositorioTimer = null;
+var EXPORTACION_REPO_DEBOUNCE_MS = 2000;
+
+function programarExportacionRepositorio() {
+  if (_exportacionRepositorioTimer) clearTimeout(_exportacionRepositorioTimer);
+  _exportacionRepositorioTimer = setTimeout(function () {
+    _exportacionRepositorioTimer = null;
+    var session = typeof getSession === 'function' ? getSession() : null;
+    if (session && hasPermission(session, 'gestionarUsuarios')) exportarDatosParaRepositorio('todo');
+  }, EXPORTACION_REPO_DEBOUNCE_MS);
+}
+
+var EXPORT_REPO_MAP = { users: ['getUsers', 'users.json'], fichajes: ['getFichajes', 'fichajes.json'], servicios: ['getRegistroServicios', 'servicios.json'] };
+
+function exportarDatosParaRepositorio(tipo) {
+  var session = typeof getSession === 'function' ? getSession() : null;
+  if (!session || !hasPermission(session, 'gestionarUsuarios')) return;
+  var api = window.backendApi;
+  var guardarEnServidor = api && api.getBaseUrl && api.getBaseUrl();
+  if (tipo === 'todo') {
+    exportarDatosParaRepositorio('users');
+    setTimeout(function () { exportarDatosParaRepositorio('fichajes'); }, 300);
+    setTimeout(function () { exportarDatosParaRepositorio('servicios'); }, 600);
+    setTimeout(function () {
+      var datos = getDatosCompletosParaExportar();
+      if (!guardarEnServidor) descargarJsonParaRepositorio('saltlab-datos-completos.json', datos);
+      else if (typeof api.saveRepoExport === 'function') api.saveRepoExport(datos);
+    }, 900);
+    return;
+  }
+  var cfg = EXPORT_REPO_MAP[tipo];
+  if (cfg && typeof window[cfg[0]] === 'function') {
+    var payload = window[cfg[0]]();
+    if (guardarEnServidor) {
+      if (tipo === 'users') api.syncUsersToServer(payload);
+      else if (tipo === 'fichajes') api.syncFichajesToServer(payload);
+      else if (tipo === 'servicios') api.syncServiciosToServer(payload);
+    } else {
+      descargarJsonParaRepositorio(cfg[1], payload);
+    }
+  }
+}
+
 function vincularResetDatos() {
   document.querySelectorAll('.btn-reset-section').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -1652,6 +1850,23 @@ function vincularResetDatos() {
       if (seccion && typeof ejecutarReset === 'function') ejecutarReset(seccion);
     });
   });
+  var exportBtns = { btnExportUsersJson: 'users', btnExportFichajesJson: 'fichajes', btnExportServiciosJson: 'servicios', btnExportTodoRepo: 'todo' };
+  Object.keys(exportBtns).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', function () { exportarDatosParaRepositorio(exportBtns[id]); });
+  });
+
+  // Exportación automática al repo: al guardar cualquier dato se programan las descargas (solo admin)
+  (function () {
+    var trigger = function () { if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio(); };
+    function wrap(name) {
+      var orig = window[name];
+      if (typeof orig !== 'function') return;
+      window[name] = function () { var r = orig.apply(this, arguments); trigger(); return r; };
+    }
+    var wrapNames = ['saveUsers', 'saveFichajes', 'saveComprasPendientes', 'saveInventario', 'saveGastos', 'saveLimitesStock', 'setPrevisionMes', 'saveAlmacenMateriales', 'addMaterialesAlmacen', 'saveStockPiezasReparacion', 'savePreciosPiezas', 'saveClientesBBDD', 'saveClientesFotos', 'savePendientes', 'saveConvenios', 'saveOrganigrama', 'addTunning', 'removeTunning', 'saveEntregasMaterial', 'saveRegistroVehiculos', 'savePreciosPiezasTuneo'];
+    for (var i = 0; i < wrapNames.length; i++) wrap(wrapNames[i]);
+  })();
 }
 
 // ========== ECONOMÍA (compras, inventario, gastos, previsiones, almacén) ==========
@@ -2689,7 +2904,8 @@ function abrirPantallaMaterialesRecuperados() {
 }
 
 function enviarMaterialesRecuperadosADiscord(datos) {
-  var apiBase = (typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) ? (window.SALTLAB_API_URL + '').replace(/\/$/, '') : '';
+  var apiBase = (window.backendApi && typeof window.backendApi.getBaseUrl === 'function') ? window.backendApi.getBaseUrl() : '';
+  if (!apiBase && typeof window.SALTLAB_API_URL !== 'undefined' && window.SALTLAB_API_URL) apiBase = (window.SALTLAB_API_URL + '').replace(/\/$/, '');
   if (!apiBase) {
     alert('No está configurada la URL del backend. Necesitas el servidor en marcha para enviar a Discord.');
     return;
@@ -2706,10 +2922,9 @@ function enviarMaterialesRecuperadosADiscord(datos) {
     alert('Indica al menos una cantidad mayor que 0.');
     return;
   }
-  if (typeof addMaterialesAlmacen === 'function') addMaterialesAlmacen(datos.movimiento);
   var fecha = new Date().toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
   var content = '📦 **Materiales recuperados**\n**Empleado:** ' + empleado + '\n**Fecha:** ' + fecha + '\n\n' + lineas.join('\n');
-  var btn = document.getElementById('btnMaterialesRecupEnviarDiscord');
+  var btn = document.getElementById('btnMaterialesRecupGuardarRegistro');
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   fetch(apiBase + '/api/discord-materiales', {
     method: 'POST',
@@ -2721,40 +2936,95 @@ function enviarMaterialesRecuperadosADiscord(datos) {
   }).catch(function (e) {
     alert('No se pudo enviar al Discord. ¿Está el servidor en marcha? ' + (e.message || e));
   }).finally(function () {
-    if (btn) { btn.disabled = false; btn.textContent = 'Enviar registro al canal de Discord'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar registro'; }
   });
 }
 
+/** Ruta base e imágenes de piezas (input/CONTENT/ALMACEN/fotospiezas). conceptoId -> nombre de archivo. */
+var INVENTARIO_FOTOS_PIEZAS_BASE = 'input/CONTENT/ALMACEN/fotospiezas/';
+var INVENTARIO_FOTOS_PIEZAS_MAP = {
+  carroceria_puerta: 'puerta.png', carroceria_capo: 'capó.png', carroceria_maletero: 'maletero.png', carroceria_cristal: 'ventana.png',
+  esenciales_bomba_direccion: 'bomba de direccion.png', esenciales_inyector: 'inyector.png', esenciales_alternador: 'alternador.png',
+  esenciales_radiador: 'radiador.png', esenciales_transmision: 'transmision.png', esenciales_frenos: 'frenos.png',
+  maquinaria_tablet_tuneo: 'tablet de tunning.png', maquinaria_maquina_diagnosis: 'herramienta de diagnosis.png', maquinaria_grua_motor: 'grúa de motor.png'
+};
+
 function renderInventario() {
-  var tbody = document.getElementById('listaInventario');
-  if (!tbody || typeof getInventario !== 'function') return;
-  var list = getInventario();
+  var wrap = document.getElementById('inventarioPorGrupos');
+  if (!wrap || typeof getInventario !== 'function' || typeof CATEGORIA_INVENTARIO === 'undefined') return;
+  var stock = getInventario();
+  var limites = typeof getLimitesStock === 'function' ? getLimitesStock() : {};
   var q = (document.getElementById('filtroEconomiaInventario') && document.getElementById('filtroEconomiaInventario').value) || '';
-  if (q) {
-    q = q.trim().toLowerCase();
-    var catMap = (typeof CATEGORIA_INVENTARIO !== 'undefined' ? CATEGORIA_INVENTARIO : []).reduce(function (o, c) { o[c.id] = ((c.grupo ? c.grupo + ' ' : '') + (c.nombre || c.id)).toLowerCase(); return o; }, {});
-    list = list.filter(function (i) {
-      var conceptoLabel = (catMap[i.categoria] || '') || (i.nombre || '');
-      var texto = [(i.solicitante || ''), (i.nombre || ''), conceptoLabel].join(' ').toLowerCase();
-      return texto.indexOf(q) !== -1;
-    });
-  }
-  var categorias = (typeof CATEGORIA_INVENTARIO !== 'undefined' ? CATEGORIA_INVENTARIO : []).reduce(function (o, c) { o[c.id] = (c.grupo ? c.grupo + ' · ' : '') + (c.nombre || c.id); return o; }, {});
-  tbody.innerHTML = '';
-  list.forEach(function (i) {
-    var tr = document.createElement('tr');
-    var ult = i.ultimaActualizacion ? new Date(i.ultimaActualizacion).toLocaleDateString('es-ES') : '—';
-    var conceptoLabel = categorias[i.categoria] || i.nombre || '—';
-    var sobreMax = (i.stockMaximo != null && i.stockMaximo > 0 && (i.cantidad || 0) >= i.stockMaximo);
-    var bajoMin = (i.stockMinimo != null && i.stockMinimo > 0 && (i.cantidad || 0) <= i.stockMinimo);
-    var alerta = bajoMin ? ' <span class="economia-alerta-badge economia-alerta-bajo">Bajo</span>' : (sobreMax ? ' <span class="economia-alerta-badge economia-alerta-alto">Alto</span>' : '');
-    var cantPedir = (i.cantidadAPedir != null && i.cantidadAPedir !== '') ? Number(i.cantidadAPedir) : '—';
-    var maxLabel = (i.stockMaximo != null && i.stockMaximo !== '') ? Number(i.stockMaximo) : '—';
-    tr.innerHTML = '<td>' + escapeHtml(i.solicitante || '—') + '</td><td>' + escapeHtml(conceptoLabel) + alerta + '</td><td>' + cantPedir + '</td><td>' + (i.cantidad || 0) + ' ' + (i.unidad || 'ud') + '</td><td>' + (i.stockMinimo || 0) + '</td><td>' + maxLabel + '</td><td>' + escapeHtml(ult) + '</td><td><button type="button" class="btn btn-outline btn-sm btn-edit-inv" data-id="' + escapeHtmlAttr(i.id) + '">Editar</button> <button type="button" class="btn btn-outline btn-sm btn-del-inv" data-id="' + escapeHtmlAttr(i.id) + '">Eliminar</button></td>';
-    tbody.appendChild(tr);
+  q = q.trim().toLowerCase();
+  var categorias = CATEGORIA_INVENTARIO.filter(function (c) {
+    if (!q) return true;
+    var texto = ((c.grupo || '') + ' ' + (c.nombre || '') + ' ' + (c.id || '')).toLowerCase();
+    return texto.indexOf(q) !== -1;
   });
-  tbody.querySelectorAll('.btn-edit-inv').forEach(function (btn) { btn.addEventListener('click', function () { abrirModalInventario(btn.getAttribute('data-id')); }); });
-  tbody.querySelectorAll('.btn-del-inv').forEach(function (btn) { btn.addEventListener('click', function () { var id = btn.getAttribute('data-id'); if (id && confirm('¿Eliminar?')) { if (typeof removeInventarioItem === 'function') removeInventarioItem(id); renderInventario(); renderEconomiaResumen(); } }); });
+  var porGrupo = {};
+  categorias.forEach(function (c) {
+    var g = c.grupo || 'Otros';
+    if (!porGrupo[g]) porGrupo[g] = [];
+    porGrupo[g].push(c);
+  });
+  var gruposOrden = ['VARIOS', 'CARROCERÍA', 'COMPONENTES ESENCIALES', 'TUNING', 'MAQUINARIA'];
+  var restantes = Object.keys(porGrupo).filter(function (g) { return gruposOrden.indexOf(g) === -1; });
+  wrap.innerHTML = '';
+  gruposOrden.concat(restantes).forEach(function (grupoNombre) {
+    var items = porGrupo[grupoNombre];
+    if (!items || !items.length) return;
+    var slug = (grupoNombre || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'otros';
+    var ficha = document.createElement('div');
+    ficha.className = 'inventario-ficha inventario-ficha-neon inventario-ficha-' + slug;
+    var tableHtml = '<div class="inventario-ficha-titulo">' + escapeHtml(grupoNombre) + '</div><div class="inventario-ficha-tabla-wrap scrollbar-on-scroll"><table class="inventario-ficha-tabla"><thead><tr><th>Concepto</th><th>Stock</th><th class="inventario-th-acciones"></th></tr></thead><tbody></tbody></table></div>';
+    ficha.innerHTML = tableHtml;
+    var tbody = ficha.querySelector('.inventario-ficha-tabla tbody');
+    items.forEach(function (c) {
+      var id = c.id;
+      var cant = (stock[id] != null && !isNaN(parseFloat(stock[id]))) ? parseFloat(stock[id]) : 0;
+      var lim = limites[id] || {};
+      var min = (lim.stockMinimo != null) ? parseFloat(lim.stockMinimo) : '';
+      var bajoMin = min > 0 && cant <= min;
+      var alerta = bajoMin ? ' <span class="economia-alerta-badge economia-alerta-bajo">Bajo stock</span>' : '';
+      var imgSrc = INVENTARIO_FOTOS_PIEZAS_MAP[id] ? (INVENTARIO_FOTOS_PIEZAS_BASE + encodeURIComponent(INVENTARIO_FOTOS_PIEZAS_MAP[id])) : '';
+      var imgHtml = imgSrc ? '<img class="inventario-pieza-logo" src="' + escapeHtmlAttr(imgSrc) + '" alt="" title="' + escapeHtmlAttr(c.nombre || id) + '" onerror="this.style.display=\'none\'">' : '<span class="inventario-pieza-logo-placeholder"></span>';
+      var tr = document.createElement('tr');
+      tr.className = 'inventario-ficha-pieza';
+      tr.innerHTML =
+        '<td class="inventario-td-concepto">' + imgHtml + '<span class="inventario-td-concepto-texto">' + escapeHtml(c.nombre || id) + alerta + '</span></td>' +
+        '<td class="inventario-td-stock">' + cant + ' ud</td>' +
+        '<td class="inventario-td-acciones">' +
+        '<input type="number" class="inventario-input-add" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a añadir">' +
+        '<button type="button" class="inventario-btn-round inventario-btn-add" data-concepto="' + escapeHtmlAttr(id) + '" title="Sumar al stock" aria-label="Añadir">+</button>' +
+        '<input type="number" class="inventario-input-remove" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a retirar">' +
+        '<button type="button" class="inventario-btn-round inventario-btn-remove" data-concepto="' + escapeHtmlAttr(id) + '" title="Restar del stock" aria-label="Retirar">−</button>' +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+    wrap.appendChild(ficha);
+  });
+  wrap.querySelectorAll('.inventario-btn-add').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-concepto');
+      var row = btn.closest('tr');
+      var input = row ? row.querySelector('.inventario-input-add') : null;
+      var n = input && input.value !== '' ? (parseInt(input.value, 10) || 1) : 1;
+      if (id && typeof addStock === 'function') { addStock(id, n); renderInventario(); if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen(); if (typeof renderLimitesStock === 'function') renderLimitesStock(); }
+    });
+  });
+  wrap.querySelectorAll('.inventario-btn-remove').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-concepto');
+      var row = btn.closest('tr');
+      var input = row ? row.querySelector('.inventario-input-remove') : null;
+      var n = input && input.value !== '' ? (parseInt(input.value, 10) || 1) : 1;
+      if (id && typeof removeStock === 'function') {
+        var actual = typeof getStock === 'function' ? getStock(id) : 0;
+        if (n > actual) n = actual;
+        if (n > 0) { removeStock(id, n); renderInventario(); if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen(); if (typeof renderLimitesStock === 'function') renderLimitesStock(); }
+      }
+    });
+  });
 }
 
 function renderLimitesStock() {
@@ -2944,7 +3214,8 @@ function abrirModalInventario(id) {
     selGrupo.innerHTML = '<option value="">— Selecciona categoría —</option>' + GRUPOS_INVENTARIO.map(function (g) { return '<option value="' + escapeHtmlAttr(g) + '">' + escapeHtml(g) + '</option>'; }).join('');
   }
   if (id && typeof getInventario === 'function') {
-    var i = getInventario().find(function (x) { return x.id === id; });
+    var inv = getInventario();
+    var i = Array.isArray(inv) ? inv.find(function (x) { return x.id === id; }) : null;
     if (i) {
       titulo.textContent = 'Editar pedido';
       document.getElementById('inventarioId').value = i.id;
@@ -3046,7 +3317,11 @@ function vincularEconomia() {
   var btnReparto = document.getElementById('btnGuardarRepartoBeneficios');
   if (btnReparto) btnReparto.addEventListener('click', function () {
     var ta = document.getElementById('economiaRepartoBeneficios');
-    if (ta) try { localStorage.setItem(REPARTO_BENEFICIOS_STORAGE, (ta.value || '').trim()); alert('Reparto de beneficios guardado.'); } catch (e) { alert('No se pudo guardar.'); }
+    if (ta) try {
+      localStorage.setItem(REPARTO_BENEFICIOS_STORAGE, (ta.value || '').trim());
+      if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
+      alert('Reparto de beneficios guardado.');
+    } catch (e) { alert('No se pudo guardar.'); }
   });
   var panelEconomia = document.getElementById('panelEconomia');
   if (panelEconomia && !panelEconomia.dataset.discordBtnBound) {
@@ -3071,15 +3346,20 @@ function vincularEconomia() {
   var filtroCompras = document.getElementById('filtroEconomiaCompras');
   var filtroInv = document.getElementById('filtroEconomiaInventario');
   var filtroGastos = document.getElementById('filtroEconomiaGastos');
-  if (filtroCompras) { filtroCompras.addEventListener('input', renderComprasPendientes); filtroCompras.addEventListener('change', renderComprasPendientes); }
-  if (filtroInv) { filtroInv.addEventListener('input', renderInventario); filtroInv.addEventListener('change', renderInventario); }
-  if (filtroGastos) { filtroGastos.addEventListener('input', renderGastos); filtroGastos.addEventListener('change', renderGastos); }
+  var debounceEconomia = 200;
+  if (filtroCompras) { filtroCompras.addEventListener('input', debounce(renderComprasPendientes, debounceEconomia)); filtroCompras.addEventListener('change', renderComprasPendientes); }
+  if (filtroInv) { filtroInv.addEventListener('input', debounce(renderInventario, debounceEconomia)); filtroInv.addEventListener('change', renderInventario); }
+  if (filtroGastos) { filtroGastos.addEventListener('input', debounce(renderGastos, debounceEconomia)); filtroGastos.addEventListener('change', renderGastos); }
   var filtroHistorial = document.getElementById('filtroHistorialTipo');
   if (filtroHistorial) { filtroHistorial.addEventListener('change', function () { if (typeof renderHistorialPedidos === 'function') renderHistorialPedidos(); }); }
   var filtroHistorialCat = document.getElementById('filtroHistorialCategoria');
   if (filtroHistorialCat) { filtroHistorialCat.addEventListener('change', function () { if (typeof renderHistorialPedidos === 'function') renderHistorialPedidos(); }); }
   var filtroEntregas = document.getElementById('filtroEntregasMaterial');
-  if (filtroEntregas) { filtroEntregas.addEventListener('input', function () { if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial(); }); filtroEntregas.addEventListener('change', function () { if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial(); }); }
+  if (filtroEntregas) {
+    var debouncedEntregas = debounce(function () { if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial(); }, 180);
+    filtroEntregas.addEventListener('input', debouncedEntregas);
+    filtroEntregas.addEventListener('change', function () { if (typeof renderEntregasMaterial === 'function') renderEntregasMaterial(); });
+  }
   var btnEntrega = document.getElementById('btnNuevaEntregaMaterial');
   if (btnEntrega) btnEntrega.addEventListener('click', function () {
     var modal = document.getElementById('modalEntregaMaterial');
@@ -3210,18 +3490,13 @@ function vincularEconomia() {
   });
   var btnMaterialesRecupHome = document.getElementById('btnMaterialesRecuperadosHome');
   if (btnMaterialesRecupHome) btnMaterialesRecupHome.addEventListener('click', function () { if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias(); });
-  var btnMaterialesRecupGuardar = document.getElementById('btnMaterialesRecupGuardarAlmacen');
-  if (btnMaterialesRecupGuardar) btnMaterialesRecupGuardar.addEventListener('click', function () {
-    var datos = typeof getMaterialesRecuperadosFormData === 'function' ? getMaterialesRecuperadosFormData() : { movimiento: {} };
+  var btnMaterialesRecupGuardarRegistro = document.getElementById('btnMaterialesRecupGuardarRegistro');
+  if (btnMaterialesRecupGuardarRegistro) btnMaterialesRecupGuardarRegistro.addEventListener('click', function () {
+    var datos = typeof getMaterialesRecuperadosFormData === 'function' ? getMaterialesRecuperadosFormData() : { movimiento: {}, empleadoNombre: '' };
     if (Object.keys(datos.movimiento).length === 0) { alert('Indica al menos una cantidad mayor que 0.'); return; }
     if (typeof addMaterialesAlmacen === 'function') addMaterialesAlmacen(datos.movimiento);
     if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
     if (typeof renderAlmacenMateriales === 'function') renderAlmacenMateriales();
-    alert('Materiales guardados en el almacén.');
-  });
-  var btnMaterialesRecupDiscord = document.getElementById('btnMaterialesRecupEnviarDiscord');
-  if (btnMaterialesRecupDiscord) btnMaterialesRecupDiscord.addEventListener('click', function () {
-    var datos = typeof getMaterialesRecuperadosFormData === 'function' ? getMaterialesRecuperadosFormData() : { movimiento: {}, empleadoNombre: '' };
     if (typeof enviarMaterialesRecuperadosADiscord === 'function') enviarMaterialesRecuperadosADiscord(datos);
   });
   var formCompra = document.getElementById('formCompra');
@@ -3264,9 +3539,16 @@ function vincularEconomia() {
     var stockMaxRaw = document.getElementById('inventarioStockMaximo').value;
     var stockMaxVal = (stockMaxRaw === '' || stockMaxRaw === null || stockMaxRaw === undefined) ? null : (parseFloat(stockMaxRaw) || null);
     if (!puedeEditarStock) {
-      if (id && typeof getInventario === 'function') {
-        var existing = getInventario().find(function (x) { return x.id === id; });
+      var inv = typeof getInventario === 'function' ? getInventario() : null;
+      var conceptoId = (conceptoEl && conceptoEl.value) || '';
+      if (Array.isArray(inv) && id) {
+        var existing = inv.find(function (x) { return x.id === id; });
         if (existing) { stockMinVal = existing.stockMinimo != null ? existing.stockMinimo : 0; stockMaxVal = existing.stockMaximo != null ? existing.stockMaximo : null; }
+        else { stockMinVal = 0; stockMaxVal = null; }
+      } else if (conceptoId && typeof getLimitesStock === 'function') {
+        var lim = getLimitesStock()[conceptoId];
+        if (lim) { stockMinVal = lim.stockMinimo != null ? lim.stockMinimo : 0; stockMaxVal = lim.stockMaximo != null ? lim.stockMaximo : null; }
+        else { stockMinVal = 0; stockMaxVal = null; }
       } else {
         stockMinVal = 0;
         stockMaxVal = null;
@@ -3839,6 +4121,7 @@ function getSolicitudesVacantes() {
 function saveSolicitudesVacantes(list) {
   try {
     localStorage.setItem(VACANTES_STORAGE, JSON.stringify(list));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   } catch (e) {}
 }
 
@@ -3988,7 +4271,10 @@ function vincularVacantes() {
   });
   if (btnHome) btnHome.addEventListener('click', function () { if (typeof irAPantallaPrincipal === 'function') irAPantallaPrincipal(); });
   if (filtroEstado) { filtroEstado.addEventListener('change', renderListaVacantes); filtroEstado.addEventListener('input', renderListaVacantes); }
-  if (filtroBuscar) { filtroBuscar.addEventListener('input', renderListaVacantes); filtroBuscar.addEventListener('change', renderListaVacantes); }
+  if (filtroBuscar) {
+    filtroBuscar.addEventListener('input', debounce(renderListaVacantes, 180));
+    filtroBuscar.addEventListener('change', renderListaVacantes);
+  }
 }
 
 // ========== CHATBOT NORMATIVAS E INSTRUCCIONES ==========
@@ -4381,7 +4667,7 @@ function vincularRegistroClientes() {
       if (arr.length > 0) {
         try {
           if (typeof saveClientesBBDD === 'function') saveClientesBBDD(arr);
-          else localStorage.setItem('benny_clientes_bbdd', JSON.stringify(arr));
+          else { localStorage.setItem('benny_clientes_bbdd', JSON.stringify(arr)); if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache(); }
         } catch (e) { console.warn('renderTablaClientesBBDD seed', e); }
         list = typeof getClientesBBDD === 'function' ? getClientesBBDD() : arr;
       }
@@ -4745,8 +5031,11 @@ function vincularRegistroClientes() {
   var filtroFichasEl = document.getElementById('filtroFichasClientes');
   var filtroBBDDEl = document.getElementById('filtroTablaBBDD');
   var filtroPendEl = document.getElementById('filtroPendientes');
-  if (filtroFichasEl) filtroFichasEl.addEventListener('input', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
-  if (filtroFichasEl) filtroFichasEl.addEventListener('change', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
+  if (filtroFichasEl) {
+    var debouncedFichas = debounce(function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); }, 180);
+    filtroFichasEl.addEventListener('input', debouncedFichas);
+    filtroFichasEl.addEventListener('change', function () { if (typeof renderFichasClientes === 'function') renderFichasClientes(); });
+  }
   if (filtroBBDDEl) {
     var debounceBBDD;
     filtroBBDDEl.addEventListener('input', function () {
@@ -4823,8 +5112,11 @@ function vincularRegistroClientes() {
       if (table) applyBBDDColumnVisibility(table);
     });
   })();
-  if (filtroPendEl) filtroPendEl.addEventListener('input', function () { renderPendientesRegistro(); });
-  if (filtroPendEl) filtroPendEl.addEventListener('change', function () { renderPendientesRegistro(); });
+  if (filtroPendEl) {
+    var debouncedPend = debounce(renderPendientesRegistro, 180);
+    filtroPendEl.addEventListener('input', debouncedPend);
+    filtroPendEl.addEventListener('change', function () { renderPendientesRegistro(); });
+  }
 
   document.getElementById('modalEditarClienteClose')?.addEventListener('click', () => document.getElementById('modalEditarCliente').classList.remove('active'));
   document.getElementById('modalEditarCliente')?.addEventListener('click', e => { if (e.target?.id === 'modalEditarCliente') document.getElementById('modalEditarCliente').classList.remove('active'); });
@@ -4968,7 +5260,7 @@ function vincularRegistroClientes() {
     if (typeof getClientesBBDD === 'function' && typeof addOrUpdateClienteBBDD === 'function') {
       if (existing && data.matricula.toUpperCase() !== (matOriginal || '').trim().toUpperCase()) {
         list.splice(idx, 1);
-        try { localStorage.setItem('benny_clientes_bbdd', JSON.stringify(list)); } catch (err) {}
+        try { localStorage.setItem('benny_clientes_bbdd', JSON.stringify(list)); if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache(); } catch (err) {}
       }
       addOrUpdateClienteBBDD({ ...existing, ...data });
     }
@@ -5228,12 +5520,14 @@ function getRendimientoEmpleados() {
 
 function renderFichajesDashboard(userId) {
   const horas = getHorasSemana(userId, new Date());
-  const minimo = HORAS_MINIMAS_SEMANA;
+  const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
   const pct = Math.min(100, (horas / minimo) * 100);
   const bar = document.getElementById('barHorasSemana');
   const textHoras = document.getElementById('textHorasSemana');
+  const textMinimo = document.getElementById('textHorasMinimo');
   if (bar) bar.style.width = pct + '%';
-  if (textHoras) textHoras.textContent = horas.toFixed(1) + 'h / ' + minimo + 'h mín.';
+  if (textHoras) textHoras.textContent = horas.toFixed(1) + ' h';
+  if (textMinimo) textMinimo.textContent = minimo + ' h';
 
   const msRestante = getMsHastaFinSemana(new Date());
   const textHasta = document.getElementById('textHastaSemana');
@@ -5308,8 +5602,9 @@ function renderTablaRendimiento() {
   const wrap = document.getElementById('tablaRendimiento');
   if (!wrap) return;
   const rows = getRendimientoEmpleados();
-  wrap.innerHTML = '<table><thead><tr><th>Trabajador</th><th>Horas/sem</th><th>Servicios (hoy/sem/total)</th><th>Facturado total</th><th>Indicadores</th></tr></thead><tbody>' +
-    rows.map(r => '<tr><td>' + escapeHtml(r.nombre) + '</td><td>' + r.horas.toFixed(1) + 'h</td><td>' + r.hoy + ' / ' + r.semana + ' / ' + r.total + '</td><td>$' + (r.totalBilled || 0).toLocaleString('es-ES') + '</td><td>' + (r.alertas.length ? '<span class="alerta">' + r.alertas.join(' · ') + '</span>' : '<span class="ok">OK</span>') + '</td></tr>').join('') +
+  const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
+  wrap.innerHTML = '<table><thead><tr><th>Trabajador</th><th>Mín. semana</th><th>Acumulado semana</th><th>Servicios (hoy/sem/total)</th><th>Facturado total</th><th>Indicadores</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td>' + escapeHtml(r.nombre) + '</td><td>' + minimo + ' h</td><td>' + r.horas.toFixed(1) + ' h</td><td>' + r.hoy + ' / ' + r.semana + ' / ' + r.total + '</td><td>$' + (r.totalBilled || 0).toLocaleString('es-ES') + '</td><td>' + (r.alertas.length ? '<span class="alerta">' + r.alertas.join(' · ') + '</span>' : '<span class="ok">OK</span>') + '</td></tr>').join('') +
     '</tbody></table>';
 }
 
@@ -5355,6 +5650,10 @@ function vincularFichajes() {
         renderListaFichajesReciente(userId);
       }
       actualizarLedFichaje();
+      var rankingSection = document.getElementById('rankingSectionFichajes');
+      if (rankingSection) rankingSection.style.display = isAdmin ? '' : 'none';
+      var hintSoloPropio = document.getElementById('fichajesHintSoloPropio');
+      if (hintSoloPropio) hintSoloPropio.style.display = isAdmin ? 'none' : 'block';
       if (isAdmin) {
         const sel = document.getElementById('selectFichajesEmpleado');
         if (sel) {
@@ -5520,8 +5819,12 @@ function vincularFichajes() {
       const statsWrap = document.getElementById('statsFichajesEmpleado');
       if (statsWrap) {
         const horas = getHorasSemana(uid, new Date());
+        const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
         const reps = getReparacionesByUser()[uid] || { hoy: 0, semana: 0, total: 0 };
-        statsWrap.innerHTML = '<div class="fichajes-stats"><div class="stat-card"><span class="stat-label">Horas esta semana</span><span class="stat-value">' + horas.toFixed(1) + 'h</span></div><div class="stat-card"><span class="stat-label">Servicios (hoy / semana / total)</span><span class="stat-value">' + reps.hoy + ' / ' + reps.semana + ' / ' + reps.total + '</span></div></div>';
+        statsWrap.innerHTML = '<div class="fichajes-stats">' +
+          '<div class="stat-card"><span class="stat-label">Mínimo a realizar esta semana</span><span class="stat-value">' + minimo + ' h</span></div>' +
+          '<div class="stat-card"><span class="stat-label">Acumulado total esta semana</span><span class="stat-value">' + horas.toFixed(1) + ' h</span></div>' +
+          '<div class="stat-card"><span class="stat-label">Servicios (hoy / semana / total)</span><span class="stat-value">' + reps.hoy + ' / ' + reps.semana + ' / ' + reps.total + '</span></div></div>';
       }
     });
   }
@@ -6019,13 +6322,226 @@ function renderFichaEmpleadoFotos(userId) {
       else if (idx < newFondo) newFondo = newFondo - 1;
       var session = getSession();
       if (typeof updateUser !== 'function' || !session) return;
-      updateUser(id, { fotosFicha: fotos, fondoFichaIndex: newFondo }, session.username).then(function () {
+      var payload = { fotosFicha: fotos, fondoFichaIndex: newFondo };
+      if (u.fotoPerfil && fotos.indexOf(u.fotoPerfil) === -1) payload.fotoPerfil = fotos.length > 0 ? fotos[0] : null;
+      updateUser(id, payload, session.username).then(function () {
         renderFichaEmpleadoFotos(id);
         aplicarFondoFichaEmpleado(id);
+        if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
       }).catch(function () {});
     });
   });
 }
+
+/** Abre el modal de galería de fotos del empleado (preview, miniatura, registro reparación, eliminar). */
+function openGaleriaFotosEmpleado(userId) {
+  var id = (userId || (document.getElementById('usuarioId') && document.getElementById('usuarioId').value) || '').toString().trim();
+  if (!id) return;
+  var modal = document.getElementById('modalGaleriaFotosEmpleado');
+  var titulo = document.getElementById('modalGaleriaFotosEmpleadoTitulo');
+  if (titulo) {
+    var users = getUsers();
+    var u = users.find(function (x) { return x.id === id; });
+    titulo.textContent = u ? ('Galería de fotos · ' + (u.nombre || u.username || 'Empleado')) : 'Galería de fotos';
+  }
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    modal.dataset.galeriaUserId = id;
+  }
+  if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
+}
+
+/** Rellena la rejilla del modal galería y enlaza acciones: foto principal, fondo, eliminar. */
+function renderGaleriaFotosEmpleado(userId) {
+  var grid = document.getElementById('galeriaFotosEmpleadoGrid');
+  if (!grid) return;
+  var users = getUsers();
+  var u = users.find(function (x) { return x.id === userId; });
+  var fotos = (u && Array.isArray(u.fotosFicha)) ? u.fotosFicha : [];
+  var fotoPerfil = (u && u.fotoPerfil) ? u.fotoPerfil : '';
+  var idxFondo = (u && u.fondoFichaIndex != null) ? Math.max(0, Math.min(Number(u.fondoFichaIndex), fotos.length - 1)) : 0;
+
+  if (fotos.length === 0) {
+    grid.innerHTML = '<p class="galeria-fotos-empleado-empty">Aún no hay fotos. Usa «Añadir foto» para subir imágenes.</p>';
+    return;
+  }
+
+  grid.innerHTML = fotos.map(function (url, i) {
+    var esPrincipal = (url === fotoPerfil) || (!fotoPerfil && i === 0);
+    var esFondo = i === idxFondo;
+    var safeUrl = (url || '').indexOf('"') === -1 ? url : (url || '').replace(/"/g, '%22');
+    return '<div class="galeria-foto-card" data-index="' + i + '">' +
+      '<div class="galeria-foto-card-thumb" style="background-image:url(' + safeUrl + ')"></div>' +
+      '<div class="galeria-foto-card-actions">' +
+      '<button type="button" class="btn btn-outline btn-sm galeria-foto-card-btn-principal' + (esPrincipal ? ' active' : '') + '" data-index="' + i + '" title="Previsualización, miniatura en ficha y registro de reparación">' + (esPrincipal ? '✓ Foto principal' : 'Foto principal') + '</button>' +
+      '<button type="button" class="btn btn-outline btn-sm galeria-foto-card-btn-fondo' + (esFondo ? ' active' : '') + '" data-index="' + i + '" title="Fondo de pantalla de la ficha">' + (esFondo ? '✓ Fondo' : 'Fondo') + '</button>' +
+      '<button type="button" class="btn btn-outline btn-sm btn-danger galeria-foto-card-btn-eliminar" data-index="' + i + '" title="Eliminar">Eliminar</button>' +
+      '</div></div>';
+  }).join('');
+
+  grid.querySelectorAll('.galeria-foto-card-btn-principal').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = grid.closest('.modal') && grid.closest('.modal').dataset.galeriaUserId;
+      if (!id) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var users = getUsers();
+      var u = users.find(function (x) { return x.id === id; });
+      var url = (u && Array.isArray(u.fotosFicha) && u.fotosFicha[idx]) ? u.fotosFicha[idx] : '';
+      if (!url) return;
+      var session = getSession();
+      if (typeof updateUser !== 'function' || !session) return;
+      updateUser(id, { fotoPerfil: url }, session.username).then(function () {
+        if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
+        var fotoImg = document.getElementById('fichaEmpleadoFotoImg');
+        var fotoIniciales = document.getElementById('fichaEmpleadoFotoIniciales');
+        if (fotoImg && fotoIniciales) {
+          fotoImg.src = url;
+          fotoImg.style.display = 'block';
+          fotoIniciales.style.display = 'none';
+        }
+        if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+        if (typeof renderOrganigramaFichaPreview === 'function') renderOrganigramaFichaPreview(id);
+      }).catch(function () {});
+    });
+  });
+
+  grid.querySelectorAll('.galeria-foto-card-btn-fondo').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = grid.closest('.modal') && grid.closest('.modal').dataset.galeriaUserId;
+      if (!id) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var session = getSession();
+      if (typeof updateUser !== 'function' || !session) return;
+      updateUser(id, { fondoFichaIndex: idx }, session.username).then(function () {
+        if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
+        if (typeof aplicarFondoFichaEmpleado === 'function') aplicarFondoFichaEmpleado(id);
+      }).catch(function () {});
+    });
+  });
+
+  grid.querySelectorAll('.galeria-foto-card-btn-eliminar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = grid.closest('.modal') && grid.closest('.modal').dataset.galeriaUserId;
+      if (!id) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var users = getUsers();
+      var u = users.find(function (x) { return x.id === id; });
+      if (!u || !Array.isArray(u.fotosFicha)) return;
+      var fotos = u.fotosFicha.slice();
+      var urlEliminada = fotos[idx];
+      fotos.splice(idx, 1);
+      var newFondo = u.fondoFichaIndex != null ? Number(u.fondoFichaIndex) : 0;
+      if (newFondo >= fotos.length) newFondo = fotos.length > 0 ? 0 : null;
+      else if (idx < newFondo) newFondo = newFondo - 1;
+      var newPrincipal = u.fotoPerfil;
+      if (urlEliminada === u.fotoPerfil) newPrincipal = fotos.length > 0 ? fotos[0] : null;
+      var session = getSession();
+      if (typeof updateUser !== 'function' || !session) return;
+      updateUser(id, { fotosFicha: fotos, fondoFichaIndex: newFondo, fotoPerfil: newPrincipal }, session.username).then(function () {
+        if (typeof renderGaleriaFotosEmpleado === 'function') renderGaleriaFotosEmpleado(id);
+        if (typeof renderFichaEmpleadoFotos === 'function') renderFichaEmpleadoFotos(id);
+        if (typeof aplicarFondoFichaEmpleado === 'function') aplicarFondoFichaEmpleado(id);
+        var fotoImg = document.getElementById('fichaEmpleadoFotoImg');
+        var fotoIniciales = document.getElementById('fichaEmpleadoFotoIniciales');
+        if (fotoImg && fotoIniciales) {
+          if (newPrincipal) { fotoImg.src = newPrincipal; fotoImg.style.display = 'block'; fotoIniciales.style.display = 'none'; }
+          else { fotoImg.src = ''; fotoImg.style.display = 'none'; fotoIniciales.style.display = ''; fotoIniciales.textContent = (u.nombre || u.username || '?').substring(0, 2).toUpperCase(); }
+        }
+        if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+      }).catch(function () {});
+    });
+  });
+}
+
+function cerrarGaleriaFotosEmpleado() {
+  var modal = document.getElementById('modalGaleriaFotosEmpleado');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+/** Abre la galería de fotos de un vehículo (por matrícula). */
+function openGaleriaFotosVehiculo(matricula, userId) {
+  var mat = (matricula || '').toString().trim();
+  if (!mat) return;
+  var modal = document.getElementById('modalGaleriaFotosVehiculo');
+  var titulo = document.getElementById('modalGaleriaFotosVehiculoTitulo');
+  if (titulo) titulo.textContent = 'Galería de fotos · ' + mat;
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    modal.dataset.galeriaMatricula = mat;
+    modal.dataset.galeriaUserId = userId || '';
+  }
+  if (typeof renderGaleriaFotosVehiculo === 'function') renderGaleriaFotosVehiculo(mat);
+}
+
+/** Rellena la rejilla de la galería de fotos del vehículo: portada, eliminar. */
+function renderGaleriaFotosVehiculo(matricula) {
+  var grid = document.getElementById('galeriaFotosVehiculoGrid');
+  if (!grid) return;
+  var mat = (matricula || '').toString().trim();
+  var fotos = typeof getFotosByMatricula === 'function' ? getFotosByMatricula(mat) : [];
+  var modal = grid.closest('.modal');
+  var currentMat = modal && modal.dataset.galeriaMatricula;
+
+  if ((currentMat && currentMat !== mat) || !mat) return;
+  if (fotos.length === 0) {
+    grid.innerHTML = '<p class="galeria-fotos-empleado-empty">Aún no hay fotos. Usa «Añadir foto» para subir imágenes.</p>';
+    return;
+  }
+
+  grid.innerHTML = fotos.map(function (url, i) {
+    var esPortada = i === 0;
+    var safeUrl = (url || '').indexOf('"') === -1 ? url : (url || '').replace(/"/g, '%22');
+    return '<div class="galeria-foto-card" data-index="' + i + '">' +
+      '<div class="galeria-foto-card-thumb" style="background-image:url(' + safeUrl + ')"></div>' +
+      '<div class="galeria-foto-card-actions">' +
+      '<button type="button" class="btn btn-outline btn-sm galeria-foto-card-btn-fondo' + (esPortada ? ' active' : '') + '" data-index="' + i + '" title="Usar como portada (preview)">' + (esPortada ? '✓ Portada' : 'Portada') + '</button>' +
+      '<button type="button" class="btn btn-outline btn-sm btn-danger galeria-foto-card-btn-eliminar" data-index="' + i + '" title="Eliminar">Eliminar</button>' +
+      '</div></div>';
+  }).join('');
+
+  grid.querySelectorAll('.galeria-foto-card-btn-fondo').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var m = modal && modal.dataset.galeriaMatricula;
+      if (!m) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      var fotosArr = typeof getFotosByMatricula === 'function' ? getFotosByMatricula(m) : [];
+      if (idx < 0 || idx >= fotosArr.length) return;
+      var url = fotosArr[idx];
+      var nuevo = [url].concat(fotosArr.slice(0, idx), fotosArr.slice(idx + 1));
+      if (typeof setFotosMatricula === 'function') setFotosMatricula(m, nuevo);
+      if (typeof renderGaleriaFotosVehiculo === 'function') renderGaleriaFotosVehiculo(m);
+      var uid = modal.dataset.galeriaUserId;
+      if (uid && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(uid);
+    });
+  });
+
+  grid.querySelectorAll('.galeria-foto-card-btn-eliminar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var m = modal && modal.dataset.galeriaMatricula;
+      if (!m) return;
+      var idx = parseInt(this.getAttribute('data-index'), 10);
+      if (typeof removeFotoMatricula !== 'function') return;
+      removeFotoMatricula(m, idx);
+      if (typeof renderGaleriaFotosVehiculo === 'function') renderGaleriaFotosVehiculo(m);
+      var uid = modal.dataset.galeriaUserId;
+      if (uid && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(uid);
+    });
+  });
+}
+
+function cerrarGaleriaFotosVehiculo() {
+  var modal = document.getElementById('modalGaleriaFotosVehiculo');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
 
 function renderMaterialEntregadoEnFicha(userId) {
   var cont = document.getElementById('listaMaterialEntregadoFicha');
@@ -6094,8 +6610,11 @@ function renderFichaEmpleadoVehiculos(userId) {
       '<div class="ficha-vehiculo-fotos-block">' +
       '<strong class="ficha-vehiculo-block-title">Fotos del vehículo</strong>' +
       '<div class="ficha-vehiculo-foto-preview-wrap">' + previewHtml + '</div>' +
-      '<input type="file" accept="image/*" id="' + inputId + '" class="ficha-vehiculo-foto-input" data-matricula="' + escapeHtml(matricula) + '">' +
-      '<label for="' + inputId + '" class="btn btn-outline btn-sm ficha-vehiculo-foto-add">+ Añadir foto</label>' +
+      '<div class="ficha-vehiculo-foto-botones">' +
+      '<button type="button" class="btn btn-outline btn-sm ficha-vehiculo-btn-galeria" data-matricula="' + escapeHtmlAttr(matricula) + '" title="Abrir galería de fotos del vehículo">Galería</button>' +
+      '<input type="file" accept="image/*" id="' + inputId + '" class="ficha-vehiculo-foto-input hidden" data-matricula="' + escapeHtml(matricula) + '">' +
+      '<button type="button" class="btn btn-outline btn-sm ficha-vehiculo-foto-add-btn" data-input-id="' + escapeHtmlAttr(inputId) + '">+ Añadir foto</button>' +
+      '</div>' +
       '</div>' +
       '<div class="ficha-vehiculo-reparaciones-block">' +
       '<strong class="ficha-vehiculo-block-title">Historial reparaciones</strong>' +
@@ -6114,9 +6633,23 @@ function renderFichaEmpleadoVehiculos(userId) {
       reader.onload = function () {
         if (typeof addFotoMatricula === 'function') addFotoMatricula(mat, reader.result);
         if (uid && typeof renderFichaEmpleadoVehiculos === 'function') renderFichaEmpleadoVehiculos(uid);
+        if (typeof renderGaleriaFotosVehiculo === 'function') renderGaleriaFotosVehiculo(mat);
       };
       reader.readAsDataURL(file);
       this.value = '';
+    });
+  });
+  cont.querySelectorAll('.ficha-vehiculo-foto-add-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-input-id');
+      var input = id ? document.getElementById(id) : null;
+      if (input) { input.value = ''; input.click(); }
+    });
+  });
+  cont.querySelectorAll('.ficha-vehiculo-btn-galeria').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var mat = this.getAttribute('data-matricula');
+      if (mat && typeof openGaleriaFotosVehiculo === 'function') openGaleriaFotosVehiculo(mat, cont.getAttribute('data-user-id'));
     });
   });
 }
@@ -6689,7 +7222,10 @@ function vincularMiHistorial() {
   var modalMiHistorialClose = document.getElementById('modalMiHistorialClose');
   if (modalMiHistorialClose) modalMiHistorialClose.addEventListener('click', () => modal.classList.remove('active'));
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
-  [buscar, tipo, desde, hasta].forEach(el => { if (el) el.addEventListener('input', renderLista); if (el) el.addEventListener('change', renderLista); });
+  var debouncedLista = debounce(renderLista, 180);
+  [buscar, tipo, desde, hasta].forEach(function (el) {
+    if (el) { el.addEventListener('input', debouncedLista); el.addEventListener('change', renderLista); }
+  });
 }
 
 // Contenido en bucle: vídeos aprobados por admin + archivos de input/CONTENT/Tapes
@@ -7231,6 +7767,7 @@ function init() {
   if (typeof cargarListadoPlacas === 'function') {
     cargarListadoPlacas(function () {
       if (typeof aplicarEstiloPlacaActual === 'function') aplicarEstiloPlacaActual();
+      if (typeof renderUltimasReparaciones === 'function') renderUltimasReparaciones();
     });
   }
   mostrarPaso('inicio');
@@ -7802,6 +8339,7 @@ function guardarMatricula(mat) {
     matriculas.unshift(mat);
     matriculas = matriculas.slice(0, 50);
     localStorage.setItem('benny_matriculas', JSON.stringify(matriculas));
+    if (typeof programarExportacionRepositorio === 'function') programarExportacionRepositorio();
   }
 }
 
@@ -8525,6 +9063,14 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   if (el.mecanico) el.mecanico.value = nombreRegistrador || '—';
   const modLabel = el.fullTuning?.checked ? 'Full Tuning' : (el.reparacion?.checked ? 'Reparación + Tuneo' : 'Tuneo');
   var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
+  var piezasTuneo = piezasSel.piezas || [];
+  if (piezasTuneo.length > 0) {
+    var resultTuneo = comprobarStockTuneo(piezasTuneo);
+    if (!resultTuneo || !resultTuneo.ok) {
+      alert(resultTuneo && resultTuneo.error ? resultTuneo.error : 'No hay stock suficiente de piezas de tuning. Añade existencias en Economía > Inventario.');
+      return;
+    }
+  }
   const servicio = {
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
@@ -8536,10 +9082,14 @@ function registrarTuneo(fotoAntes, fotoDespues) {
     convenio: el.negocios.value,
     descuento: p.descuento,
     userId: session ? session.username : null,
-    piezasTuneo: piezasSel.piezas || [],
+    piezasTuneo: piezasTuneo,
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
+  if (piezasTuneo.length > 0 && typeof restarStockTuneo === 'function') restarStockTuneo(piezasTuneo);
+  if (typeof renderInventario === 'function') renderInventario();
+  if (typeof renderLimitesStock === 'function') renderLimitesStock();
+  if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
   if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistrador);
   if (fotoAntes && fotoDespues && typeof addTunning === 'function') {
@@ -8561,6 +9111,89 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   renderListaResultadosCalculadora();
   abrirPantallaResultadosCalculadora();
   alert('Tuneo registrado correctamente.');
+}
+
+/** Mapeo de IDs de piezas reparación (chasis/esenciales) a conceptoId del inventario economía (control único de existencias). */
+var MAPEO_PIEZAS_REPARACION_A_INVENTARIO = {
+  chasis: { capo: 'carroceria_capo', maletero: 'carroceria_maletero', puerta: 'carroceria_puerta', rueda: 'esenciales_rueda', ventana: 'carroceria_cristal' },
+  esenciales: { transmision: 'esenciales_transmision', bomba_direccion: 'esenciales_bomba_direccion', alternador: 'esenciales_alternador', inyector: 'esenciales_inyector', frenos: 'esenciales_frenos', radiador: 'esenciales_radiador', celulas_bateria: 'esenciales_otro', motor_electrico: 'esenciales_otro' }
+};
+
+/** Comprueba si hay stock suficiente en inventario (economía) para las piezas de la reparación. Devuelve { ok: true } o { ok: false, error: string }. */
+function comprobarStockReparacion(chasisDesglose, esencialesDesglose) {
+  if (typeof getStock !== 'function') return { ok: true };
+  var mapCh = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.chasis || {};
+  var mapEs = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.esenciales || {};
+  var nombres = { chasis: { capo: 'Capó', maletero: 'Maletero', puerta: 'Puerta', rueda: 'Rueda', ventana: 'Cristal' }, esenciales: { transmision: 'Transmisión', bomba_direccion: 'Bomba de dirección', alternador: 'Alternador', inyector: 'Inyector', frenos: 'Frenos', radiador: 'Radiador', celulas_bateria: 'Células de batería', motor_electrico: 'Motor eléctrico' } };
+  chasisDesglose = Array.isArray(chasisDesglose) ? chasisDesglose : [];
+  esencialesDesglose = Array.isArray(esencialesDesglose) ? esencialesDesglose : [];
+  var i, id, conceptoId, stock, nombre;
+  for (i = 0; i < chasisDesglose.length; i++) {
+    id = chasisDesglose[i];
+    conceptoId = mapCh[id] || 'carroceria_otro';
+    stock = getStock(conceptoId);
+    if (stock < 1) {
+      nombre = (nombres.chasis && nombres.chasis[id]) ? nombres.chasis[id] : id;
+      return { ok: false, error: 'Stock insuficiente de "' + nombre + '" (carrocería). Ve a Economía > Inventario para añadir existencias.' };
+    }
+  }
+  for (i = 0; i < esencialesDesglose.length; i++) {
+    id = esencialesDesglose[i];
+    conceptoId = mapEs[id] || 'esenciales_otro';
+    stock = getStock(conceptoId);
+    if (stock < 1) {
+      nombre = (nombres.esenciales && nombres.esenciales[id]) ? nombres.esenciales[id] : id;
+      return { ok: false, error: 'Stock insuficiente de "' + nombre + '" (componentes esenciales). Ve a Economía > Inventario para añadir existencias.' };
+    }
+  }
+  return { ok: true };
+}
+
+/** Resta del inventario (economía) las piezas usadas en la reparación. Solo llamar después de comprobarStockReparacion(). */
+function restarStockReparacion(chasisDesglose, esencialesDesglose) {
+  if (typeof removeStock !== 'function') return;
+  var mapCh = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.chasis || {};
+  var mapEs = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.esenciales || {};
+  chasisDesglose = Array.isArray(chasisDesglose) ? chasisDesglose : [];
+  esencialesDesglose = Array.isArray(esencialesDesglose) ? esencialesDesglose : [];
+  var i;
+  for (i = 0; i < chasisDesglose.length; i++) removeStock(mapCh[chasisDesglose[i]] || 'carroceria_otro', 1);
+  for (i = 0; i < esencialesDesglose.length; i++) removeStock(mapEs[esencialesDesglose[i]] || 'esenciales_otro', 1);
+}
+
+/** Mapeo piezaId de tuneo (PIEZAS_TUNING) a conceptoId inventario economía (TUNING). El resto usa tuning_otro. */
+var MAPEO_PIEZAS_TUNEO_A_INVENTARIO = {
+  pintura_vehiculo: 'tuning_pintura', aleron_vehiculo: 'tuning_aleron', llanta_vehiculo: 'tuning_llantas', luces_vehiculo: 'tuning_luces',
+  parachoques_delantero: 'tuning_parachoque', parachoques_trasero: 'tuning_parachoque', faldon_lateral: 'tuning_aletas', neon_vehiculo: 'tuning_luces'
+};
+
+function conceptoInventarioParaPiezaTuneo(piezaId) {
+  return MAPEO_PIEZAS_TUNEO_A_INVENTARIO[piezaId] || 'tuning_otro';
+}
+
+/** Comprueba stock en inventario para las piezas de tuneo seleccionadas. Devuelve { ok: true } o { ok: false, error: string }. */
+function comprobarStockTuneo(piezas) {
+  if (typeof getStock !== 'function' || !Array.isArray(piezas) || !piezas.length) return { ok: true };
+  var requerido = {};
+  piezas.forEach(function (p) {
+    var cid = conceptoInventarioParaPiezaTuneo(p.piezaId || p.id);
+    requerido[cid] = (requerido[cid] || 0) + 1;
+  });
+  var cid, stock;
+  for (cid in requerido) {
+    if (!requerido.hasOwnProperty(cid)) continue;
+    stock = getStock(cid);
+    if (stock < (requerido[cid] || 0)) return { ok: false, error: 'Stock insuficiente de piezas de tuning. Ve a Economía > Inventario para añadir existencias (Tuning).' };
+  }
+  return { ok: true };
+}
+
+/** Resta del inventario las piezas de tuneo usadas (1 ud por pieza). */
+function restarStockTuneo(piezas) {
+  if (typeof removeStock !== 'function' || !Array.isArray(piezas)) return;
+  piezas.forEach(function (p) {
+    removeStock(conceptoInventarioParaPiezaTuneo(p.piezaId || p.id), 1);
+  });
 }
 
 function registrarReparacion() {
@@ -8609,13 +9242,12 @@ function registrarReparacion() {
         }
         piezasEsencialesDesglose.push(valE);
       }
-      if (typeof restarStockPiezas === 'function') {
-        var result = restarStockPiezas(piezasChasisDesglose, piezasEsencialesDesglose);
-        if (!result || !result.ok) {
-          alert(result && result.error ? result.error : 'No hay stock suficiente para las piezas indicadas.');
-          return;
-        }
+      var result = comprobarStockReparacion(piezasChasisDesglose, piezasEsencialesDesglose);
+      if (!result || !result.ok) {
+        alert(result && result.error ? result.error : 'No hay stock suficiente para las piezas indicadas. Añade existencias en Economía > Inventario.');
+        return;
       }
+      restarStockReparacion(piezasChasisDesglose, piezasEsencialesDesglose);
     }
   }
   const servicio = {
@@ -8638,6 +9270,9 @@ function registrarReparacion() {
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
+  if (typeof renderInventario === 'function') renderInventario();
+  if (typeof renderLimitesStock === 'function') renderLimitesStock();
+  if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
   if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistradorRep);
   if (session && typeof hasPermission === 'function' && !hasPermission(session, 'gestionarUsuarios')) {

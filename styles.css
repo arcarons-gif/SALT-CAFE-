@@ -1503,6 +1503,13 @@ button.login-recovery-link {
   flex: 1;
   min-width: 0;
 }
+.ficha-empleado-foto-y-boton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
 .ficha-empleado-foto-wrap {
   width: 72px;
   height: 72px;
@@ -1514,6 +1521,17 @@ button.login-recovery-link {
   justify-content: center;
   flex-shrink: 0;
   border: 2px solid var(--border);
+}
+.ficha-empleado-btn-galeria {
+  white-space: nowrap;
+  min-height: 2rem;
+  padding: 0.4rem 0.75rem;
+  font-weight: 600;
+  border-color: var(--accent, #d4af37);
+  color: var(--accent, #d4af37);
+}
+.ficha-empleado-btn-galeria:hover {
+  background: rgba(212, 175, 55, 0.15);
 }
 .ficha-empleado-foto-wrap img {
   width: 100%;
@@ -1700,6 +1718,46 @@ button.login-recovery-link {
 }
 .ficha-foto-btn-fondo.active { background: rgba(212, 175, 55, 0.25); border-color: var(--accent, #d4af37); color: var(--accent, #d4af37); }
 .ficha-fotos-empty { color: var(--text-muted); font-size: 0.9rem; margin: 0; padding: 0.5rem 0; }
+
+/* Modal Galería fotos empleado */
+.modal-galeria-fotos-empleado .modal-content { max-width: 560px; }
+.galeria-fotos-empleado-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+.galeria-fotos-empleado-toolbar { margin-bottom: 1rem; }
+.galeria-fotos-empleado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.galeria-foto-card {
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.galeria-foto-card-thumb {
+  aspect-ratio: 1;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-app, #1a1a1a);
+}
+.galeria-foto-card-actions {
+  padding: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.galeria-foto-card-actions .btn { font-size: 0.75rem; padding: 0.35rem 0.5rem; }
+.galeria-foto-card-btn-principal.active,
+.galeria-foto-card-btn-fondo.active { background: rgba(212, 175, 55, 0.25); border-color: var(--accent, #d4af37); color: var(--accent, #d4af37); }
+.galeria-fotos-empleado-empty { color: var(--text-muted); font-size: 0.9rem; margin: 0; padding: 1rem 0; }
+
 .ficha-seccion-material { margin-top: 1rem; }
 .ficha-seccion-material .usuario-material-entregado-titulo { display: none; }
 .ficha-seccion-material .usuario-material-entregado-hint { display: none; }
@@ -1797,7 +1855,6 @@ button.login-recovery-link {
   box-shadow: none !important;
   transition: transform 0.15s ease;
 }
-
 .gestion-card:hover {
   transform: translateY(-3px) scale(1.05);
 }
@@ -2068,6 +2125,46 @@ button.login-recovery-link {
 .modal-cambiar-password-user {
   margin-bottom: 0.75rem;
   font-weight: 600;
+  color: var(--text, #eee);
+}
+
+.panel-export-repo {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-elevated, rgba(255,255,255,0.06));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.panel-export-repo-titulo {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  color: var(--text, #eee);
+}
+
+.panel-export-repo-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.panel-export-repo-desc code {
+  background: var(--bg-app, #1a1a1a);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.panel-export-repo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.panel-reset-titulo {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
   color: var(--text, #eee);
 }
 
@@ -2541,11 +2638,54 @@ button.login-recovery-link {
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--accent);
 }
-.economia-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-.economia-tab { padding: 0.4rem 0.75rem; font-size: 0.9rem; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; }
-.economia-tab:hover { color: var(--text); }
-.economia-tab.active { color: var(--accent); border-color: var(--accent); }
+.economia-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+/* Mismo lenguaje visual que los botones del menú de gestión: sin relleno, sin borde, glow por texto/sombra */
+.economia-tab { padding: 0.5rem 0.9rem; font-family: var(--font); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.04em; background: transparent !important; border: none; border-radius: 14px; color: var(--text-muted); cursor: pointer; transition: transform 0.15s ease, color 0.2s, text-shadow 0.2s, box-shadow 0.2s; }
+.economia-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(212, 175, 55, 0.6), 0 0 14px rgba(212, 175, 55, 0.4); transform: translateY(-2px) scale(1.02); }
+.economia-tab.active { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 12px rgba(212, 175, 55, 0.7), 0 0 20px rgba(212, 175, 55, 0.5); box-shadow: 0 0 16px rgba(212, 175, 55, 0.25); }
+.stock-tabs .economia-tab:hover { text-shadow: 0 0 8px rgba(34, 211, 238, 0.6), 0 0 14px rgba(6, 182, 212, 0.4); }
+.stock-tabs .economia-tab.active { text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 12px rgba(34, 211, 238, 0.7), 0 0 20px rgba(6, 182, 212, 0.5); box-shadow: 0 0 16px rgba(6, 182, 212, 0.25); }
 .economia-subpanel { margin-top: 0.5rem; }
+
+.economia-inventario-desc { margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-muted); }
+.inventario-por-grupos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1rem; align-items: start; }
+.inventario-ficha { border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; border: 2px solid transparent; transition: box-shadow 0.2s; }
+.inventario-ficha-tabla-wrap { overflow: visible; }
+.inventario-ficha-titulo { margin: 0; padding: 0.7rem 1rem; font-family: var(--font-saltlab); font-size: 1.05rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid rgba(255,255,255,0.3); text-shadow: 0 0 8px rgba(0,0,0,0.4); text-align: center; }
+.inventario-ficha-neon.inventario-ficha-varios .inventario-ficha-titulo { background: #c2410c; box-shadow: 0 0 12px rgba(194, 65, 12, 0.7), 0 0 24px rgba(194, 65, 12, 0.4); border-color: #fb923c; }
+.inventario-ficha-neon.inventario-ficha-varios { box-shadow: 0 0 15px rgba(194, 65, 12, 0.5), 0 0 30px rgba(194, 65, 12, 0.25); border-color: #fb923c; }
+.inventario-ficha-neon.inventario-ficha-carrocera .inventario-ficha-titulo { background: #0369a1; box-shadow: 0 0 12px rgba(6, 182, 212, 0.7), 0 0 24px rgba(6, 182, 212, 0.4); border-color: #22d3ee; }
+.inventario-ficha-neon.inventario-ficha-carrocera { box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), 0 0 30px rgba(6, 182, 212, 0.25); border-color: #22d3ee; }
+.inventario-ficha-neon.inventario-ficha-componentes-esenciales .inventario-ficha-titulo { background: var(--primary); box-shadow: 0 0 12px rgba(220, 38, 38, 0.7), 0 0 24px rgba(220, 38, 38, 0.4); border-color: #fca5a5; }
+.inventario-ficha-neon.inventario-ficha-componentes-esenciales { box-shadow: 0 0 15px rgba(220, 38, 38, 0.5), 0 0 30px rgba(220, 38, 38, 0.25); border-color: #fca5a5; }
+.inventario-ficha-neon.inventario-ficha-tuning .inventario-ficha-titulo { background: #7c3aed; box-shadow: 0 0 12px rgba(124, 58, 237, 0.7), 0 0 24px rgba(167, 139, 250, 0.4); border-color: #a78bfa; }
+.inventario-ficha-neon.inventario-ficha-tuning { box-shadow: 0 0 15px rgba(124, 58, 237, 0.5), 0 0 30px rgba(124, 58, 237, 0.25); border-color: #a78bfa; }
+.inventario-ficha-neon.inventario-ficha-maquinaria .inventario-ficha-titulo { background: #b45309; box-shadow: 0 0 12px rgba(212, 175, 55, 0.8), 0 0 24px rgba(212, 175, 55, 0.4); border-color: var(--accent); }
+.inventario-ficha-neon.inventario-ficha-maquinaria { box-shadow: 0 0 15px rgba(212, 175, 55, 0.5), 0 0 30px rgba(212, 175, 55, 0.25); border-color: var(--accent); }
+.inventario-ficha-neon.inventario-ficha-otros .inventario-ficha-titulo { background: var(--bg-elevated); box-shadow: 0 0 12px rgba(156, 163, 175, 0.5); border-color: var(--border); }
+.inventario-ficha-neon.inventario-ficha-otros { box-shadow: 0 0 15px rgba(156, 163, 175, 0.3); border-color: var(--border); }
+.inventario-ficha .inventario-ficha-tabla-wrap { background: var(--bg-elevated); }
+.inventario-ficha-tabla { width: 100%; min-width: 260px; border-collapse: collapse; font-size: 0.85rem; }
+.inventario-ficha-tabla th, .inventario-ficha-tabla td { padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.inventario-ficha-tabla th { color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; text-align: center; }
+.inventario-ficha-tabla td { text-align: left; }
+.inventario-ficha-tabla .inventario-td-stock { text-align: center; }
+.inventario-td-acciones { min-width: 130px; }
+.inventario-ficha-tabla tbody tr:hover { background: rgba(255,255,255,0.03); }
+.inventario-th-acciones { width: 1%; white-space: nowrap; text-align: center !important; }
+.inventario-td-concepto { font-weight: 500; min-width: 0; display: flex; align-items: center; gap: 0.5rem; }
+.inventario-pieza-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+.inventario-pieza-logo-placeholder { width: 28px; height: 28px; flex-shrink: 0; display: inline-block; }
+.inventario-td-concepto-texto { min-width: 0; }
+.inventario-td-stock { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; font-size: 0.85rem; }
+.inventario-td-acciones { white-space: nowrap; text-align: right; }
+.inventario-td-acciones .inventario-input-add, .inventario-td-acciones .inventario-input-remove { width: 2.25rem; padding: 0.2rem 0.25rem; font-size: 0.78rem; text-align: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-app); color: var(--text); margin: 0 0.2rem; }
+.inventario-btn-round { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border: none; border-radius: 50%; font-size: 1.1rem; font-weight: 700; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: opacity 0.15s, transform 0.1s; }
+.inventario-btn-round:hover { opacity: 0.9; transform: scale(1.05); }
+.inventario-btn-round:active { transform: scale(0.95); }
+.inventario-btn-round.inventario-btn-add { background: #22c55e; color: #fff; box-shadow: 0 0 10px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.3); }
+.inventario-btn-round.inventario-btn-remove { background: #dc2626; color: #fff; box-shadow: 0 0 10px rgba(220, 38, 38, 0.6), 0 0 20px rgba(220, 38, 38, 0.3); margin-left: 0.25rem; }
+
 /* Dashboard economía: barra KPIs (estilo magenta) y gráfico estadísticas */
 .economia-dashboard-bar {
   display: flex;
@@ -3512,6 +3652,8 @@ button.login-recovery-link {
   flex: 1;
   max-width: 100%;
   min-width: 0;
+  display: flex;
+  align-items: center;
   justify-content: center;
   overflow: hidden;
 }
@@ -3564,6 +3706,8 @@ button.login-recovery-link {
   font-size: clamp(1rem, 3.5vw, 1.65rem);
   letter-spacing: 0.12em;
   width: 100%;
+  display: block;
+  margin: 0 auto;
 }
 
 /* Estilo Yankton: placa roja completa, sin franja blanca; el número va sobre el mismo fondo */
@@ -3910,7 +4054,11 @@ button.login-recovery-link {
 /* Placa en calculadora: solo lectura, matrícula + modelo */
 .matricula-plate-calc {
   max-width: 100%;
-  margin: 0 0 0.5rem 0;
+  margin: 0 auto 0.5rem;
+}
+.field-matricula-plantilla .matricula-plate-wrap {
+  margin-left: auto;
+  margin-right: auto;
 }
 /* Misma medida que paso matrícula: fondo oscuro para no mostrar marco blanco */
 .matricula-plate-calc.matricula-plate-from-repo {
@@ -3925,6 +4073,10 @@ button.login-recovery-link {
   overflow: hidden;
   padding: 0.4rem 0.75rem;
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 .matricula-plate-calc.matricula-plate-from-repo .matricula-plate-display,
 .matricula-plate-calc.matricula-plate-from-repo .matricula-plate-modelo {
@@ -3936,10 +4088,21 @@ button.login-recovery-link {
 .matricula-plate-calc.matricula-plate-from-repo .matricula-plate-display {
   font-size: clamp(1rem, 3.5vw, 1.65rem);
   letter-spacing: 0.12em;
+  text-align: center;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 4rem;
 }
 .matricula-plate-calc.matricula-plate-from-repo .matricula-plate-modelo {
   font-size: clamp(0.75rem, 2.5vw, 1rem);
-  margin-left: 0.2rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-shrink: 0;
+  margin-left: 0;
+  pointer-events: none;
 }
 .matricula-plate-body-readonly {
   min-height: 60px;
@@ -4610,6 +4773,38 @@ button.login-recovery-link {
   overflow-y: visible;
 }
 
+/* Footer pantalla principal: CTA desarrollador + aviso legal */
+.footer-principal {
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 1.25rem 1rem 1rem;
+  border-top: 2px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%);
+  text-align: center;
+}
+.footer-principal-cta {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--text);
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.footer-principal-cta strong {
+  color: var(--accent);
+}
+.footer-principal-legal {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
 .pantalla-principal-layout {
   display: grid;
   grid-template-columns: 1fr minmax(380px, 1fr);
@@ -5240,6 +5435,13 @@ button.login-recovery-link {
 .ficha-vehiculo-block-title { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; }
 .ficha-vehiculo-fotos-block { min-width: 0; }
 .ficha-vehiculo-foto-preview-wrap { margin-bottom: 0.5rem; }
+.ficha-vehiculo-foto-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.ficha-vehiculo-foto-botones .btn { flex-shrink: 0; }
 .ficha-vehiculo-foto-preview {
   width: 100%; height: 80px; border-radius: var(--radius-sm); background: var(--bg-elevated) no-repeat center/cover;
 }
@@ -6212,6 +6414,9 @@ button.login-recovery-link {
   padding: 0.75rem 1rem;
   border: 1px solid var(--benny-border);
 }
+.stat-card.stat-horas .stat-horas-minimo { display: block; margin-bottom: 0.75rem; }
+.stat-card.stat-horas .stat-horas-acumulado-label { display: block; margin-top: 0; }
+.fichajes-solo-propio { margin-bottom: 0.75rem; }
 
 .stat-label {
   display: block;

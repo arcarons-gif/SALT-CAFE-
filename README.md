@@ -71,6 +71,15 @@ Los valores por defecto dan ~$47/pieza para un Previon de $38k (4+4 partes ≈ $
 - **En local (sin backend):** usuarios, registro de servicios y matrículas en `localStorage` del navegador.
 - **Con backend en marcha:** la app sincroniza usuarios, fichajes y reparaciones con el servidor; todos los que usen la misma URL del backend ven los mismos datos.
 
+### Evitar que se pierdan los datos al hacer push
+
+Para que los datos queden en el repo y no se borren al hacer `git push`:
+
+- **Guardado automático en `server/data/`:** (1) Servidor en ejecución (en la carpeta `server/`, p. ej. `node server.js` o `run-server.cmd`). (2) En la app, **Personalización** → **«URL del servidor API»** con la misma URL (ej. `http://localhost:3001`). Si ambos se cumplen, al guardar datos como admin se escriben solos en `server/data/`. Luego commit + push.
+- **Sin servidor:** Gestión → Reset / Limpiar datos → Guardar datos en el repositorio → descargar los JSON y guardarlos manualmente en `server/data/`. Luego commit + push.
+
+Más detalle en [server/README.md](server/README.md).
+
 ## Configuración del backend
 
 En **`js/config.js`** puedes definir:

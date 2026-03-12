@@ -7,14 +7,22 @@ const HORAS_MINIMAS_SEMANA = 5;
 /** Entradas sin salida que lleven más de esta cantidad de horas se eliminan */
 const HORAS_MAX_ENTRADA_ABIERTA = 5;
 
+let _cachedFichajes = null;
 function getFichajes() {
+  if (_cachedFichajes !== null) return _cachedFichajes;
   try {
     const raw = localStorage.getItem(FICHAJES_STORAGE);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    _cachedFichajes = Array.isArray(parsed) ? parsed : [];
+    return _cachedFichajes;
   } catch {
-    return [];
+    return (_cachedFichajes = []);
   }
 }
+function invalidateFichajesCache() {
+  _cachedFichajes = null;
+}
+if (typeof window !== 'undefined') window.invalidateFichajesCache = invalidateFichajesCache;
 
 /** Elimina del almacenamiento las entradas abiertas (sin salida) con más de 5h */
 function limpiarEntradasAbiertasAntiguas() {
@@ -34,6 +42,7 @@ function limpiarEntradasAbiertasAntiguas() {
 
 function saveFichajes(arr) {
   const list = Array.isArray(arr) ? arr : [];
+  _cachedFichajes = list;
   localStorage.setItem(FICHAJES_STORAGE, JSON.stringify(list));
   if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.syncFichajesToServer === 'function') {
     window.backendApi.syncFichajesToServer(list);

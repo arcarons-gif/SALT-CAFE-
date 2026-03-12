@@ -13,8 +13,8 @@ Es la **calculadora del taller** de SALTLAB CAFE. Permite:
 - **Fichajes** (entrada/salida) del personal.
 - **Consulta de normativas** e **instrucciones** mediante un asistente (chatbot).
 - **Gestión** de usuarios, organigrama, economía, clientes y materiales (según permisos).
-- **Materiales recuperados**: cualquier usuario puede indicar materiales devueltos al almacén tras reparaciones y enviar el registro a Discord (el almacén se actualiza automáticamente).
-- **Personalización** de colores, fuentes y aspecto de la interfaz.
+- **Materiales recuperados**: cualquier usuario puede indicar cantidades de materiales devueltos al almacén tras reparaciones. Un solo botón **«Guardar registro»** actualiza el almacén y envía el resumen al canal de Discord.
+- **Personalización** de colores, fuentes, tema y **URL del servidor API** (para sincronización y guardado automático de datos en el repositorio).
 
 ---
 
@@ -67,6 +67,7 @@ Flujo: **matrícula → calculadora → registrar**.
 
 - **Últimas reparaciones:** listado de los últimos servicios. **Haz clic en una fila** para abrir una ventana con el **resumen** de esa reparación/tuneo. Puedes cerrar la ventana con la **X** o con la tecla **Escape**.
 - **Dashboard:** indicadores (total materiales, compras pendientes, empleados, gastos del mes) y gráfico de estadísticas (si tienes permiso).
+- **Pie de página:** mensaje de contacto para adquirir herramientas web personalizadas y aviso legal (herramienta registrada, creada por AAC en 2026).
 
 ---
 
@@ -114,7 +115,7 @@ El servicio queda registrado (y puede enviarse a Discord si está configurado). 
 | **Gestión** | Panel: Usuarios, Convenios, Organigrama, Economía, Stock, **Materiales recuperados** (todos), Mi ficha, Normativas, etc. (según permisos). |
 | **Clientes** | Registro de clientes, BBDD, pendientes, vetados (si tienes permiso). |
 | **Personalización** | Ajustar colores, fuentes, tema, fondo de pantalla, estilo de tarjetas, animaciones. |
-| **Materiales recuperados** | (Dentro de Gestión, visible para todos.) Indicar cantidades de materiales devueltos al almacén; **Enviar registro al canal de Discord** actualiza el almacén y envía el resumen a Discord. |
+| **Materiales recuperados** | (Dentro de Gestión, visible para todos.) Indicar cantidades de materiales devueltos al almacén; el botón **«Guardar registro»** actualiza el almacén y envía el resumen al canal de Discord. |
 | **Salir** | Cerrar sesión (y fichar salida automática si tenías entrada abierta). |
 
 La visibilidad de cada opción depende de tu **rol y permisos**.
@@ -147,13 +148,13 @@ Acceso desde **Menú → Gestión**. Incluye:
   - Compras, inventario, gastos, **entregas a trabajadores**, historial de pedidos, previsiones.  
   - **Gestión financiera** (solo admin): resultado EBITA, reparto de beneficios, **Enviar registro al canal de Discord** (resumen financiero). El mismo botón de Discord está en Historial de pedidos, Gastos y Previsiones.  
   - **Entregas a trabajadores:** al registrar una entrega (quién entrega, material, cantidad, a qué trabajador), el registro se envía automáticamente al canal de Discord configurado.
-- **Stock / Almacén materiales:**  
-  - Tabla por material (ACERO, ALUMINIO, COBRE, etc.) con **Cantidad en almacén**, **Aportaciones**, **Retiradas**, **Aplicar** (suma aportaciones y resta retiradas) y **Reset** (poner esa cantidad a cero).  
-  - **Registrar materiales recuperados** (modal): añade cantidades al almacén (como hasta ahora).
+- **Stock / Inventario:** control de existencias por pieza y por grupos (Varios, Carrocería, Componentes esenciales, Tuning, Maquinaria). Añadir o retirar stock con los botones +/−; las reparaciones y tuneos registrados descuentan del inventario.  
+- **Almacén materiales:** tabla por material (ACERO, ALUMINIO, COBRE, etc.) con Cantidad, Aportaciones, Retiradas, Aplicar y Reset.  
+- **Materiales recuperados** (Gestión): indicar cantidades devueltas al almacén; **«Guardar registro»** guarda en almacén y envía el resumen a Discord.
 
-**Sincronización de datos:**  
-- **Sin backend:** Los datos se guardan en el **navegador** (localStorage). En el mismo PC y navegador, varias pestañas comparten datos. Entre ordenadores distintos no se comparten.  
-- **Con backend en la nube:** Si el backend está desplegado (p. ej. en Render) y la app abre desde la URL pública (GitHub Pages), **todos los usuarios comparten los mismos usuarios, fichajes y reparaciones**; la actualización es simultánea y no depende de que tu PC esté encendido. Ver **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)** para desplegar el backend.
+**Sincronización y guardado en el repositorio:**  
+- **Sin servidor:** Los datos se guardan en el **navegador** (localStorage). Varias pestañas del mismo navegador comparten datos.  
+- **Con servidor:** (1) Servidor en ejecución (en la carpeta `server/`, p. ej. `node server.js` o `run-server.cmd`). (2) En la app, **Personalización** → **«URL del servidor API»** con la misma URL (ej. `http://localhost:3001`). Entonces usuarios, fichajes y reparaciones se sincronizan entre todos; y si eres **administrador**, al guardar cualquier dato los archivos se guardan **automáticamente en `server/data/`** (users.json, fichajes.json, servicios.json, saltlab-datos-completos.json) sin abrir diálogos de descarga. Luego solo hace falta hacer commit y push. Ver **[server/README.md](server/README.md)** y **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.
 
 ---
 
@@ -165,8 +166,9 @@ Desde **Menú → Clientes** (si tienes permiso): registro de clientes, base de 
 
 ## 12. Personalización
 
-Desde **Menú → Personalización** cualquier usuario puede:
+Desde **Menú → Personalización** (o Gestión → Personalización) cualquier usuario puede:
 
+- **URL del servidor API:** para conectar la app al backend (sincronización de usuarios, fichajes y reparaciones; y guardado automático en `server/data/` para administradores). Ejemplo: `http://localhost:3001`. El servidor debe estar en marcha (en la carpeta `server/`, p. ej. `node server.js`). Pulsa el botón de guardar y comprueba el estado («Conectado» / «No se pudo conectar»).
 - **Color de acento:** elegir el color principal (oro, verde, naranja, azul, etc.).
 - **Tipografía:** familia y tamaño de fuente.
 - **Tema:** claro/oscuro y contraste.
@@ -218,5 +220,6 @@ Para dudas sobre permisos, precios o convenios, consulta al responsable del tall
 
 ## 17. Configuración y despliegue
 
-- **`js/config.js`**: Define la URL del backend para uso local (`API_URL_LOCAL`) y para cuando la app se abre desde GitHub Pages (`API_URL_PRODUCCION`). Los webhooks de Discord (economía, entregas, materiales) se configuran en el backend al desplegarlo.
-- **Backend en la nube:** Para que todos los que abran el enlace público compartan los mismos datos (usuarios, fichajes, reparaciones) sin depender de tu PC, despliega la carpeta `server` en un servicio como Render y configura `API_URL_PRODUCCION` con la URL que te den. Instrucciones paso a paso: **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.
+- **`js/config.js`**: Define la URL del backend para uso local (`API_URL_LOCAL`, por defecto `http://localhost:3001`) y para producción (`API_URL_PRODUCCION`). Si no cambias nada en Personalización, la app usará esa URL. Los webhooks de Discord (economía, entregas, materiales) se configuran en el backend al desplegarlo.
+- **Guardado automático en `server/data/`:** (1) Servidor en ejecución en `server/` (p. ej. `node server.js` o `run-server.cmd`). (2) En la app, **Personalización** → **«URL del servidor API»** con la misma URL. Como administrador, al guardar datos los JSON se escriben solos en `server/data/`; no se abre ningún diálogo de descarga. Ver **[server/README.md](server/README.md)**.
+- **Backend en la nube:** Para que todos los que abran el enlace público compartan los mismos datos, despliega la carpeta `server` en un servicio como Render y configura `API_URL_PRODUCCION`. Instrucciones: **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.

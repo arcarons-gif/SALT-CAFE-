@@ -1,0 +1,14 @@
+alternador.png
+bomba de direccion.png
+capó.png
+frenos.png
+grúa de motor.png
+herramienta de diagnosis.png
+inyector.png
+kit de reparacion.png
+maletero.png
+puerta.png
+radiador.png
+tablet de tunning.png
+transmision.png
+ventana.png

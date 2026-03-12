@@ -9,6 +9,7 @@
   var STORAGE_GASTOS = 'benny_economia_gastos';
   var STORAGE_PREVISIONES = 'benny_economia_previsiones';
   var STORAGE_LIMITES_STOCK = 'benny_economia_limites_stock';
+  var _cachedCompras = null, _cachedInventario = null, _cachedGastos = null;
 
   // Control riguroso de existencias. Categorías por grupo; los admin (o quien tenga permiso) pueden dar de alta cualquier producto en cualquiera.
   var CATEGORIA_INVENTARIO = [
@@ -16,6 +17,7 @@
     { id: 'varios_bebida', grupo: 'VARIOS', nombre: 'Bebida' },
     { id: 'carroceria_puerta', grupo: 'CARROCERÍA', nombre: 'Puerta' },
     { id: 'carroceria_capo', grupo: 'CARROCERÍA', nombre: 'Capó' },
+    { id: 'carroceria_maletero', grupo: 'CARROCERÍA', nombre: 'Maletero' },
     { id: 'carroceria_cristal', grupo: 'CARROCERÍA', nombre: 'Cristal' },
     { id: 'esenciales_bomba_direccion', grupo: 'COMPONENTES ESENCIALES', nombre: 'Bomba de dirección' },
     { id: 'esenciales_inyector', grupo: 'COMPONENTES ESENCIALES', nombre: 'Inyector' },
@@ -59,15 +61,18 @@
   ];
 
   function getComprasPendientes() {
+    if (_cachedCompras !== null) return _cachedCompras;
     try {
       var raw = localStorage.getItem(STORAGE_COMPRAS);
       var arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) { return []; }
+      _cachedCompras = Array.isArray(arr) ? arr : [];
+      return _cachedCompras;
+    } catch (e) { return (_cachedCompras = []); }
   }
 
   function saveComprasPendientes(arr) {
-    try { localStorage.setItem(STORAGE_COMPRAS, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (e) {}
+    _cachedCompras = Array.isArray(arr) ? arr : [];
+    try { localStorage.setItem(STORAGE_COMPRAS, JSON.stringify(_cachedCompras)); } catch (e) {}
   }
 
   function addCompra(item) {
@@ -110,63 +115,75 @@
     saveComprasPendientes(list);
   }
 
+  /** Inventario = existencias por pieza: { [conceptoId]: cantidad }. Migra desde array (legacy) si aplica. */
   function getInventario() {
+    if (_cachedInventario !== null) return _cachedInventario;
     try {
       var raw = localStorage.getItem(STORAGE_INVENTARIO);
-      var arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) { return []; }
+      if (!raw) { _cachedInventario = {}; return _cachedInventario; }
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        var obj = {};
+        parsed.forEach(function (i) {
+          var c = (i.categoria || '').trim();
+          if (c) obj[c] = (obj[c] || 0) + (parseFloat(i.cantidad) || 0);
+        });
+        saveInventario(obj);
+        _cachedInventario = obj;
+        return _cachedInventario;
+      }
+      _cachedInventario = typeof parsed === 'object' && parsed !== null ? parsed : {};
+      return _cachedInventario;
+    } catch (e) { return (_cachedInventario = {}); }
   }
 
-  function saveInventario(arr) {
-    try { localStorage.setItem(STORAGE_INVENTARIO, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (e) {}
+  function saveInventario(obj) {
+    _cachedInventario = typeof obj === 'object' && obj !== null ? obj : {};
+    try { localStorage.setItem(STORAGE_INVENTARIO, JSON.stringify(_cachedInventario)); } catch (e) {}
+  }
+
+  function getStock(conceptoId) {
+    var inv = getInventario();
+    return (inv[conceptoId] != null && !isNaN(parseFloat(inv[conceptoId]))) ? parseFloat(inv[conceptoId]) : 0;
+  }
+
+  function addStock(conceptoId, cantidad) {
+    if (!conceptoId) return;
+    var inv = getInventario();
+    var n = typeof cantidad === 'number' ? cantidad : (parseFloat(cantidad) || 0);
+    inv[conceptoId] = (inv[conceptoId] != null ? parseFloat(inv[conceptoId]) : 0) + n;
+    saveInventario(inv);
+  }
+
+  function setStock(conceptoId, cantidad) {
+    if (!conceptoId) return;
+    var inv = getInventario();
+    inv[conceptoId] = (cantidad != null && !isNaN(parseFloat(cantidad))) ? parseFloat(cantidad) : 0;
+    saveInventario(inv);
+  }
+
+  /** Resta cantidad del stock (mínimo 0). No hace nada si conceptoId vacío o cantidad <= 0. */
+  function removeStock(conceptoId, cantidad) {
+    if (!conceptoId) return;
+    var n = typeof cantidad === 'number' ? cantidad : (parseInt(cantidad, 10) || 0);
+    if (n <= 0) return;
+    var inv = getInventario();
+    var actual = (inv[conceptoId] != null && !isNaN(parseFloat(inv[conceptoId]))) ? parseFloat(inv[conceptoId]) : 0;
+    inv[conceptoId] = Math.max(0, actual - n);
+    saveInventario(inv);
   }
 
   function addInventarioItem(item) {
-    var list = getInventario();
-    var id = 'inv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    list.push({
-      id: id,
-      solicitante: (item.solicitante || '').trim(),
-      nombre: (item.nombre || '').trim(),
-      categoria: (item.categoria || '').trim(),
-      cantidadAPedir: typeof item.cantidadAPedir === 'number' ? item.cantidadAPedir : (parseFloat(item.cantidadAPedir) || 1),
-      cantidad: typeof item.cantidad === 'number' ? item.cantidad : (parseFloat(item.cantidad) || 0),
-      unidad: (item.unidad || 'ud').trim(),
-      stockMinimo: typeof item.stockMinimo === 'number' ? item.stockMinimo : (parseFloat(item.stockMinimo) || 0),
-      stockMaximo: (item.stockMaximo !== undefined && item.stockMaximo !== '' && item.stockMaximo !== null) ? (typeof item.stockMaximo === 'number' ? item.stockMaximo : parseFloat(item.stockMaximo)) : null,
-      ultimaActualizacion: new Date().toISOString(),
-      notas: (item.notas || '').trim()
-    });
-    saveInventario(list);
-    return id;
+    var cat = (item && item.categoria) ? String(item.categoria).trim() : '';
+    if (cat) addStock(cat, item.cantidad != null ? item.cantidad : 0);
+    return 'inv-' + Date.now();
   }
 
   function updateInventarioItem(id, data) {
-    var list = getInventario();
-    var idx = list.findIndex(function (i) { return i.id === id; });
-    if (idx === -1) return;
-    var i = list[idx];
-    if (data.solicitante !== undefined) i.solicitante = String(data.solicitante).trim();
-    if (data.nombre !== undefined) i.nombre = String(data.nombre).trim();
-    if (data.categoria !== undefined) i.categoria = data.categoria;
-    if (data.cantidadAPedir !== undefined) i.cantidadAPedir = typeof data.cantidadAPedir === 'number' ? data.cantidadAPedir : (parseFloat(data.cantidadAPedir) || 1);
-    if (data.cantidad !== undefined) i.cantidad = typeof data.cantidad === 'number' ? data.cantidad : parseFloat(data.cantidad) || 0;
-    if (data.unidad !== undefined) i.unidad = String(data.unidad).trim();
-    if (data.stockMinimo !== undefined) i.stockMinimo = typeof data.stockMinimo === 'number' ? data.stockMinimo : parseFloat(data.stockMinimo) || 0;
-    if (data.stockMaximo !== undefined) {
-      var v = data.stockMaximo;
-      i.stockMaximo = (v === '' || v === null || v === undefined) ? null : (typeof v === 'number' ? v : parseFloat(v));
-    }
-    if (data.notas !== undefined) i.notas = String(data.notas).trim();
-    i.ultimaActualizacion = new Date().toISOString();
-    saveInventario(list);
+    if (data && data.categoria != null && data.cantidad !== undefined) setStock(data.categoria, data.cantidad);
   }
 
-  function removeInventarioItem(id) {
-    var list = getInventario().filter(function (i) { return i.id !== id; });
-    saveInventario(list);
-  }
+  function removeInventarioItem(id) { /* Control por pieza: no-op */ }
 
   function getCategoriaInventarioLabel(catId) {
     if (!catId) return '';
@@ -175,11 +192,25 @@
   }
 
   function getInventarioAlertaBajoStock() {
-    return getInventario().filter(function (i) {
-      var min = i.stockMinimo != null ? parseFloat(i.stockMinimo) : 0;
-      var cant = i.cantidad != null ? parseFloat(i.cantidad) : 0;
-      return min > 0 && cant <= min;
+    var stock = getInventario();
+    var limites = getLimitesStock();
+    var categorias = CATEGORIA_INVENTARIO || [];
+    var out = [];
+    categorias.forEach(function (c) {
+      var id = c.id;
+      var min = (limites[id] && limites[id].stockMinimo != null) ? parseFloat(limites[id].stockMinimo) : 0;
+      var cant = parseFloat(stock[id]) || 0;
+      if (min > 0 && cant <= min) {
+        out.push({
+          conceptoId: id,
+          nombre: (c.grupo ? c.grupo + ' · ' : '') + (c.nombre || id),
+          cantidad: cant,
+          unidad: 'ud',
+          stockMinimo: min
+        });
+      }
     });
+    return out;
   }
 
   function getLimitesStock() {
@@ -206,14 +237,7 @@
   }
 
   function getStockActualPorConcepto() {
-    var inv = getInventario();
-    var porConcepto = {};
-    inv.forEach(function (i) {
-      var cat = (i.categoria || '').trim();
-      if (!cat) return;
-      porConcepto[cat] = (porConcepto[cat] || 0) + (parseFloat(i.cantidad) || 0);
-    });
-    return porConcepto;
+    return getInventario();
   }
 
   function getNecesidadesReposicion() {
@@ -245,15 +269,18 @@
   }
 
   function getGastos() {
+    if (_cachedGastos !== null) return _cachedGastos;
     try {
       var raw = localStorage.getItem(STORAGE_GASTOS);
       var arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) { return []; }
+      _cachedGastos = Array.isArray(arr) ? arr : [];
+      return _cachedGastos;
+    } catch (e) { return (_cachedGastos = []); }
   }
 
   function saveGastos(arr) {
-    try { localStorage.setItem(STORAGE_GASTOS, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (e) {}
+    _cachedGastos = Array.isArray(arr) ? arr : [];
+    try { localStorage.setItem(STORAGE_GASTOS, JSON.stringify(_cachedGastos)); } catch (e) {}
   }
 
   function addGasto(item) {
@@ -331,6 +358,12 @@
     savePrevisiones(prev);
   }
 
+  function invalidateEconomiaCaches() {
+    _cachedCompras = null;
+    _cachedInventario = null;
+    _cachedGastos = null;
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       getComprasPendientes: getComprasPendientes,
@@ -340,6 +373,10 @@
       removeCompra: removeCompra,
       getInventario: getInventario,
       saveInventario: saveInventario,
+      getStock: getStock,
+      addStock: addStock,
+      setStock: setStock,
+      removeStock: removeStock,
       addInventarioItem: addInventarioItem,
       updateInventarioItem: updateInventarioItem,
       removeInventarioItem: removeInventarioItem,
@@ -372,6 +409,10 @@
     global.removeCompra = removeCompra;
     global.getInventario = getInventario;
     global.saveInventario = saveInventario;
+    global.getStock = getStock;
+    global.addStock = addStock;
+    global.setStock = setStock;
+    global.removeStock = removeStock;
     global.addInventarioItem = addInventarioItem;
     global.updateInventarioItem = updateInventarioItem;
     global.removeInventarioItem = removeInventarioItem;
@@ -395,5 +436,6 @@
     global.CATEGORIA_INVENTARIO = CATEGORIA_INVENTARIO;
     global.CATEGORIA_GASTO = CATEGORIA_GASTO;
     global.ESTADO_COMPRA = ESTADO_COMPRA;
+    global.invalidateEconomiaCaches = invalidateEconomiaCaches;
   }
 })(typeof window !== 'undefined' ? window : this);

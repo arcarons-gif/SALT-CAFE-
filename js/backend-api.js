@@ -68,6 +68,7 @@
         const prev = localStorage.getItem(AUTH_STORAGE);
         const next = JSON.stringify(users);
         localStorage.setItem(AUTH_STORAGE, next);
+        if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
         return prev !== next;
       }
       var local = [];
@@ -90,6 +91,7 @@
         const prev = localStorage.getItem(FICHAJES_STORAGE);
         const next = JSON.stringify(fichajes);
         localStorage.setItem(FICHAJES_STORAGE, next);
+        if (typeof window.invalidateFichajesCache === 'function') window.invalidateFichajesCache();
         return prev !== next;
       }
       var local = [];
@@ -112,6 +114,7 @@
         const prev = localStorage.getItem(SERVICIOS_STORAGE);
         const next = JSON.stringify(servicios);
         localStorage.setItem(SERVICIOS_STORAGE, next);
+        if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
         return prev !== next;
       }
       var local = [];
@@ -166,6 +169,21 @@
     }
   }
 
+  /** Guarda el objeto de exportación completa en server/data/saltlab-datos-completos.json */
+  async function saveRepoExport(data) {
+    const base = getBaseUrl();
+    if (!base) return;
+    try {
+      await fetch(base + '/api/repo-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo guardar exportación en server/data', e);
+    }
+  }
+
   var pollTimer = null;
 
   function startPolling() {
@@ -214,6 +232,7 @@
     syncUsersToServer,
     syncFichajesToServer,
     syncServiciosToServer,
+    saveRepoExport,
     init,
     startPolling,
   };

@@ -56,7 +56,18 @@ El servidor queda en **http://localhost:3001**.
 - `GET /api/fichajes` – Lista de fichajes.
 - `POST /api/fichajes` – Sustituir lista de fichajes. Body: `{ "fichajes": [...] }`.
 
-Los datos se guardan en JSON en `server/data/` (`users.json`, `fichajes.json`). No se requieren herramientas de compilación ni módulos nativos.
+Los datos se guardan en JSON en `server/data/` (`users.json`, `fichajes.json`, `servicios.json`). No se requieren herramientas de compilación ni módulos nativos.
+
+## Mantener los datos en el repositorio (evitar que se pierdan al hacer push)
+
+Si creas usuarios o registros desde la web (o desde la app en producción), esos datos quedan en el navegador o en el servidor. Para que **queden en el repositorio** y no se borren al hacer `git push`:
+
+1. **Servidor en ejecución:** en la carpeta `server`, arranca el API (por ejemplo `node server.js` si estás dentro de `server/`, o `node server/server.js` desde la raíz del proyecto; o doble clic en `install-and-run.cmd` / `run-server.cmd` dentro de `server/`).
+2. **URL en la app:** en **Personalización** → **"URL del servidor API"** indica la misma URL del servidor (ej. `http://localhost:3001`).
+3. Al guardar cualquier dato como administrador, a los ~2 segundos la app envía los datos al servidor y **guarda automáticamente** en `server/data/`: `users.json`, `fichajes.json`, `servicios.json` y `saltlab-datos-completos.json`. No se abre ningún diálogo de descarga.
+4. Haz **commit** y **push** de los archivos en `server/data/`. Así la base de datos del repo queda actualizada.
+
+Si no usas servidor API, puedes seguir descargando los JSON desde **Gestión** → **Reset / Limpiar datos** → **Guardar datos en el repositorio** y copiarlos manualmente a `server/data/`.
 
 ## Si `npm install` falla con errores de `gyp` o `better-sqlite3`
 
