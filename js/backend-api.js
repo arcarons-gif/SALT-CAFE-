@@ -193,6 +193,51 @@
     }
   }
 
+  /** Merge aditivo: sumar movimiento al almacén (no sobrescribe; todos suman al total) */
+  async function mergeAlmacen(movimiento) {
+    const base = getBaseUrl();
+    if (!base || !movimiento || typeof movimiento !== 'object') return;
+    try {
+      await fetch(base + '/api/merge-almacen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ movimiento }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo merge almacén', e);
+    }
+  }
+
+  /** Merge aditivo: sumar (o restar con negativo) al inventario por conceptoId */
+  async function mergeInventario(items) {
+    const base = getBaseUrl();
+    if (!base || !items || typeof items !== 'object') return;
+    try {
+      await fetch(base + '/api/merge-inventario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo merge inventario', e);
+    }
+  }
+
+  /** Merge BBDD clientes: enviar clientes para upsert por idCliente (no sobrescribe lo de otros) */
+  async function mergeClientesBBDD(clientes) {
+    const base = getBaseUrl();
+    if (!base || !Array.isArray(clientes)) return;
+    try {
+      await fetch(base + '/api/merge-clientes-bbdd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientes }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo merge clientes BBDD', e);
+    }
+  }
+
   /** Obtiene todos los datos sincronizados del servidor (toda la app al momento) */
   async function fetchDatosCompletos() {
     var base = getBaseUrl();
@@ -208,6 +253,15 @@
     }
   }
 
+  function hasEconomyData(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    if (obj.economiaInventario && Object.keys(obj.economiaInventario).length > 0) return true;
+    if (Array.isArray(obj.economiaCompras) && obj.economiaCompras.length > 0) return true;
+    if (Array.isArray(obj.economiaGastos) && obj.economiaGastos.length > 0) return true;
+    if (obj.almacenMateriales && typeof obj.almacenMateriales === 'object' && Object.keys(obj.almacenMateriales).length > 0) return true;
+    return false;
+  }
+
   var pollTimer = null;
 
   function startPolling() {
@@ -216,6 +270,20 @@
       if (!(await isAvailable(8000))) return;
       var full = await fetchDatosCompletos();
       if (full && typeof window.aplicarDatosCompletosFromServer === 'function') {
+        if (!hasEconomyData(full) && typeof window.getDatosCompletosParaExportar === 'function') {
+          var local = window.getDatosCompletosParaExportar();
+          if (local && hasEconomyData(local)) {
+            try {
+              if (local.almacenMateriales && Object.keys(local.almacenMateriales).length > 0) {
+                await mergeAlmacen(local.almacenMateriales);
+              }
+              if (local.economiaInventario && Object.keys(local.economiaInventario).length > 0) {
+                await mergeInventario(local.economiaInventario);
+              }
+              full = await fetchDatosCompletos() || full;
+            } catch (e) {}
+          }
+        }
         window.aplicarDatosCompletosFromServer(full);
         window.dispatchEvent(new CustomEvent('benny-backend-sync', { detail: { fullSync: true } }));
       } else {
@@ -249,6 +317,20 @@
     window._backendRetry = 0;
     var full = await fetchDatosCompletos();
     if (full && typeof window.aplicarDatosCompletosFromServer === 'function') {
+      if (!hasEconomyData(full) && typeof window.getDatosCompletosParaExportar === 'function') {
+        var local = window.getDatosCompletosParaExportar();
+        if (local && hasEconomyData(local)) {
+          try {
+            if (local.almacenMateriales && Object.keys(local.almacenMateriales).length > 0) {
+              await mergeAlmacen(local.almacenMateriales);
+            }
+            if (local.economiaInventario && Object.keys(local.economiaInventario).length > 0) {
+              await mergeInventario(local.economiaInventario);
+            }
+            full = await fetchDatosCompletos() || full;
+          } catch (e) {}
+        }
+      }
       window.aplicarDatosCompletosFromServer(full);
     } else {
       await fetchAndApplyUsers();
@@ -284,6 +366,9 @@
     syncFichajesToServer,
     syncServiciosToServer,
     saveRepoExport,
+    mergeAlmacen,
+    mergeInventario,
+    mergeClientesBBDD,
     init,
     startPolling,
   };

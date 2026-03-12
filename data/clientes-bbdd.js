@@ -101,6 +101,9 @@ function saveClientesBBDD(arr) {
     const list = Array.isArray(arr) ? arr : [];
     _cachedClientesBBDD = list;
     localStorage.setItem(CLIENTES_BBDD_STORAGE, JSON.stringify(list));
+    if (list.length > 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeClientesBBDD === 'function') {
+      window.backendApi.mergeClientesBBDD(list);
+    }
   } catch (e) {
     console.warn('saveClientesBBDD', e);
   }

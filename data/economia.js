@@ -153,6 +153,11 @@
     var n = typeof cantidad === 'number' ? cantidad : (parseFloat(cantidad) || 0);
     inv[conceptoId] = (inv[conceptoId] != null ? parseFloat(inv[conceptoId]) : 0) + n;
     saveInventario(inv);
+    if (n !== 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeInventario === 'function') {
+      var delta = {};
+      delta[conceptoId] = n;
+      window.backendApi.mergeInventario(delta);
+    }
   }
 
   function setStock(conceptoId, cantidad) {
@@ -171,6 +176,11 @@
     var actual = (inv[conceptoId] != null && !isNaN(parseFloat(inv[conceptoId]))) ? parseFloat(inv[conceptoId]) : 0;
     inv[conceptoId] = Math.max(0, actual - n);
     saveInventario(inv);
+    if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeInventario === 'function') {
+      var delta = {};
+      delta[conceptoId] = -n;
+      window.backendApi.mergeInventario(delta);
+    }
   }
 
   function addInventarioItem(item) {

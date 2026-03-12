@@ -58,6 +58,17 @@ function addFichaje(userId, entrada, salida) {
   return id;
 }
 
+/** Actualiza la hora de entrada de un fichaje por id. Devuelve true si se actualizó. */
+function updateFichajeEntrada(fichajeId, nuevaEntradaISO) {
+  if (!fichajeId || !nuevaEntradaISO) return false;
+  const list = getFichajes();
+  const idx = list.findIndex(f => (f.id || '') === fichajeId);
+  if (idx < 0) return false;
+  list[idx] = { ...list[idx], entrada: nuevaEntradaISO };
+  saveFichajes(list);
+  return true;
+}
+
 /** Cierra el último fichaje abierto del usuario (añade salida). Devuelve el fichaje cerrado o null. */
 function cerrarUltimoFichaje(userId, salida) {
   const list = getFichajes();

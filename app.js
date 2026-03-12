@@ -1844,7 +1844,10 @@ function aplicarDatosCompletosFromServer(payload) {
   if (typeof window.invalidateEconomiaCaches === 'function') window.invalidateEconomiaCaches();
   registroServicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
 }
-if (typeof window !== 'undefined') window.aplicarDatosCompletosFromServer = aplicarDatosCompletosFromServer;
+if (typeof window !== 'undefined') {
+  window.aplicarDatosCompletosFromServer = aplicarDatosCompletosFromServer;
+  window.getDatosCompletosParaExportar = getDatosCompletosParaExportar;
+}
 
 /** Descarga un JSON como archivo para guardar en server/data/ del repositorio */
 function descargarJsonParaRepositorio(nombreArchivo, datos) {
@@ -5629,7 +5632,7 @@ function getFichajesComoEventos(userId) {
   fichajes.forEach(function (f) {
     var nombre = (users.find(function (u) { return (u.username || '') === (f.userId || ''); }) || {}).nombre || f.userId || '—';
     var dEntrada = new Date(f.entrada);
-    eventos.push({ type: 'entrada', date: f.entrada, userId: f.userId, nombre: nombre });
+    eventos.push({ type: 'entrada', date: f.entrada, userId: f.userId, nombre: nombre, fichajeId: f.id });
     if (f.salida) eventos.push({ type: 'salida', date: f.salida, userId: f.userId, nombre: nombre });
   });
   eventos.sort(function (a, b) { return new Date(b.date).getTime() - new Date(a.date).getTime(); });
@@ -5639,6 +5642,8 @@ function getFichajesComoEventos(userId) {
 function renderListaFichajesReciente(userId, listId) {
   const list = document.getElementById(listId || 'listaFichajesReciente');
   if (!list) return;
+  list.setAttribute('data-fichajes-user-id', (userId || '').toString());
+  list.setAttribute('data-fichajes-list-id', (listId || 'listaFichajesReciente').toString());
   const eventos = getFichajesComoEventos(userId);
   if (eventos.length === 0) {
     list.innerHTML = '<p class="no-fichajes">Sin fichajes recientes.</p>';
@@ -5652,7 +5657,8 @@ function renderListaFichajesReciente(userId, listId) {
     const timeStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
     const icon = ev.type === 'entrada' ? iconEntrada : iconSalida;
     const nombreUpper = (ev.nombre || '—').toString().toUpperCase();
-    return '<div class="fichaje-item ' + (ev.type === 'entrada' ? 'fichaje-item-entrada' : 'fichaje-item-salida') + '">' + icon + '<span class="fichaje-card-nombre">' + escapeHtml(nombreUpper) + '</span><span class="fichaje-card-fecha">' + escapeHtml(dateStr) + '</span><span class="fichaje-card-hora">' + escapeHtml(timeStr) + '</span></div>';
+    const btnEditar = (ev.type === 'entrada' && ev.fichajeId) ? '<button type="button" class="btn btn-sm fichaje-editar-entrada-btn" data-fichaje-id="' + escapeHtmlAttr(ev.fichajeId) + '" data-date-iso="' + escapeHtmlAttr(ev.date) + '" title="Editar hora de entrada">Editar</button>' : '';
+    return '<div class="fichaje-item ' + (ev.type === 'entrada' ? 'fichaje-item-entrada' : 'fichaje-item-salida') + '" data-fichaje-id="' + (ev.fichajeId ? escapeHtmlAttr(ev.fichajeId) : '') + '">' + icon + '<span class="fichaje-card-nombre">' + escapeHtml(nombreUpper) + '</span><span class="fichaje-card-fecha">' + escapeHtml(dateStr) + '</span><span class="fichaje-card-hora">' + escapeHtml(timeStr) + '</span>' + btnEditar + '</div>';
   }).join('');
 }
 
@@ -5884,6 +5890,69 @@ function vincularFichajes() {
           '<div class="stat-card"><span class="stat-label">Acumulado total esta semana</span><span class="stat-value">' + horas.toFixed(1) + ' h</span></div>' +
           '<div class="stat-card"><span class="stat-label">Servicios (hoy / semana / total)</span><span class="stat-value">' + reps.hoy + ' / ' + reps.semana + ' / ' + reps.total + '</span></div></div>';
       }
+    });
+  }
+
+  var pantallaFichajes = document.getElementById('pantallaFichajes');
+  if (pantallaFichajes && !pantallaFichajes.dataset.fichajeEditarBound) {
+    pantallaFichajes.dataset.fichajeEditarBound = '1';
+    pantallaFichajes.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest('.fichaje-editar-entrada-btn');
+      if (!btn) return;
+      e.preventDefault();
+      var fichajeId = btn.getAttribute('data-fichaje-id');
+      var dateIso = btn.getAttribute('data-date-iso');
+      if (!fichajeId || typeof updateFichajeEntrada !== 'function') return;
+      var list = btn.closest('.lista-fichajes-reciente');
+      if (!list) return;
+      var userId = list.getAttribute('data-fichajes-user-id') || '';
+      var listId = list.getAttribute('data-fichajes-list-id') || 'listaFichajesReciente';
+      var item = btn.closest('.fichaje-item');
+      if (!item) return;
+      var horaSpan = item.querySelector('.fichaje-card-hora');
+      if (!horaSpan) return;
+      var d = new Date(dateIso);
+      var isoForInput = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      var wrap = document.createElement('span');
+      wrap.className = 'fichaje-edit-entrada-wrap';
+      var input = document.createElement('input');
+      input.type = 'datetime-local';
+      input.value = isoForInput;
+      input.className = 'fichaje-edit-entrada-input';
+      var guardar = document.createElement('button');
+      guardar.type = 'button';
+      guardar.className = 'btn btn-sm';
+      guardar.textContent = 'Guardar';
+      var cancelar = document.createElement('button');
+      cancelar.type = 'button';
+      cancelar.className = 'btn btn-sm btn-outline';
+      cancelar.textContent = 'Cancelar';
+      wrap.appendChild(input);
+      wrap.appendChild(guardar);
+      wrap.appendChild(cancelar);
+      horaSpan.style.display = 'none';
+      btn.style.display = 'none';
+      item.insertBefore(wrap, horaSpan.nextSibling);
+      input.focus();
+      function quitarEditor() {
+        wrap.remove();
+        horaSpan.style.display = '';
+        btn.style.display = '';
+      }
+      guardar.addEventListener('click', function () {
+        var val = input.value;
+        if (!val) return;
+        var nuevaEntrada = new Date(val);
+        if (isNaN(nuevaEntrada.getTime())) return;
+        if (updateFichajeEntrada(fichajeId, nuevaEntrada.toISOString())) {
+          if (typeof invalidateFichajesCache === 'function') invalidateFichajesCache();
+          renderListaFichajesReciente(userId, listId);
+          if (typeof renderFichajesDashboard === 'function' && userId) renderFichajesDashboard(userId);
+          if (typeof actualizarLedFichaje === 'function') actualizarLedFichaje();
+        }
+        quitarEditor();
+      });
+      cancelar.addEventListener('click', quitarEditor);
     });
   }
 
@@ -8725,17 +8794,9 @@ function actualizarVista() {
   aplicarDeshabilitarPiezasPorFullTuning();
   var rep = tipoServicio === 'reparacion';
   var tuneoRep = tipoServicio === 'tuneoReparacion';
-  if ((rep || tuneoRep) && !vehiculoActual && el.modelo && typeof VEHICULOS_DB !== 'undefined') {
-    var akuma = VEHICULOS_DB.find(function (v) { return (v.modelo || '').toLowerCase() === 'akuma'; });
-    if (akuma && el.modelo.options && Array.prototype.some.call(el.modelo.options, function (o) { return (o.value || '').toLowerCase() === 'akuma'; })) {
-      el.modelo.value = akuma.modelo;
-      cambiarModelo();
-      return;
-    }
-  }
   const p = calcularPrecios();
   const matricula = (matriculaActual || (el.matriculaCalc && el.matriculaCalc.value) || (el.matricula && el.matricula.value) || '').trim() || '-';
-  const modelo = vehiculoActual?.nombreIC || '-';
+  const modelo = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(matricula !== '-' ? matricula : '') : (vehiculoActual?.nombreIC || '-');
   var session = getSession();
   if (el.mecanico) el.mecanico.value = session ? (session.nombre || session.username || '') : 'BASE';
   const mecanico = el.mecanico.value || 'BASE';
@@ -8850,22 +8911,22 @@ function getTextoRegistroCalculadora() {
   const reparacion = tipoServicio === 'reparacion' || tipoServicio === 'tuneoReparacion';
   if (tuneo) {
     lineas.push('--- TUNEO ---');
-    lineas.push('Matrícula: ' + (document.getElementById('tplMatricula')?.textContent || '-'));
+    lineas.push('Matricula: ' + (document.getElementById('tplMatricula')?.textContent || '-'));
     lineas.push('Modelo: ' + (document.getElementById('tplModelo')?.textContent || '-'));
     lineas.push('Modificación: ' + (document.getElementById('tplModTuneo')?.textContent || '-'));
     lineas.push('Importe: ' + (document.getElementById('tplImporteTuneo')?.textContent || '-'));
-    lineas.push('Empleado: ' + (document.getElementById('tplEmpleado')?.textContent || '-'));
-    lineas.push('Convenio: ' + (document.getElementById('tplConvenio')?.textContent || '-'));
+    lineas.push('Empleado que realizo el servicio: ' + (document.getElementById('tplEmpleado')?.textContent || '-'));
+    lineas.push('Convenio y descuento: ' + (document.getElementById('tplConvenio')?.textContent || '-'));
   }
   if (reparacion) {
     if (lineas.length) lineas.push('');
     lineas.push('--- REPARACIÓN ---');
-    lineas.push('Matrícula: ' + (document.getElementById('tplMatriculaRep')?.textContent || '-'));
+    lineas.push('Matricula: ' + (document.getElementById('tplMatriculaRep')?.textContent || '-'));
     lineas.push('Modelo: ' + (document.getElementById('tplModeloRep')?.textContent || '-'));
     lineas.push('Modificación: Reparación');
     lineas.push('Importe: ' + (document.getElementById('tplImporteRep')?.textContent || '-'));
-    lineas.push('Empleado: ' + (document.getElementById('tplEmpleadoRep')?.textContent || '-'));
-    lineas.push('Convenio: ' + (document.getElementById('tplConvenioRep')?.textContent || '-'));
+    lineas.push('Empleado que realizo el servicio: ' + (document.getElementById('tplEmpleadoRep')?.textContent || '-'));
+    lineas.push('Convenio y descuento: ' + (document.getElementById('tplConvenioRep')?.textContent || '-'));
   }
   if (lineas.length === 0) lineas.push('Sin datos de registro.');
   return lineas.join('\n');
@@ -8948,6 +9009,23 @@ function limpiarUnidadesCalculadora() {
   actualizarVista();
 }
 
+/** Devuelve el nombre del modelo a mostrar en el registro de reparación/tuneo y en Discord (el mismo que BBDD). Prioridad: formulario, cliente BBDD, registro vehículos, vehiculoActual. */
+function getModeloDisplayParaRegistro(matricula) {
+  var mat = (matricula || '').trim();
+  var desdeForm = (el.nombreIC && (el.nombreIC.value || '').trim()) || '';
+  if (desdeForm) return desdeForm;
+  if (mat && typeof getClienteByMatricula === 'function') {
+    var cli = getClienteByMatricula(mat);
+    if (cli && (cli.nombreVehiculo || '').trim()) return (cli.nombreVehiculo || '').trim();
+  }
+  if (mat && typeof getVehiculoByMatricula === 'function') {
+    var reg = getVehiculoByMatricula(mat);
+    if (reg && (reg.nombreIC || '').trim()) return (reg.nombreIC || '').trim();
+  }
+  if (vehiculoActual && (vehiculoActual.nombreIC || '').trim()) return (vehiculoActual.nombreIC || '').trim();
+  return '-';
+}
+
 /** Asegura que la matrícula esté en la BBDD de clientes; si no existe, la añade con los datos del formulario */
 function ensureClienteEnBBDDSiFalta(matricula) {
   const mat = (matricula || '').trim();
@@ -9005,35 +9083,20 @@ function enviarRegistroFichajeADiscord(fichaje, session) {
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
 
-/** Envía el registro de reparación/tuneo al webhook de Discord. No bloquea la UI. */
+/** Envía el registro de reparación/tuneo al webhook de Discord. Mismo formato que la plantilla. */
 function enviarRegistroServicioADiscord(servicio) {
   var url = (typeof CONFIG !== 'undefined' && CONFIG.discordWebhookUrl) ? CONFIG.discordWebhookUrl : '';
   if (!url || !servicio) return;
-  var esReparacion = (servicio.tipo || '').toUpperCase().indexOf('REPARAC') !== -1;
-  var title = esReparacion ? 'Reparación registrada' : 'Tuneo registrado';
-  var color = esReparacion ? 0x2ecc71 : 0xf1c40f; // verde / amarillo
-  var fields = [
-    { name: 'Matrícula', value: (servicio.matricula || '—').toString(), inline: true },
-    { name: 'Modelo', value: (servicio.modelo || '—').toString(), inline: true },
-    { name: 'Importe', value: '$' + (servicio.importe || 0).toLocaleString('es-ES'), inline: true },
-    { name: 'Empleado', value: (servicio.empleado || '—').toString(), inline: true },
-    { name: 'Convenio', value: (servicio.convenio || '—').toString(), inline: true },
-    { name: 'Fecha', value: servicio.fecha ? new Date(servicio.fecha).toLocaleString('es-ES') : '—', inline: true },
-  ];
-  if (servicio.modificacion) fields.push({ name: 'Tipo / Modificación', value: servicio.modificacion.toString(), inline: false });
-  if (servicio.descuento != null && servicio.descuento > 0) fields.push({ name: 'Descuento', value: servicio.descuento + '%', inline: true });
-  if (esReparacion && (servicio.partesChasis > 0 || servicio.partesEsenciales > 0)) {
-    fields.push({ name: 'Partes chasis', value: String(servicio.partesChasis || 0), inline: true });
-    fields.push({ name: 'Partes esenciales', value: String(servicio.partesEsenciales || 0), inline: true });
-  }
-  var body = JSON.stringify({
-    embeds: [{
-      title: title,
-      color: color,
-      fields: fields,
-      timestamp: servicio.fecha || new Date().toISOString(),
-    }],
-  });
+  var mod = (servicio.modificacion || ((servicio.tipo || '').toUpperCase().indexOf('REPARAC') !== -1 ? 'Reparación' : '-')).toString();
+  var importeVal = servicio.importe != null ? (typeof servicio.importe === 'number' ? servicio.importe : parseFloat(servicio.importe) || 0) : 0;
+  var importeStr = importeVal > 0 ? importeVal.toLocaleString('es-ES') + '$' : '-';
+  var content = 'Matricula: ' + (servicio.matricula || '-') + '\n' +
+    'Modelo: ' + (servicio.modelo || '-') + '\n' +
+    'Modificación: ' + (mod || '-') + '\n' +
+    'Importe: ' + importeStr + '\n' +
+    'Empleado que realizo el servicio: ' + (servicio.empleado || '-') + '\n' +
+    'Convenio y descuento: ' + (servicio.convenio || '-');
+  var body = JSON.stringify({ content: content });
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
 
@@ -9197,11 +9260,12 @@ function registrarTuneo(fotoAntes, fotoDespues) {
       return;
     }
   }
+  const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const servicio = {
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
     matricula: mat,
-    modelo: vehiculoActual?.nombreIC || '-',
+    modelo: modeloDisplay,
     modificacion: modLabel,
     importe: p.total,
     empleado: nombreRegistrador || el.mecanico?.value || '—',
@@ -9343,7 +9407,7 @@ function registrarReparacion() {
   var piezasChasisDesglose = [];
   var piezasEsencialesDesglose = [];
   if (p.kitActivo) {
-    partesChasisReg = 10;
+    partesChasisReg = 20;
     partesEsencialesReg = 6;
   } else {
     partesChasisReg = parseInt(el.partesChasis?.value, 10) || 0;
@@ -9376,11 +9440,12 @@ function registrarReparacion() {
       restarStockReparacion(piezasChasisDesglose, piezasEsencialesDesglose);
     }
   }
+  const modeloDisplayRep = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const servicio = {
     tipo: 'REPARACIÓN',
     fecha: new Date().toISOString(),
     matricula: mat,
-    modelo: vehiculoActual?.nombreIC || '-',
+    modelo: modeloDisplayRep,
     modificacion: p.kitActivo ? 'Reparación (kit)' : 'Reparación',
     importe: p.total,
     empleado: nombreRegistradorRep || el.mecanico?.value || '—',

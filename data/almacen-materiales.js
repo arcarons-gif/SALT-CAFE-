@@ -81,6 +81,9 @@
     try {
       localStorage.setItem(STORAGE_MOVIMIENTOS, JSON.stringify(list.slice(0, 500)));
     } catch (e) {}
+    if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeAlmacen === 'function') {
+      window.backendApi.mergeAlmacen(movimiento);
+    }
     return stock;
   }
 
@@ -116,8 +119,14 @@
     if (!TIPOS_MATERIAL_ALMACEN.some(function (t) { return t.id === id; })) return stock;
     var a = typeof aportaciones === 'number' ? aportaciones : 0;
     var r = typeof retiradas === 'number' ? retiradas : 0;
-    stock[id] = Math.max(0, (stock[id] || 0) + a - r);
+    var delta = a - r;
+    stock[id] = Math.max(0, (stock[id] || 0) + delta);
     saveAlmacenMateriales(stock);
+    if (delta !== 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeAlmacen === 'function') {
+      var mov = {};
+      mov[id] = delta;
+      window.backendApi.mergeAlmacen(mov);
+    }
     return getAlmacenMateriales();
   }
 

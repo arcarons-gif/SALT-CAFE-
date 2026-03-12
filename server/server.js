@@ -85,7 +85,10 @@ app.get('/', (req, res) => {
         <li>/api/fichajes – GET (lista) / POST (guardar)</li>
         <li>/api/servicios – GET (lista) / POST (guardar reparaciones/tuneos)</li>
         <li>/api/datos-completos – GET (todos los datos sincronizados)</li>
-        <li>/api/repo-export – POST (guardar saltlab-datos-completos.json en server/data/)</li>
+        <li>/api/repo-export – POST (guardar saltlab-datos-completos.json; almacén e inventario no se sobrescriben)</li>
+        <li>/api/merge-almacen – POST (sumar movimiento al almacén; body: { movimiento: { acero?: number, ... } })</li>
+        <li>/api/merge-inventario – POST (sumar/restar al inventario; body: { items: { "conceptoId": delta } })</li>
+        <li>/api/merge-clientes-bbdd – POST (fusionar clientes por idCliente; body: { clientes: [...] })</li>
         <li>/api/discord-economia – POST (envía resumen financiero al webhook de Discord)</li>
         <li>/api/discord-entregas – POST (envía registro de entrega de herramientas al webhook de Discord)</li>
         <li>/api/discord-materiales – POST (envía registro de materiales recuperados al webhook de Discord)</li>
@@ -234,12 +237,118 @@ app.get('/api/datos-completos', (req, res) => {
 });
 
 // Guardar exportación completa en server/data/ (automatizar guardado en repo)
+// almacenMateriales y economiaInventario NO se sobrescriben: solo se actualizan por merge (suma de todos)
 app.post('/api/repo-export', (req, res) => {
   try {
-    const data = req.body;
-    if (!data || typeof data !== 'object') {
+    const incoming = req.body;
+    if (!incoming || typeof incoming !== 'object') {
       return res.status(400).json({ error: 'Se espera un objeto JSON' });
     }
+    const current = readDatosCompletos();
+    const data = { ...incoming };
+    if (current.almacenMateriales && typeof current.almacenMateriales === 'object') {
+      data.almacenMateriales = current.almacenMateriales;
+    } else {
+      data.almacenMateriales = data.almacenMateriales || {};
+    }
+    if (current.economiaInventario && typeof current.economiaInventario === 'object') {
+      data.economiaInventario = current.economiaInventario;
+    } else {
+      data.economiaInventario = data.economiaInventario || {};
+    }
+    if (Array.isArray(current.clientesBBDD) && current.clientesBBDD.length > 0) {
+      data.clientesBBDD = current.clientesBBDD;
+    } else {
+      data.clientesBBDD = Array.isArray(data.clientesBBDD) ? data.clientesBBDD : [];
+    }
+    data._exportadoAt = new Date().toISOString();
+    ensureDataDir();
+    fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+// Merge aditivo: sumar movimiento al almacén (todos los usuarios suman, no se sobrescribe)
+app.post('/api/merge-almacen', (req, res) => {
+  try {
+    const movimiento = req.body.movimiento;
+    if (!movimiento || typeof movimiento !== 'object') {
+      return res.status(400).json({ error: 'Se espera { movimiento: { acero?: number, ... } }' });
+    }
+    const data = readDatosCompletos();
+    if (!data.almacenMateriales) data.almacenMateriales = {};
+    Object.keys(movimiento).forEach((key) => {
+      const n = Number(movimiento[key]);
+      if (!isNaN(n)) {
+        data.almacenMateriales[key] = (data.almacenMateriales[key] || 0) + n;
+      }
+    });
+    data._exportadoAt = new Date().toISOString();
+    ensureDataDir();
+    fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+// Merge aditivo: sumar (o restar) items al inventario por concepto
+app.post('/api/merge-inventario', (req, res) => {
+  try {
+    const items = req.body.items;
+    if (!items || typeof items !== 'object') {
+      return res.status(400).json({ error: 'Se espera { items: { "conceptoId": delta, ... } }' });
+    }
+    const data = readDatosCompletos();
+    if (!data.economiaInventario) data.economiaInventario = {};
+    Object.keys(items).forEach((key) => {
+      const n = Number(items[key]);
+      if (!isNaN(n)) {
+        const prev = data.economiaInventario[key] || 0;
+        data.economiaInventario[key] = Math.max(0, prev + n);
+      }
+    });
+    data._exportadoAt = new Date().toISOString();
+    ensureDataDir();
+    fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+// Merge BBDD clientes: upsert por idCliente (no se sobrescribe lo de otros usuarios)
+app.post('/api/merge-clientes-bbdd', (req, res) => {
+  try {
+    const clientes = req.body.clientes;
+    if (!Array.isArray(clientes)) {
+      return res.status(400).json({ error: 'Se espera { clientes: [...] }' });
+    }
+    const data = readDatosCompletos();
+    if (!data.clientesBBDD) data.clientesBBDD = [];
+    const list = data.clientesBBDD;
+    const byId = {};
+    list.forEach((c, i) => {
+      const id = (c.idCliente || c.matricula || '').toString().trim();
+      if (id) byId[id] = i;
+    });
+    clientes.forEach((c) => {
+      const id = (c.idCliente || c.matricula || '').toString().trim();
+      if (!id) return;
+      if (byId[id] !== undefined) {
+        list[byId[id]] = { ...list[byId[id]], ...c, idCliente: list[byId[id]].idCliente || id };
+      } else {
+        list.push({ ...c, idCliente: c.idCliente || id });
+        byId[id] = list.length - 1;
+      }
+    });
+    data.clientesBBDD = list;
+    data._exportadoAt = new Date().toISOString();
     ensureDataDir();
     fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
     res.json({ ok: true });
