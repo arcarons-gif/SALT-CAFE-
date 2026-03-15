@@ -1000,31 +1000,34 @@ async function manejarCambioPassword(e) {
 function getLogConexiones() {
   try {
     var raw = localStorage.getItem(LOG_CONEXIONES_STORAGE);
-    return raw ? JSON.parse(raw) : [];
+    var parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) { return []; }
 }
 
 function registrarConexion(usuario, nombre) {
-  if (!usuario) return;
-  var ahora = new Date();
-  var entrada = {
-    usuario: String(usuario).trim(),
-    nombre: (nombre || usuario || '').trim(),
-    fecha: ahora.toISOString().slice(0, 10),
-    hora: ahora.toTimeString().slice(0, 8),
-    fechaHora: ahora.toISOString()
-  };
-  var log = getLogConexiones();
-  log.unshift(entrada);
-  if (log.length > LOG_CONEXIONES_MAX) log = log.slice(0, LOG_CONEXIONES_MAX);
   try {
+    if (!usuario) return;
+    var ahora = new Date();
+    var entrada = {
+      usuario: String(usuario).trim(),
+      nombre: (nombre || usuario || '').trim(),
+      fecha: ahora.toISOString().slice(0, 10),
+      hora: ahora.toTimeString().slice(0, 8),
+      fechaHora: ahora.toISOString()
+    };
+    var log = getLogConexiones();
+    log.unshift(entrada);
+    if (log.length > LOG_CONEXIONES_MAX) log = log.slice(0, LOG_CONEXIONES_MAX);
     localStorage.setItem(LOG_CONEXIONES_STORAGE, JSON.stringify(log));
-  } catch (e) {}
+  } catch (e) { /* no bloquear entrada por fallo en registro */ }
 }
 
 function entrarApp(user) {
   const u = user || getSession();
-  if (u && u.username) registrarConexion(u.username, u.nombre);
+  try {
+    if (u && u.username) registrarConexion(u.username, u.nombre);
+  } catch (e) { /* no bloquear entrada */ }
   var ls = document.getElementById('loginScreen');
   var cs = document.getElementById('cambioPasswordScreen');
   var app = document.getElementById('appContent');
