@@ -440,7 +440,7 @@ function cerrarTodasPantallasSecundarias() {
   });
   if (appBody) appBody.style.display = 'flex';
   if (principal) principal.style.display = 'block';
-  if (appContent) appContent.classList.remove('pantalla-secundaria-visible', 'ficha-empleado-abierta');
+  if (appContent) appContent.classList.remove('pantalla-secundaria-visible', 'ficha-empleado-abierta', 'gestion-visible');
   actualizarLedFichaje();
   if (typeof paso !== 'undefined') {
     if (paso === 'calculadora' && matriculaActual) renderStatsVehiculo(matriculaActual);
@@ -454,7 +454,10 @@ function ocultarAppBodyMostrarSecundaria(pantallaId) {
   const appContent = document.getElementById('appContent');
   if (appBody) appBody.style.display = 'none';
   if (pantalla) pantalla.style.display = 'flex';
-  if (appContent) appContent.classList.add('pantalla-secundaria-visible');
+  if (appContent) {
+    appContent.classList.add('pantalla-secundaria-visible');
+    if (pantallaId === 'pantallaGestion') appContent.classList.add('gestion-visible');
+  }
 }
 
 function getPendingUserUpdates() {
@@ -3026,6 +3029,44 @@ var INVENTARIO_FOTOS_PIEZAS_MAP = {
   maquinaria_tablet_tuneo: 'tablet de tunning.png', maquinaria_maquina_diagnosis: 'herramienta de diagnosis.png', maquinaria_grua_motor: 'grúa de motor.png'
 };
 
+/** Coste por unidad desde BBDD: CARROCERÍA = chasis, COMPONENTES ESENCIALES = esenciales (precios piezas reparación). */
+function getCosteInventarioDesdeBBDD(conceptoId) {
+  var cat = typeof CATEGORIA_INVENTARIO !== 'undefined' && CATEGORIA_INVENTARIO ? CATEGORIA_INVENTARIO.find(function (c) { return c.id === conceptoId; }) : null;
+  if (!cat || !cat.grupo) return 0;
+  var precios = typeof getPreciosPiezas === 'function' ? getPreciosPiezas() : null;
+  if (!precios) return cat.grupo === 'CARROCERÍA' ? 15 : cat.grupo === 'COMPONENTES ESENCIALES' ? 40 : 0;
+  if (cat.grupo === 'CARROCERÍA') return (precios.chasis && typeof precios.chasis.coste === 'number') ? precios.chasis.coste : 15;
+  if (cat.grupo === 'COMPONENTES ESENCIALES') return (precios.esenciales && typeof precios.esenciales.coste === 'number') ? precios.esenciales.coste : 40;
+  return 0;
+}
+
+function tieneCosteEnBBDD(conceptoId) {
+  return getCosteInventarioDesdeBBDD(conceptoId) > 0;
+}
+
+/** Coste efectivo: primero el guardado por el usuario (si no hay en BBDD), luego el de la BBDD. */
+function getCosteEfectivoInventarioConcepto(conceptoId) {
+  var stored = typeof getCosteInventarioConcepto === 'function' ? getCosteInventarioConcepto(conceptoId) : 0;
+  if (stored > 0) return stored;
+  return getCosteInventarioDesdeBBDD(conceptoId);
+}
+
+function registrarGastoEntradaStock(conceptoId, cantidad) {
+  if (!conceptoId || cantidad <= 0 || typeof addGasto !== 'function') return;
+  var costeUnit = getCosteEfectivoInventarioConcepto(conceptoId);
+  if (costeUnit <= 0) return;
+  var importeTotal = Math.round(cantidad * costeUnit * 100) / 100;
+  var label = typeof getCategoriaInventarioLabel === 'function' ? getCategoriaInventarioLabel(conceptoId) : conceptoId;
+  addGasto({
+    categoria: 'material_taller',
+    concepto: 'Stock: ' + label + ' (+' + cantidad + ' ud)',
+    importe: importeTotal,
+    fecha: new Date().toISOString().slice(0, 10),
+    registradoPor: '',
+    notas: 'Entrada de inventario'
+  });
+}
+
 function renderInventario() {
   var wrap = document.getElementById('inventarioPorGrupos');
   if (!wrap || typeof getInventario !== 'function' || typeof CATEGORIA_INVENTARIO === 'undefined') return;
@@ -3072,7 +3113,11 @@ function renderInventario() {
     items.forEach(function (c) {
       var id = c.id;
       var cant = (stock[id] != null && !isNaN(parseFloat(stock[id]))) ? parseFloat(stock[id]) : 0;
-      var costeUd = typeof getCosteInventarioConcepto === 'function' ? getCosteInventarioConcepto(id) : 0;
+      var costeBBDD = tieneCosteEnBBDD(id);
+      var costeUd = getCosteEfectivoInventarioConcepto(id);
+      var costeCell = costeBBDD
+        ? '<span class="inventario-coste-bbdd">' + (costeUd > 0 ? costeUd : '—') + ' €</span>'
+        : '<input type="number" class="inventario-input-coste" data-concepto="' + escapeHtmlAttr(id) + '" min="0" step="0.01" value="' + (costeUd > 0 ? costeUd : '') + '" placeholder="—" title="Sin precio en BBDD: indica coste/ud para el reporte de gastos">';
       var lim = limites[id] || {};
       var min = (lim.stockMinimo != null) ? parseFloat(lim.stockMinimo) : '';
       var bajoMin = min > 0 && cant <= min;
@@ -3083,7 +3128,7 @@ function renderInventario() {
       tr.className = 'inventario-ficha-pieza';
       tr.innerHTML =
         '<td class="inventario-td-concepto">' + imgHtml + '<span class="inventario-td-concepto-texto">' + escapeHtml(c.nombre || id) + alerta + '</span></td>' +
-        '<td class="inventario-td-coste"><input type="number" class="inventario-input-coste" data-concepto="' + escapeHtmlAttr(id) + '" min="0" step="0.01" value="' + (costeUd > 0 ? costeUd : '') + '" placeholder="0" title="Coste por unidad (al añadir stock se registra como gasto)"></td>' +
+        '<td class="inventario-td-coste">' + costeCell + '</td>' +
         '<td class="inventario-td-stock">' + cant + ' ud</td>' +
         '<td class="inventario-td-acciones">' +
         '<input type="number" class="inventario-input-add" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a añadir" inputmode="numeric">' +
@@ -3125,6 +3170,7 @@ function renderInventario() {
       var n = input && input.value !== '' ? (parseInt(input.value, 10) || 1) : 1;
       if (!id || typeof addStock !== 'function') return;
       addStock(id, n);
+      if (n > 0) registrarGastoEntradaStock(id, n);
       var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
       if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
       if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
@@ -3157,6 +3203,7 @@ function renderInventario() {
       var n = addIn.value !== '' ? (parseInt(addIn.value, 10) || 1) : 1;
       if (!id || typeof addStock !== 'function') return;
       addStock(id, n);
+      if (n > 0) registrarGastoEntradaStock(id, n);
       var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
       if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
       if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();

@@ -154,21 +154,6 @@
     var n = typeof cantidad === 'number' ? cantidad : (parseFloat(cantidad) || 0);
     inv[conceptoId] = (inv[conceptoId] != null ? parseFloat(inv[conceptoId]) : 0) + n;
     saveInventario(inv);
-    if (n > 0) {
-      var costeUnit = getCosteInventarioConcepto(conceptoId);
-      if (costeUnit > 0) {
-        var importeTotal = n * costeUnit;
-        var label = getCategoriaInventarioLabel(conceptoId);
-        addGasto({
-          categoria: 'material_taller',
-          concepto: 'Stock: ' + label + ' (+' + n + ' ud)',
-          importe: Math.round(importeTotal * 100) / 100,
-          fecha: new Date().toISOString().slice(0, 10),
-          registradoPor: '',
-          notas: 'Entrada de inventario'
-        });
-      }
-    }
     if (n !== 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeInventario === 'function') {
       var delta = {};
       delta[conceptoId] = n;
