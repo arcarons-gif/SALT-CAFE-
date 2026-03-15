@@ -7399,12 +7399,13 @@ function abrirModalCambiarPassword(userId, username) {
   var errEl = document.getElementById('modalCambiarPasswordError');
   if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
   modal.classList.add('active');
+  modal.style.display = 'flex';
   modal.setAttribute('aria-hidden', 'false');
 }
 
 function cerrarModalCambiarPassword() {
   var modal = document.getElementById('modalCambiarPassword');
-  if (modal) { modal.classList.remove('active'); modal.setAttribute('aria-hidden', 'true'); }
+  if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
 }
 
 function buildConveniosFichas() {
@@ -7959,7 +7960,15 @@ function renderDocConvenioHistorial() {
   grid.appendChild(cardSubir);
   conveniosFirmados.forEach(function (c) {
     var doc = c.documentoAcuerdo || {};
-    var soloSubido = c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0 && !(doc && ((doc.titulo || '').trim() && doc.titulo !== 'Documento subido') || (doc.objetoConvenio || '').trim() || (doc.serviciosBenny && doc.serviciosBenny.length) || (doc.serviciosEmpresa && doc.serviciosEmpresa.length) || doc.logoSalttabDataUrl || doc.firmaSalttabDataUrl));
+    var tieneContenidoDoc = doc && (
+      ((doc.titulo || '').trim() && doc.titulo !== 'Documento subido') ||
+      (doc.objetoConvenio || '').trim() ||
+      (doc.serviciosBenny && doc.serviciosBenny.length) ||
+      (doc.serviciosEmpresa && doc.serviciosEmpresa.length) ||
+      doc.logoSalttabDataUrl ||
+      doc.firmaSalttabDataUrl
+    );
+    var soloSubido = c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0 && !tieneContenidoDoc;
     var titulo = (doc.titulo || '').trim() || (soloSubido ? 'Documento subido' : 'CONVENIO COMERCIAL DE COLABORACIÓN');
     var subtitulo = (doc.subtitulo || '').trim() || ('SALTLAB · ' + (c.nombre || 'Empresa'));
     var previewHtml = '<div class="doc-convenio-historial-card-preview">';
