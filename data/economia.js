@@ -9,6 +9,7 @@
   var STORAGE_GASTOS = 'benny_economia_gastos';
   var STORAGE_PREVISIONES = 'benny_economia_previsiones';
   var STORAGE_LIMITES_STOCK = 'benny_economia_limites_stock';
+  var STORAGE_COSTES_INVENTARIO = 'benny_economia_inventario_costes';
   var _cachedCompras = null, _cachedInventario = null, _cachedGastos = null;
 
   // Control riguroso de existencias. Categorías por grupo; los admin (o quien tenga permiso) pueden dar de alta cualquier producto en cualquiera.
@@ -153,6 +154,21 @@
     var n = typeof cantidad === 'number' ? cantidad : (parseFloat(cantidad) || 0);
     inv[conceptoId] = (inv[conceptoId] != null ? parseFloat(inv[conceptoId]) : 0) + n;
     saveInventario(inv);
+    if (n > 0) {
+      var costeUnit = getCosteInventarioConcepto(conceptoId);
+      if (costeUnit > 0) {
+        var importeTotal = n * costeUnit;
+        var label = getCategoriaInventarioLabel(conceptoId);
+        addGasto({
+          categoria: 'material_taller',
+          concepto: 'Stock: ' + label + ' (+' + n + ' ud)',
+          importe: Math.round(importeTotal * 100) / 100,
+          fecha: new Date().toISOString().slice(0, 10),
+          registradoPor: '',
+          notas: 'Entrada de inventario'
+        });
+      }
+    }
     if (n !== 0 && typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.mergeInventario === 'function') {
       var delta = {};
       delta[conceptoId] = n;
@@ -244,6 +260,25 @@
       obj[conceptoId].stockMaximo = (v === '' || v === null || v === undefined) ? null : (typeof v === 'number' ? v : parseFloat(v));
     }
     saveLimitesStock(obj);
+  }
+
+  /** Coste por unidad de cada concepto de inventario: { [conceptoId]: coste }. Para reflejar gastos al añadir stock. */
+  function getCostesInventario() {
+    try {
+      var raw = localStorage.getItem(STORAGE_COSTES_INVENTARIO);
+      var obj = raw ? JSON.parse(raw) : {};
+      return typeof obj === 'object' && obj !== null ? obj : {};
+    } catch (e) { return {}; }
+  }
+
+  function getCosteInventarioConcepto(conceptoId) {
+    var obj = getCostesInventario();
+    var v = obj[conceptoId];
+    return (v != null && !isNaN(parseFloat(v))) ? parseFloat(v) : 0;
+  }
+
+  function saveCostesInventario(obj) {
+    try { localStorage.setItem(STORAGE_COSTES_INVENTARIO, JSON.stringify(typeof obj === 'object' && obj !== null ? obj : {})); } catch (e) {}
   }
 
   function getStockActualPorConcepto() {
@@ -395,6 +430,9 @@
       getLimitesStock: getLimitesStock,
       saveLimitesStock: saveLimitesStock,
       setLimiteStock: setLimiteStock,
+      getCostesInventario: getCostesInventario,
+      getCosteInventarioConcepto: getCosteInventarioConcepto,
+      saveCostesInventario: saveCostesInventario,
       getStockActualPorConcepto: getStockActualPorConcepto,
       getNecesidadesReposicion: getNecesidadesReposicion,
       getGastos: getGastos,
@@ -431,6 +469,9 @@
     global.getLimitesStock = getLimitesStock;
     global.saveLimitesStock = saveLimitesStock;
     global.setLimiteStock = setLimiteStock;
+    global.getCostesInventario = getCostesInventario;
+    global.getCosteInventarioConcepto = getCosteInventarioConcepto;
+    global.saveCostesInventario = saveCostesInventario;
     global.getStockActualPorConcepto = getStockActualPorConcepto;
     global.getNecesidadesReposicion = getNecesidadesReposicion;
     global.getGastos = getGastos;

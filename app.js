@@ -1780,7 +1780,7 @@ function getDatosCompletosParaExportar() {
   };
   var keys = [
     ['clientesBBDD', 'benny_clientes_bbdd', []], ['clientesPendientes', 'benny_clientes_pendientes', []], ['clientesFotos', 'benny_clientes_fotos', {}],
-    ['economiaCompras', 'benny_economia_compras', []], ['economiaInventario', 'benny_economia_inventario', {}], ['economiaGastos', 'benny_economia_gastos', []],
+    ['economiaCompras', 'benny_economia_compras', []], ['economiaInventario', 'benny_economia_inventario', {}], ['economiaInventarioCostes', 'benny_economia_inventario_costes', {}], ['economiaGastos', 'benny_economia_gastos', []],
     ['economiaPrevisiones', 'benny_economia_previsiones', {}], ['economiaLimitesStock', 'benny_economia_limites_stock', {}],
     ['tunnings', 'benny_tunnings', []], ['mediaPending', 'benny_media_pending', []], ['mediaApproved', 'benny_media_approved', []],
     ['vacantes', 'benny_vacantes_solicitudes', []], ['bandejaEntrada', 'benny_bandeja_entrada', {}], ['normativasTestRegistro', 'benny_normativas_test_registro', []],
@@ -1806,6 +1806,7 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
   ['clientesFotos', 'benny_clientes_fotos', false],
   ['economiaCompras', 'benny_economia_compras', false],
   ['economiaInventario', 'benny_economia_inventario', false],
+  ['economiaInventarioCostes', 'benny_economia_inventario_costes', false],
   ['economiaGastos', 'benny_economia_gastos', false],
   ['economiaPrevisiones', 'benny_economia_previsiones', false],
   ['economiaLimitesStock', 'benny_economia_limites_stock', false],
@@ -3028,6 +3029,8 @@ var INVENTARIO_FOTOS_PIEZAS_MAP = {
 function renderInventario() {
   var wrap = document.getElementById('inventarioPorGrupos');
   if (!wrap || typeof getInventario !== 'function' || typeof CATEGORIA_INVENTARIO === 'undefined') return;
+  var active = document.activeElement;
+  if (active && wrap.contains(active) && (active.classList.contains('inventario-input-add') || active.classList.contains('inventario-input-remove') || active.classList.contains('inventario-input-coste'))) return;
   var stock = getInventario();
   var limites = typeof getLimitesStock === 'function' ? getLimitesStock() : {};
   var q = (document.getElementById('filtroEconomiaInventario') && document.getElementById('filtroEconomiaInventario').value) || '';
@@ -3063,12 +3066,13 @@ function renderInventario() {
     var slug = (grupoNombre || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'otros';
     var ficha = document.createElement('div');
     ficha.className = 'inventario-ficha inventario-ficha-neon inventario-ficha-' + slug;
-    var tableHtml = '<div class="inventario-ficha-titulo">' + escapeHtml(grupoNombre) + '</div><div class="inventario-ficha-tabla-wrap scrollbar-on-scroll"><table class="inventario-ficha-tabla"><thead><tr><th>Concepto</th><th>Stock</th><th class="inventario-th-acciones"></th></tr></thead><tbody></tbody></table></div>';
+    var tableHtml = '<div class="inventario-ficha-titulo">' + escapeHtml(grupoNombre) + '</div><div class="inventario-ficha-tabla-wrap scrollbar-on-scroll"><table class="inventario-ficha-tabla"><thead><tr><th>Concepto</th><th>Coste/ud (€)</th><th>Stock</th><th class="inventario-th-acciones"></th></tr></thead><tbody></tbody></table></div>';
     ficha.innerHTML = tableHtml;
     var tbody = ficha.querySelector('.inventario-ficha-tabla tbody');
     items.forEach(function (c) {
       var id = c.id;
       var cant = (stock[id] != null && !isNaN(parseFloat(stock[id]))) ? parseFloat(stock[id]) : 0;
+      var costeUd = typeof getCosteInventarioConcepto === 'function' ? getCosteInventarioConcepto(id) : 0;
       var lim = limites[id] || {};
       var min = (lim.stockMinimo != null) ? parseFloat(lim.stockMinimo) : '';
       var bajoMin = min > 0 && cant <= min;
@@ -3079,6 +3083,7 @@ function renderInventario() {
       tr.className = 'inventario-ficha-pieza';
       tr.innerHTML =
         '<td class="inventario-td-concepto">' + imgHtml + '<span class="inventario-td-concepto-texto">' + escapeHtml(c.nombre || id) + alerta + '</span></td>' +
+        '<td class="inventario-td-coste"><input type="number" class="inventario-input-coste" data-concepto="' + escapeHtmlAttr(id) + '" min="0" step="0.01" value="' + (costeUd > 0 ? costeUd : '') + '" placeholder="0" title="Coste por unidad (al añadir stock se registra como gasto)"></td>' +
         '<td class="inventario-td-stock">' + cant + ' ud</td>' +
         '<td class="inventario-td-acciones">' +
         '<input type="number" class="inventario-input-add" data-concepto="' + escapeHtmlAttr(id) + '" min="1" step="1" value="1" title="Cantidad a añadir" inputmode="numeric">' +
@@ -3101,6 +3106,16 @@ function renderInventario() {
     if (!id || !valoresInputs[id]) return;
     var v = valoresInputs[id];
     if (v.remove != null) removeIn.value = v.remove;
+  });
+  wrap.querySelectorAll('.inventario-input-coste').forEach(function (costeInp) {
+    costeInp.addEventListener('change', function () {
+      var id = costeInp.getAttribute('data-concepto');
+      if (!id || typeof getCostesInventario !== 'function' || typeof saveCostesInventario !== 'function') return;
+      var obj = getCostesInventario();
+      var v = costeInp.value !== '' ? (parseFloat(costeInp.value) || 0) : 0;
+      if (v > 0) obj[id] = v; else delete obj[id];
+      saveCostesInventario(obj);
+    });
   });
   wrap.querySelectorAll('.inventario-btn-add').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -3131,6 +3146,43 @@ function renderInventario() {
       if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
       if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
       if (typeof renderLimitesStock === 'function') renderLimitesStock();
+    });
+  });
+  wrap.querySelectorAll('.inventario-input-add').forEach(function (addIn) {
+    addIn.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var id = addIn.getAttribute('data-concepto');
+      var row = addIn.closest('tr');
+      var n = addIn.value !== '' ? (parseInt(addIn.value, 10) || 1) : 1;
+      if (!id || typeof addStock !== 'function') return;
+      addStock(id, n);
+      var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
+      if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
+      if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      if (typeof renderLimitesStock === 'function') renderLimitesStock();
+      addIn.value = '1';
+      addIn.blur();
+    });
+  });
+  wrap.querySelectorAll('.inventario-input-remove').forEach(function (removeIn) {
+    removeIn.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var id = removeIn.getAttribute('data-concepto');
+      var row = removeIn.closest('tr');
+      var n = removeIn.value !== '' ? (parseInt(removeIn.value, 10) || 1) : 1;
+      if (!id || typeof removeStock !== 'function') return;
+      var actual = typeof getStock === 'function' ? getStock(id) : 0;
+      if (n > actual) n = actual;
+      if (n <= 0) { removeIn.blur(); return; }
+      removeStock(id, n);
+      var stockCell = row ? row.querySelector('.inventario-td-stock') : null;
+      if (stockCell && typeof getStock === 'function') stockCell.textContent = getStock(id) + ' ud';
+      if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
+      if (typeof renderLimitesStock === 'function') renderLimitesStock();
+      removeIn.value = '1';
+      removeIn.blur();
     });
   });
 }

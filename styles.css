@@ -2684,11 +2684,14 @@ button.login-recovery-link {
 .inventario-ficha-neon.inventario-ficha-otros .inventario-ficha-titulo { background: var(--bg-elevated); box-shadow: 0 0 12px rgba(156, 163, 175, 0.5); border-color: var(--border); }
 .inventario-ficha-neon.inventario-ficha-otros { box-shadow: 0 0 15px rgba(156, 163, 175, 0.3); border-color: var(--border); }
 .inventario-ficha .inventario-ficha-tabla-wrap { background: var(--bg-elevated); }
-.inventario-ficha-tabla { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: 0.85rem; }
+.inventario-ficha-tabla { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; font-size: 0.85rem; }
 .inventario-ficha-tabla th, .inventario-ficha-tabla td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.inventario-ficha-tabla th:nth-child(1), .inventario-ficha-tabla .inventario-td-concepto { width: 45%; min-width: 0; }
-.inventario-ficha-tabla th:nth-child(2), .inventario-ficha-tabla .inventario-td-stock { width: 12%; }
-.inventario-ficha-tabla th:nth-child(3), .inventario-ficha-tabla .inventario-td-acciones { width: 43%; }
+.inventario-ficha-tabla th:nth-child(1), .inventario-ficha-tabla .inventario-td-concepto { width: 1%; min-width: 11rem; }
+.inventario-ficha-tabla th:nth-child(2), .inventario-ficha-tabla .inventario-td-coste { width: 7rem; }
+.inventario-ficha-tabla th:nth-child(3), .inventario-ficha-tabla .inventario-td-stock { width: 6rem; }
+.inventario-ficha-tabla th:nth-child(4), .inventario-ficha-tabla .inventario-td-acciones { width: auto; }
+.inventario-td-coste { text-align: center; }
+.inventario-input-coste { width: 5rem; min-width: 4rem; padding: 0.35rem 0.4rem; font-size: 0.85rem; text-align: right; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-app); color: var(--text); }
 .inventario-ficha-tabla th { color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; text-align: center; }
 .inventario-ficha-tabla td { text-align: left; }
 .inventario-ficha-tabla .inventario-td-stock { text-align: center; }
@@ -2698,7 +2701,7 @@ button.login-recovery-link {
 .inventario-td-concepto { font-weight: 500; min-width: 0; display: flex; align-items: center; gap: 0.5rem; }
 .inventario-pieza-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
 .inventario-pieza-logo-placeholder { width: 28px; height: 28px; flex-shrink: 0; display: inline-block; }
-.inventario-td-concepto-texto { min-width: 0; word-break: break-word; white-space: normal; overflow: visible; }
+.inventario-td-concepto-texto { white-space: nowrap; overflow: visible; min-width: 0; }
 .inventario-td-stock { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; font-size: 0.85rem; }
 .inventario-td-acciones { white-space: nowrap; text-align: right; }
 .inventario-td-acciones .inventario-input-add, .inventario-td-acciones .inventario-input-remove { width: 4rem; min-width: 3rem; padding: 0.35rem 0.4rem; font-size: 0.9rem; text-align: center; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-app); color: var(--text); margin: 0 0.2rem; }
