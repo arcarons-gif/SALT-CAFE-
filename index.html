@@ -885,10 +885,25 @@
           </div>
           <div id="conveniosPanelDocumentoComercial" class="convenios-panel-tab" style="display:none">
             <p class="convenios-documento-comercial-desc">Edita el documento tipo <strong>CONVENIO COMERCIAL DE COLABORACIÓN</strong> (SALTLAB y empresa colaboradora). Todos los datos son editables. Puedes guardar el documento como <strong>nuevo convenio</strong> o asociarlo a un <strong>convenio existente</strong> como acuerdo de dicho convenio.</p>
-            <h4 class="doc-convenio-historial-titulo">Documentos de convenios</h4>
-            <p class="doc-convenio-historial-desc">Haz clic en una miniatura para editar el documento de ese convenio.</p>
+            <h4 class="doc-convenio-historial-titulo">Convenios firmados (documentos guardados)</h4>
+            <p class="doc-convenio-historial-desc">Solo se muestran los convenios que tienen documento generado, rellenado, firmado y guardado. El descuento indicado es el que se aplica en reparaciones y tuneos para esa empresa. Haz clic en una miniatura para ver o editar el documento.</p>
+            <p id="docConvenioHistorialVacio" class="doc-convenio-historial-vacio" style="display:none">No hay convenios con documento firmado/guardado. Crea un documento con «Abrir editor», rellénalo, firma y guárdalo asociándolo a un convenio (desde «Empresas y descuentos» o al guardar).</p>
             <div id="docConvenioHistorialGrid" class="doc-convenio-historial-grid"></div>
             <button type="button" class="btn btn-register" id="btnAbrirEditorDocConvenioComercial">+ Nuevo documento / Abrir editor</button>
+
+            <!-- Modal ver documento firmado desde repositorio (ej. LS Customs) -->
+            <div id="modalVerDocFirmadoRepo" class="modal modal-ver-doc-firmado-repo" role="dialog" aria-modal="true" style="display:none">
+              <div class="modal-ver-doc-firmado-repo-backdrop" id="modalVerDocFirmadoRepoBackdrop"></div>
+              <div class="modal-ver-doc-firmado-repo-content">
+                <div class="modal-ver-doc-firmado-repo-header">
+                  <h4 id="modalVerDocFirmadoRepoTitulo">Convenio firmado</h4>
+                  <button type="button" class="modal-ver-doc-firmado-repo-cerrar" id="modalVerDocFirmadoRepoCerrar" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="modal-ver-doc-firmado-repo-body">
+                  <img id="modalVerDocFirmadoRepoImg" src="" alt="Documento firmado" class="modal-ver-doc-firmado-repo-img">
+                </div>
+              </div>
+            </div>
           </div>
           <div id="conveniosPanelEmpleadosPlacas" class="convenios-panel-tab" style="display:none">
             <div class="convenios-detalle-wrap">
@@ -1878,12 +1893,139 @@
       </div>
     </div>
 
-    <!-- Pantalla completa: documento convenio comercial -->
+    <!-- Pantalla completa: documento convenio comercial (solo vista) -->
     <div id="docConvenioFullscreen" class="doc-convenio-fullscreen" style="display:none" aria-hidden="true">
       <div class="doc-convenio-fullscreen-header">
         <button type="button" class="btn btn-outline" id="docConvenioFullscreenCerrar">Cerrar / Volver a editar</button>
       </div>
       <div id="docConvenioFullscreenContent" class="doc-convenio-fullscreen-content"></div>
+    </div>
+
+    <!-- Pantalla: editar documento en el propio documento + Personalización -->
+    <div id="pantallaEditorDocConvenio" class="pantalla-secundaria pantalla-editor-doc-convenio" style="display:none" aria-hidden="true">
+      <div class="pantalla-secundaria-header editor-doc-convenio-header">
+        <button type="button" class="btn btn-home" id="editorDocConvenioVolver" aria-label="Volver">← Volver</button>
+        <div class="editor-doc-convenio-header-actions">
+          <button type="button" class="btn btn-outline" id="editorDocConvenioBtnPersonalizacion">Personalización</button>
+          <div class="editor-doc-convenio-guardar-wrap">
+            <button type="button" class="btn btn-register" id="editorDocConvenioBtnGuardarNuevo">Guardar como nuevo convenio</button>
+            <select id="editorDocConvenioSelectExistente" class="editor-doc-convenio-select-existente" title="Convenio en el que guardar">
+              <option value="">— Convenio —</option>
+            </select>
+            <button type="button" class="btn btn-outline" id="editorDocConvenioBtnGuardarExistente">Asociar a convenio existente</button>
+          </div>
+        </div>
+      </div>
+      <div class="pantalla-secundaria-body editor-doc-convenio-body scrollbar-on-scroll">
+        <div id="docConvenioEditorWrap" class="doc-convenio-editor-wrap">
+          <div id="docConvenioEditorMarcaAgua" class="doc-convenio-editor-marca-agua" aria-hidden="true"></div>
+          <div id="docConvenioEditorContent" class="doc-convenio-editor-content">
+            <!-- Contenido editable generado por JS -->
+          </div>
+        </div>
+      </div>
+      <!-- Panel Personalización (deslizable) -->
+      <div id="panelPersonalizacionDocConvenio" class="panel-personalizacion-doc-convenio" aria-hidden="true">
+        <div class="panel-personalizacion-header">
+          <h4>Personalización</h4>
+          <button type="button" class="panel-personalizacion-cerrar" id="panelPersonalizacionCerrar" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="panel-personalizacion-body scrollbar-on-scroll">
+          <section class="panel-personalizacion-seccion">
+            <h5>Colores</h5>
+            <div class="field">
+              <label>Color del borde / títulos</label>
+              <input type="color" id="personalizacionColorBorde" value="#c9a227" title="Color borde">
+            </div>
+            <div class="field">
+              <label>Color de acento</label>
+              <input type="color" id="personalizacionColorAcento" value="#2c5282" title="Color acento">
+            </div>
+          </section>
+          <section class="panel-personalizacion-seccion">
+            <h5>Fuentes</h5>
+            <div class="field">
+              <label>Fuente del documento</label>
+              <select id="personalizacionFuente">
+                <option value="Oswald">Oswald</option>
+                <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Arial, sans-serif">Arial</option>
+              </select>
+            </div>
+          </section>
+          <section class="panel-personalizacion-seccion">
+            <h5>Estilo del documento</h5>
+            <div class="field">
+              <select id="personalizacionFormatoEstilo">
+                <option value="Formato 1">Formato 1</option>
+                <option value="Formato 2">Formato 2</option>
+              </select>
+            </div>
+          </section>
+          <section class="panel-personalizacion-seccion">
+            <h5>Logos</h5>
+            <div class="field">
+              <label>Logo SALTLAB</label>
+              <input type="file" id="personalizacionLogoSalttab" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Logo empresa colaboradora</label>
+              <input type="file" id="personalizacionLogoEmpresa" accept="image/*">
+            </div>
+          </section>
+          <section class="panel-personalizacion-seccion">
+            <h5>Marca de agua de fondo</h5>
+            <div class="field">
+              <label>Imagen de fondo (marca de agua)</label>
+              <input type="file" id="personalizacionMarcaAgua" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Opacidad marca de agua</label>
+              <input type="range" id="personalizacionMarcaAguaOpacidad" min="0" max="100" value="15">
+              <span id="personalizacionMarcaAguaOpacidadVal">15</span>%
+            </div>
+          </section>
+          <section class="panel-personalizacion-seccion">
+            <h5>Firmas</h5>
+            <div class="field">
+              <label>Imagen firma SALTLAB</label>
+              <input type="file" id="personalizacionFirmaSalttab" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Imagen firma empresa</label>
+              <input type="file" id="personalizacionFirmaEmpresa" accept="image/*">
+            </div>
+          </section>
+        </div>
+      </div>
+      <div id="panelPersonalizacionOverlay" class="panel-personalizacion-overlay" style="display:none" aria-hidden="true"></div>
+
+      <!-- Modal: elegir logo del repositorio -->
+      <div id="modalSeleccionarLogo" class="modal-seleccion-repositorio" role="dialog" aria-labelledby="modalSeleccionarLogoTitulo" aria-modal="true" style="display:none">
+        <div class="modal-seleccion-repositorio-backdrop" id="modalSeleccionarLogoBackdrop"></div>
+        <div class="modal-seleccion-repositorio-content">
+          <h4 id="modalSeleccionarLogoTitulo" class="modal-seleccion-repositorio-titulo">Seleccionar logo del repositorio</h4>
+          <p class="modal-seleccion-repositorio-desc">Elige un logo de la carpeta <code>input/CONTENT/Logos/convenios</code></p>
+          <div id="selectorLogosGrid" class="modal-seleccion-repositorio-grid"></div>
+          <div class="modal-seleccion-repositorio-actions">
+            <button type="button" class="btn btn-outline" id="modalSeleccionarLogoCancelar">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: elegir firma del repositorio -->
+      <div id="modalSeleccionarFirma" class="modal-seleccion-repositorio" role="dialog" aria-labelledby="modalSeleccionarFirmaTitulo" aria-modal="true" style="display:none">
+        <div class="modal-seleccion-repositorio-backdrop" id="modalSeleccionarFirmaBackdrop"></div>
+        <div class="modal-seleccion-repositorio-content">
+          <h4 id="modalSeleccionarFirmaTitulo" class="modal-seleccion-repositorio-titulo">Seleccionar firma del repositorio</h4>
+          <p class="modal-seleccion-repositorio-desc">Elige una firma de la carpeta <code>input/CONTENT/Logos/convenios/firmas</code></p>
+          <div id="selectorFirmasGrid" class="modal-seleccion-repositorio-grid"></div>
+          <div class="modal-seleccion-repositorio-actions">
+            <button type="button" class="btn btn-outline" id="modalSeleccionarFirmaCancelar">Cancelar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Pantalla completa Ficha del empleado (sustituye modal) -->

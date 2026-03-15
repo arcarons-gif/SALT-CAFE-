@@ -2646,6 +2646,95 @@ button.login-recovery-link {
   font-style: italic;
   color: #888;
 }
+.doc-convenio-historial-guardado {
+  font-size: 0.75rem;
+  color: #22c55e;
+  font-weight: 600;
+  display: block;
+  margin-top: 0.25rem;
+}
+.doc-convenio-historial-vacio {
+  padding: 1rem;
+  background: var(--primary-soft, rgba(255,255,255,0.06));
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+.doc-convenio-historial-card.doc-convenio-repo-card .doc-convenio-historial-subtitulo-mini { font-style: italic; }
+.doc-convenio-historial-repo-thumb {
+  max-height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+.doc-convenio-historial-repo-badge {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* Modal ver documento firmado desde repositorio */
+.modal-ver-doc-firmado-repo {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.modal-ver-doc-firmado-repo-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+}
+.modal-ver-doc-firmado-repo-content {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.modal-ver-doc-firmado-repo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-ver-doc-firmado-repo-header h4 { margin: 0; font-size: 1rem; }
+.modal-ver-doc-firmado-repo-cerrar {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.modal-ver-doc-firmado-repo-body {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.modal-ver-doc-firmado-repo-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 .doc-convenio-historial-card-footer {
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
@@ -2776,6 +2865,332 @@ button.login-recovery-link {
 .doc-convenio-fullscreen-content .doc-preview-inner[data-formato-estilo="formato-2"] {
   border: 3px double #2c5282;
   background: linear-gradient(to bottom, #fafafa 0%, #fff 2rem);
+}
+
+/* Pantalla editar documento en el propio documento */
+.pantalla-editor-doc-convenio { position: relative; }
+.editor-doc-convenio-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+}
+.editor-doc-convenio-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.editor-doc-convenio-guardar-wrap { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: center; }
+.editor-doc-convenio-body {
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.doc-convenio-editor-wrap {
+  position: relative;
+  background: #fff;
+  color: #1a1a1a;
+  border: 2px solid #c9a227;
+  border-radius: 8px;
+  padding: 2rem;
+  min-height: 500px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.editor-doc-convenio-select-existente {
+  min-width: 180px;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.doc-editor-logo-placeholder {
+  font-size: 0.8rem;
+  color: #999;
+  font-style: italic;
+}
+.doc-editor-confidencial {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 1rem;
+}
+.doc-convenio-editor-marca-agua {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 8px;
+}
+.doc-convenio-editor-content {
+  position: relative;
+  z-index: 1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.doc-convenio-editor-content .doc-editor-field {
+  width: 100%;
+  border: none;
+  border-bottom: 1px dotted #ccc;
+  background: transparent;
+  padding: 0.25rem 0;
+  margin: 0.2rem 0;
+  font: inherit;
+  color: inherit;
+  resize: none;
+}
+.doc-convenio-editor-content .doc-editor-field:focus {
+  outline: none;
+  border-bottom-color: var(--accent, #c9a227);
+}
+.doc-convenio-editor-content .doc-editor-titulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+}
+.doc-convenio-editor-content .doc-editor-subtitulo {
+  text-align: center;
+  font-size: 1rem;
+  color: #444;
+}
+.doc-convenio-editor-content .doc-editor-logos {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.doc-convenio-editor-content .doc-editor-logos img {
+  max-height: 50px;
+  max-width: 140px;
+  object-fit: contain;
+}
+.doc-convenio-editor-content .doc-editor-h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+  font-weight: 700;
+}
+.doc-convenio-editor-content .doc-editor-firmas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+.doc-convenio-editor-content .doc-editor-firma-block { min-width: 140px; }
+.doc-convenio-editor-content .doc-editor-firma-block img {
+  max-width: 120px;
+  max-height: 50px;
+  object-fit: contain;
+  display: block;
+  margin: 0.25rem 0;
+}
+.doc-convenio-editor-content .doc-editor-logo-btn,
+.doc-convenio-editor-content .doc-editor-firma-img-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  min-width: 100px;
+  padding: 0.5rem;
+  border: 1px dashed var(--border, #ccc);
+  border-radius: 6px;
+  background: var(--bg-elevated, rgba(255,255,255,0.05));
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.doc-convenio-editor-content .doc-editor-logo-btn {
+  flex-direction: row;
+}
+.doc-convenio-editor-content .doc-editor-logo-btn:hover,
+.doc-convenio-editor-content .doc-editor-firma-img-btn:hover {
+  border-color: var(--accent, #c9a227);
+  background: rgba(201, 162, 39, 0.1);
+}
+.doc-convenio-editor-content .doc-editor-logo-btn img,
+.doc-convenio-editor-content .doc-editor-firma-img-btn img {
+  max-height: 48px;
+  max-width: 130px;
+  object-fit: contain;
+}
+.doc-convenio-editor-content .doc-editor-firma-img-wrap {
+  margin: 0.25rem 0;
+}
+
+/* Modal selección desde repositorio (logos / firmas) */
+.modal-seleccion-repositorio {
+  position: fixed;
+  inset: 0;
+  z-index: 10010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.modal-seleccion-repositorio-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.modal-seleccion-repositorio-content {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 520px;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.modal-seleccion-repositorio-titulo {
+  margin: 0 0 0.25rem;
+  padding: 1rem 1rem 0;
+  font-size: 1.1rem;
+}
+.modal-seleccion-repositorio-desc {
+  margin: 0 1rem 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.modal-seleccion-repositorio-desc code { font-size: 0.85em; }
+.modal-seleccion-repositorio-grid {
+  padding: 0 1rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.modal-seleccion-repositorio-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.modal-seleccion-repositorio-item:hover {
+  border-color: var(--accent);
+  background: rgba(201, 162, 39, 0.1);
+}
+.modal-seleccion-repositorio-item img {
+  max-width: 80px;
+  max-height: 40px;
+  object-fit: contain;
+  display: block;
+}
+.modal-seleccion-repositorio-item span {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.modal-seleccion-repositorio-actions {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.modal-seleccion-loading,
+.modal-seleccion-vacio {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+.doc-editor-firma-cambiar {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+
+/* Panel Personalización */
+.panel-personalizacion-doc-convenio {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-width: 95vw;
+  height: 100vh;
+  background: var(--bg-app, #1a1a1a);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+  z-index: 10002;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+.panel-personalizacion-doc-convenio.panel-open {
+  transform: translateX(0);
+}
+.panel-personalizacion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-personalizacion-header h4 { margin: 0; font-size: 1.1rem; }
+.panel-personalizacion-cerrar {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.panel-personalizacion-body {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+}
+.panel-personalizacion-seccion {
+  margin-bottom: 1.25rem;
+}
+.panel-personalizacion-seccion h5 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+.panel-personalizacion-seccion .field {
+  margin-bottom: 0.75rem;
+}
+.panel-personalizacion-seccion input[type="color"] {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.panel-personalizacion-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 10001;
 }
 
 .convenios-detalle-wrap {
