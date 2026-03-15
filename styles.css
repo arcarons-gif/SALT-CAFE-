@@ -2125,6 +2125,22 @@ button.login-recovery-link {
   margin-top: 1rem;
 }
 
+.gestion-registro-conexiones-titulo {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+.gestion-registro-conexiones-desc {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #999);
+}
+.registro-conexiones-wrap {
+  margin-top: 1rem;
+}
+.registro-conexiones-tabla {
+  width: 100%;
+}
+
 .modal-cambiar-password-user {
   margin-bottom: 0.75rem;
   font-weight: 600;
@@ -2662,6 +2678,31 @@ button.login-recovery-link {
   font-size: 0.95rem;
   margin-bottom: 1rem;
 }
+.doc-convenio-historial-card-subir {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+}
+.doc-convenio-historial-card-subir .doc-convenio-historial-card-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.doc-convenio-historial-subir-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--accent, #e11d48);
+  font-weight: 300;
+  margin-bottom: 0.5rem;
+}
+.doc-convenio-historial-subir-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.2rem;
+}
+
 .doc-convenio-historial-card.doc-convenio-repo-card .doc-convenio-historial-subtitulo-mini { font-style: italic; }
 .doc-convenio-historial-repo-thumb {
   max-height: 60px;
@@ -2733,6 +2774,116 @@ button.login-recovery-link {
   max-width: 100%;
   height: auto;
   display: block;
+}
+
+/* Modal asociar documento subido a convenio */
+.modal-doc-convenio-subir {
+  position: fixed;
+  inset: 0;
+  z-index: 10015;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.modal-doc-convenio-subir-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.modal-doc-convenio-subir-content {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 400px;
+  width: 100%;
+  padding: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.modal-doc-convenio-subir-content h4 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+.modal-doc-convenio-subir-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+.modal-doc-convenio-subir-o {
+  text-align: center;
+  margin: 0.75rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.modal-doc-convenio-subir-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Modal ver documento subido (data URL) */
+.modal-ver-doc-dataurl {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.modal-ver-doc-dataurl-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+}
+.modal-ver-doc-dataurl-content {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.modal-ver-doc-dataurl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-ver-doc-dataurl-header h4 { margin: 0; font-size: 1rem; }
+.modal-ver-doc-dataurl-cerrar {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.modal-ver-doc-dataurl-body {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.modal-ver-doc-dataurl-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.modal-ver-doc-dataurl-iframe {
+  width: 100%;
+  min-height: 70vh;
+  border: none;
 }
 
 .doc-convenio-historial-card-footer {

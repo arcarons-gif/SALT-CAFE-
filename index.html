@@ -831,6 +831,12 @@
           </span>
           <span class="gestion-card-label">Usuarios</span>
         </button>
+        <button type="button" class="gestion-card gestion-card-registro-conexiones" data-tab="registro-conexiones" title="Registro de conexiones">
+          <span class="gestion-card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4-8-11V5l8-3 8 3v6c0 7-8 4-8 11z"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <span class="gestion-card-label">Registro de conexiones</span>
+        </button>
         <button type="button" class="gestion-card gestion-card-nav gestion-card-admin gestion-card-nav-vacantes" data-gestion-nav="vacantes" id="gestionCardVacantes" title="Vacantes">
           <span class="gestion-card-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M5 8h14"/><path d="M9 7v2"/></svg></span>
           <span class="gestion-card-label">Vacantes</span>
@@ -873,6 +879,23 @@
             </table>
           </div>
         </div>
+        <div id="panelRegistroConexiones" class="admin-panel" style="display:none">
+          <h4 class="gestion-registro-conexiones-titulo">Registro de conexiones</h4>
+          <p class="gestion-registro-conexiones-desc">Últimas conexiones de usuarios (usuario, fecha y hora). Solo visible para administradores.</p>
+          <div class="convenios-table-wrap registro-conexiones-wrap">
+            <table class="convenios-table registro-conexiones-tabla">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Nombre</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody id="listaRegistroConexiones"></tbody>
+            </table>
+          </div>
+        </div>
         <div id="panelConvenios" class="admin-panel" style="display:none">
           <div class="convenios-tabs">
             <button type="button" class="convenios-tab active" data-convenios-tab="empresas" id="conveniosTabEmpresas">Empresas y descuentos</button>
@@ -888,8 +911,48 @@
             <h4 class="doc-convenio-historial-titulo">Convenios firmados (documentos guardados)</h4>
             <p class="doc-convenio-historial-desc">Solo se muestran los convenios que tienen documento generado, rellenado, firmado y guardado. El descuento indicado es el que se aplica en reparaciones y tuneos para esa empresa. Haz clic en una miniatura para ver o editar el documento.</p>
             <p id="docConvenioHistorialVacio" class="doc-convenio-historial-vacio" style="display:none">No hay convenios con documento firmado/guardado. Crea un documento con «Abrir editor», rellénalo, firma y guárdalo asociándolo a un convenio (desde «Empresas y descuentos» o al guardar).</p>
+            <input type="file" id="docConvenioSubirArchivo" accept=".pdf,image/*" style="display:none" aria-hidden="true">
             <div id="docConvenioHistorialGrid" class="doc-convenio-historial-grid"></div>
             <button type="button" class="btn btn-register" id="btnAbrirEditorDocConvenioComercial">+ Nuevo documento / Abrir editor</button>
+
+            <!-- Modal: asociar documento subido a convenio -->
+            <div id="modalDocConvenioSubirAsociar" class="modal modal-doc-convenio-subir" style="display:none" aria-hidden="true">
+              <div class="modal-doc-convenio-subir-backdrop" id="modalDocConvenioSubirBackdrop"></div>
+              <div class="modal-doc-convenio-subir-content">
+                <h4>Asociar documento subido</h4>
+                <p class="modal-doc-convenio-subir-desc">Elige un convenio existente o crea uno nuevo para guardar este documento.</p>
+                <div class="field">
+                  <label>Convenio existente</label>
+                  <select id="docConvenioSubirSelectExistente">
+                    <option value="">— Elegir convenio —</option>
+                  </select>
+                </div>
+                <p class="modal-doc-convenio-subir-o">— o —</p>
+                <div class="field">
+                  <label>Crear nuevo convenio (nombre de la empresa)</label>
+                  <input type="text" id="docConvenioSubirNuevoNombre" placeholder="Ej. Mi Empresa S.L.">
+                </div>
+                <div class="modal-doc-convenio-subir-actions">
+                  <button type="button" class="btn btn-outline" id="docConvenioSubirCancelar">Cancelar</button>
+                  <button type="button" class="btn btn-register" id="docConvenioSubirAceptar">Guardar</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal ver documento subido (data URL) -->
+            <div id="modalVerDocConvenioDataUrl" class="modal modal-ver-doc-dataurl" style="display:none" aria-hidden="true">
+              <div class="modal-ver-doc-dataurl-backdrop" id="modalVerDocConvenioDataUrlBackdrop"></div>
+              <div class="modal-ver-doc-dataurl-content">
+                <div class="modal-ver-doc-dataurl-header">
+                  <h4 id="modalVerDocConvenioDataUrlTitulo">Documento</h4>
+                  <button type="button" class="modal-ver-doc-dataurl-cerrar" id="modalVerDocConvenioDataUrlCerrar" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="modal-ver-doc-dataurl-body">
+                  <img id="modalVerDocConvenioDataUrlImg" src="" alt="" class="modal-ver-doc-dataurl-img" style="display:none">
+                  <iframe id="modalVerDocConvenioDataUrlIframe" src="" class="modal-ver-doc-dataurl-iframe" style="display:none" title="Documento PDF"></iframe>
+                </div>
+              </div>
+            </div>
 
             <!-- Modal ver documento firmado desde repositorio (ej. LS Customs) -->
             <div id="modalVerDocFirmadoRepo" class="modal modal-ver-doc-firmado-repo" role="dialog" aria-modal="true" style="display:none">

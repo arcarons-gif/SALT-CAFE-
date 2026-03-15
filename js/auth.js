@@ -401,6 +401,22 @@ async function cambiarPassword(userId, nuevaPassword) {
   return { ok: true };
 }
 
+/** Cambiar contraseña de cualquier usuario (solo administrador). No aplica restricción de usuarios protegidos. */
+async function cambiarPasswordPorAdmin(userId, nuevaPassword) {
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === userId);
+  if (idx === -1) return { error: 'Usuario no encontrado' };
+  if (!nuevaPassword || nuevaPassword.length < 4) {
+    return { error: 'La contraseña debe tener al menos 4 caracteres' };
+  }
+  const salt = crypto.randomUUID() + Date.now();
+  users[idx].passwordHash = await hashPassword(nuevaPassword, salt);
+  users[idx].salt = salt;
+  users[idx].cambiarPasswordObligatorio = false;
+  saveUsers(users);
+  return { ok: true };
+}
+
 /** Recuperar contraseña (olvidé mi contraseña): actualiza la contraseña del usuario por nombre de usuario en la BBDD */
 async function resetPasswordPorUsuario(username, nuevaPassword) {
   const u = (username || '').toString().trim();

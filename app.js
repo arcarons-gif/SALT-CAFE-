@@ -126,6 +126,8 @@ let registroServicios = getRegistroServicios();
 const CREDENTIALS_STORAGE = 'benny_remember_credentials';
 const LOGIN_USUARIOS_STORAGE = 'benny_login_usuarios';
 const LOGIN_USUARIOS_MAX = 10;
+const LOG_CONEXIONES_STORAGE = 'benny_log_conexiones';
+const LOG_CONEXIONES_MAX = 500;
 const PENDING_USER_UPDATES_STORAGE = 'benny_pending_user_updates';
 const PREFERENCIAS_STORAGE_PREFIX = 'benny_preferencias_';
 
@@ -995,8 +997,34 @@ async function manejarCambioPassword(e) {
   entrarApp(getSession());
 }
 
+function getLogConexiones() {
+  try {
+    var raw = localStorage.getItem(LOG_CONEXIONES_STORAGE);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function registrarConexion(usuario, nombre) {
+  if (!usuario) return;
+  var ahora = new Date();
+  var entrada = {
+    usuario: String(usuario).trim(),
+    nombre: (nombre || usuario || '').trim(),
+    fecha: ahora.toISOString().slice(0, 10),
+    hora: ahora.toTimeString().slice(0, 8),
+    fechaHora: ahora.toISOString()
+  };
+  var log = getLogConexiones();
+  log.unshift(entrada);
+  if (log.length > LOG_CONEXIONES_MAX) log = log.slice(0, LOG_CONEXIONES_MAX);
+  try {
+    localStorage.setItem(LOG_CONEXIONES_STORAGE, JSON.stringify(log));
+  } catch (e) {}
+}
+
 function entrarApp(user) {
   const u = user || getSession();
+  if (u && u.username) registrarConexion(u.username, u.nombre);
   var ls = document.getElementById('loginScreen');
   var cs = document.getElementById('cambioPasswordScreen');
   var app = document.getElementById('appContent');
@@ -1381,7 +1409,7 @@ function vincularAdmin() {
     document.querySelectorAll('.gestion-card').forEach(function (card) {
       if (card.getAttribute('data-gestion-nav')) return;
       var t = card.dataset.tab;
-      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'usuarios-tabla' && puedeUsuarios) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'stock' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset) || (t === 'indicadores' && puedeUsuarios);
+      var visible = (t === 'usuarios' && puedeUsuarios) || (t === 'usuarios-tabla' && puedeUsuarios) || (t === 'registro-conexiones' && hasPermission(s, 'gestionarUsuarios')) || (t === 'convenios' && puedeConvenios) || (t === 'economia' && puedeEconomia) || (t === 'stock' && puedeEconomia) || (t === 'solicitudes-graficas' && puedeSolicitudes) || (t === 'organigrama' && puedeOrganigrama) || (t === 'reset' && puedeReset) || (t === 'indicadores' && puedeUsuarios);
       card.style.display = visible ? '' : 'none';
     });
     var economiaTabsEl = document.getElementById('economiaTabs');
@@ -1400,7 +1428,7 @@ function vincularAdmin() {
   var gestionMenuEl = document.getElementById('gestionMenu');
   var gestionContenidoEl = document.getElementById('gestionContenido');
   var gestionContenidoTituloEl = document.getElementById('gestionContenidoTitulo');
-  var titulosGestion = { usuarios: 'Empleados', 'usuarios-tabla': 'Usuarios', convenios: 'Convenios', economia: 'Economía', stock: 'Stock', 'solicitudes-graficas': 'Solicitudes', organigrama: 'Organigrama', reset: 'Reset / Limpiar datos', indicadores: 'Indicadores' };
+  var titulosGestion = { usuarios: 'Empleados', 'usuarios-tabla': 'Usuarios', 'registro-conexiones': 'Registro de conexiones', convenios: 'Convenios', economia: 'Economía', stock: 'Stock', 'solicitudes-graficas': 'Solicitudes', organigrama: 'Organigrama', reset: 'Reset / Limpiar datos', indicadores: 'Indicadores' };
 
   function abrirPantallaGestion() {
     cerrarTodasPantallasSecundarias();
@@ -1610,6 +1638,21 @@ function vincularAdmin() {
       document.getElementById('modalSeleccionarFirmaBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalSeleccionarFirma === 'function') cerrarModalSeleccionarFirma(); });
       document.getElementById('modalVerDocFirmadoRepoCerrar')?.addEventListener('click', function () { if (typeof cerrarModalVerDocFirmadoRepo === 'function') cerrarModalVerDocFirmadoRepo(); });
       document.getElementById('modalVerDocFirmadoRepoBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalVerDocFirmadoRepo === 'function') cerrarModalVerDocFirmadoRepo(); });
+      document.getElementById('modalVerDocConvenioDataUrlCerrar')?.addEventListener('click', function () { if (typeof cerrarModalVerDocConvenioDataUrl === 'function') cerrarModalVerDocConvenioDataUrl(); });
+      document.getElementById('modalVerDocConvenioDataUrlBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalVerDocConvenioDataUrl === 'function') cerrarModalVerDocConvenioDataUrl(); });
+      var docConvenioSubirInput = document.getElementById('docConvenioSubirArchivo');
+      if (docConvenioSubirInput) docConvenioSubirInput.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          if (typeof abrirModalDocConvenioSubirAsociar === 'function') abrirModalDocConvenioSubirAsociar(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+      document.getElementById('docConvenioSubirCancelar')?.addEventListener('click', function () { if (typeof cerrarModalDocConvenioSubirAsociar === 'function') cerrarModalDocConvenioSubirAsociar(); });
+      document.getElementById('modalDocConvenioSubirBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalDocConvenioSubirAsociar === 'function') cerrarModalDocConvenioSubirAsociar(); });
+      document.getElementById('docConvenioSubirAceptar')?.addEventListener('click', function () { if (typeof guardarDocConvenioSubido === 'function') guardarDocConvenioSubido(); });
     })();
     document.querySelectorAll('.doc-editar-descuento-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -1635,8 +1678,11 @@ function vincularAdmin() {
       if (!userId) { if (errEl) { errEl.textContent = 'Usuario no indicado.'; errEl.style.display = 'block'; } return; }
       if (nueva.length < 4) { if (errEl) { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; } return; }
       if (nueva !== confirmar) { if (errEl) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.style.display = 'block'; } return; }
-      if (typeof cambiarPassword !== 'function') { if (errEl) { errEl.textContent = 'No disponible.'; errEl.style.display = 'block'; } return; }
-      cambiarPassword(userId, nueva).then(function (result) {
+      var session = typeof getSession === 'function' ? getSession() : null;
+      var esAdmin = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarUsuarios');
+      var cambiarFn = (esAdmin && typeof cambiarPasswordPorAdmin === 'function') ? cambiarPasswordPorAdmin : (typeof cambiarPassword === 'function' ? cambiarPassword : null);
+      if (!cambiarFn) { if (errEl) { errEl.textContent = 'No disponible.'; errEl.style.display = 'block'; } return; }
+      cambiarFn(userId, nueva).then(function (result) {
         if (result && result.error) {
           if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
           return;
@@ -1658,6 +1704,11 @@ function vincularAdmin() {
       var input = document.getElementById('convenioDescuento');
       if (input) input.value = n;
       if (typeof syncConvenioDescuentoButtons === 'function') syncConvenioDescuentoButtons();
+      var modal = document.getElementById('modalConvenio');
+      var idEl = document.getElementById('convenioId');
+      if (modal && modal.classList.contains('active') && idEl && idEl.value && this.closest && this.closest('#formConvenio')) {
+        if (typeof guardarSoloDescuentoConvenio === 'function') guardarSoloDescuentoConvenio();
+      }
     });
   });
   (function () {
@@ -1980,6 +2031,18 @@ function aplicarDatosCompletosFromServer(payload) {
           val.forEach(function (c) { if (c && c.id) serverIds[c.id] = true; });
           localList.forEach(function (c) {
             if (c && c.id && !serverIds[c.id]) { val = val.slice(); val.push(c); serverIds[c.id] = true; }
+          });
+          var localById = {};
+          localList.forEach(function (c) { if (c && c.id) localById[c.id] = c; });
+          val = val.slice();
+          val.forEach(function (c, i) {
+            if (!c || !c.id) return;
+            var local = localById[c.id];
+            if (local && (local.descuento !== undefined || local.nombre !== undefined)) {
+              val[i] = Object.assign({}, c);
+              if (local.descuento !== undefined) val[i].descuento = local.descuento;
+              if (local.nombre !== undefined) val[i].nombre = local.nombre;
+            }
           });
         }
       } catch (e) { /* ignore */ }
@@ -7243,6 +7306,11 @@ function mostrarPanelAdmin(tab) {
     panelUsuariosTabla.style.display = tab === 'usuarios-tabla' ? '' : 'none';
     if (tab === 'usuarios-tabla' && typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
   }
+  const panelRegistroConexiones = document.getElementById('panelRegistroConexiones');
+  if (panelRegistroConexiones) {
+    panelRegistroConexiones.style.display = tab === 'registro-conexiones' ? '' : 'none';
+    if (tab === 'registro-conexiones' && typeof renderRegistroConexiones === 'function') renderRegistroConexiones();
+  }
   if (panelConvenios) panelConvenios.style.display = tab === 'convenios' ? '' : 'none';
   if (panelEconomia) {
     panelEconomia.style.display = (tab === 'economia' || tab === 'stock') ? '' : 'none';
@@ -7268,6 +7336,18 @@ function mostrarPanelAdmin(tab) {
   }
 }
 
+function renderRegistroConexiones() {
+  var tbody = document.getElementById('listaRegistroConexiones');
+  if (!tbody) return;
+  var log = typeof getLogConexiones === 'function' ? getLogConexiones() : [];
+  tbody.innerHTML = '';
+  log.forEach(function (entrada) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + escapeHtml(entrada.usuario || '') + '</td><td>' + escapeHtml(entrada.nombre || '') + '</td><td>' + escapeHtml(entrada.fecha || '') + '</td><td>' + escapeHtml(entrada.hora || '') + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
 function renderTablaUsuarios() {
   const tbody = document.getElementById('listaUsuariosTabla');
   if (!tbody) return;
@@ -7278,7 +7358,9 @@ function renderTablaUsuarios() {
     const username = (u.username || '').toString().trim() || '—';
     const nombre = (u.nombre || '').toString().trim() || '—';
     const rol = (u.rol || 'mecanico').toString();
-    const puedeCambiarPassword = typeof isUsuarioContrasenaProtegida === 'function' ? !isUsuarioContrasenaProtegida(username) : true;
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const esAdmin = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarUsuarios');
+    const puedeCambiarPassword = esAdmin || (typeof isUsuarioContrasenaProtegida === 'function' ? !isUsuarioContrasenaProtegida(username) : true);
     const btnCambiarHtml = puedeCambiarPassword
       ? '<button type="button" class="btn btn-outline btn-sm btn-cambiar-password" data-user-id="' + escapeHtml(u.id) + '" data-username="' + escapeHtml(username) + '">Cambiar contraseña</button>'
       : '<span class="btn btn-outline btn-sm btn-disabled" title="No se puede cambiar la contraseña de este usuario">Cambiar contraseña</span>';
@@ -7298,7 +7380,9 @@ function renderTablaUsuarios() {
 }
 
 function abrirModalCambiarPassword(userId, username) {
-  if (typeof isUsuarioContrasenaProtegida === 'function' && isUsuarioContrasenaProtegida(username)) {
+  var session = typeof getSession === 'function' ? getSession() : null;
+  var esAdmin = session && typeof hasPermission === 'function' && hasPermission(session, 'gestionarUsuarios');
+  if (!esAdmin && typeof isUsuarioContrasenaProtegida === 'function' && isUsuarioContrasenaProtegida(username)) {
     alert('No está permitido cambiar la contraseña de este usuario.');
     return;
   }
@@ -7835,6 +7919,7 @@ function abrirEditorDocConvenioComercial(convenioId) {
   modal.setAttribute('aria-hidden', 'false');
 }
 function tieneDocumentoConvenioGuardado(c) {
+  if (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) return true;
   var doc = c.documentoAcuerdo;
   if (!doc || typeof doc !== 'object') return false;
   if ((doc.titulo || '').trim()) return true;
@@ -7854,13 +7939,30 @@ function renderDocConvenioHistorial() {
   var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
   var conveniosFirmados = convenios.filter(function (c) { return c && c.id && tieneDocumentoConvenioGuardado(c); });
   grid.innerHTML = '';
-  if (vacioEl) vacioEl.style.display = conveniosFirmados.length === 0 ? '' : 'none';
+  if (vacioEl) vacioEl.style.display = 'none';
+  var cardSubir = document.createElement('div');
+  cardSubir.className = 'doc-convenio-historial-card doc-convenio-historial-card-subir';
+  cardSubir.setAttribute('role', 'button');
+  cardSubir.setAttribute('tabindex', '0');
+  cardSubir.setAttribute('aria-label', 'Subir documento de convenio');
+  cardSubir.innerHTML = '<div class="doc-convenio-historial-card-preview"><div class="doc-convenio-historial-subir-icon" aria-hidden="true">+</div><div class="doc-convenio-historial-card-text"><strong class="doc-convenio-historial-titulo-mini">Subir documento</strong><span class="doc-convenio-historial-subir-desc">PDF o imagen del convenio firmado</span></div></div><div class="doc-convenio-historial-card-footer"><span class="doc-convenio-historial-card-nombre">Asociar a convenio existente o nuevo</span></div>';
+  cardSubir.addEventListener('click', function () {
+    var input = document.getElementById('docConvenioSubirArchivo');
+    if (input) input.click();
+  });
+  cardSubir.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); var input = document.getElementById('docConvenioSubirArchivo'); if (input) input.click(); }
+  });
+  grid.appendChild(cardSubir);
   conveniosFirmados.forEach(function (c) {
     var doc = c.documentoAcuerdo || {};
-    var titulo = (doc.titulo || '').trim() || 'CONVENIO COMERCIAL DE COLABORACIÓN';
+    var soloSubido = c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0 && !(doc && ((doc.titulo || '').trim() && doc.titulo !== 'Documento subido') || (doc.objetoConvenio || '').trim() || (doc.serviciosBenny && doc.serviciosBenny.length) || (doc.serviciosEmpresa && doc.serviciosEmpresa.length) || doc.logoSalttabDataUrl || doc.firmaSalttabDataUrl));
+    var titulo = (doc.titulo || '').trim() || (soloSubido ? 'Documento subido' : 'CONVENIO COMERCIAL DE COLABORACIÓN');
     var subtitulo = (doc.subtitulo || '').trim() || ('SALTLAB · ' + (c.nombre || 'Empresa'));
     var previewHtml = '<div class="doc-convenio-historial-card-preview">';
-    if (doc.logoSalttabDataUrl && doc.logoSalttabDataUrl.indexOf('data:') === 0) {
+    if (soloSubido && c.acuerdoArchivoDataUrl.indexOf('data:image') === 0) {
+      previewHtml += '<img src="' + c.acuerdoArchivoDataUrl.replace(/"/g, '&quot;') + '" alt="" class="doc-convenio-historial-logo doc-convenio-historial-repo-thumb">';
+    } else if (doc.logoSalttabDataUrl && doc.logoSalttabDataUrl.indexOf('data:') === 0) {
       previewHtml += '<img src="' + doc.logoSalttabDataUrl.replace(/"/g, '&quot;') + '" alt="" class="doc-convenio-historial-logo">';
     }
     previewHtml += '<div class="doc-convenio-historial-card-text">';
@@ -7873,15 +7975,21 @@ function renderDocConvenioHistorial() {
     var card = document.createElement('div');
     card.className = 'doc-convenio-historial-card';
     card.setAttribute('data-convenio-id', c.id);
+    if (soloSubido) card.setAttribute('data-solo-subido', '1');
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', 'Ver o editar documento de ' + (c.nombre || 'convenio'));
+    card.setAttribute('aria-label', soloSubido ? 'Ver documento de ' + (c.nombre || 'convenio') : 'Ver o editar documento de ' + (c.nombre || 'convenio'));
     card.innerHTML = previewHtml + '<div class="doc-convenio-historial-card-footer"><span class="doc-convenio-historial-card-nombre">' + escapeHtml(c.nombre || '') + '</span> <span class="doc-convenio-historial-card-descuento">' + descuentoText + '</span></div>';
     card.addEventListener('click', function () {
-      if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(c.id);
+      if (this.getAttribute('data-solo-subido') === '1' && typeof abrirModalVerDocConvenioDataUrl === 'function') abrirModalVerDocConvenioDataUrl(c.acuerdoArchivoDataUrl, c.nombre || 'Documento');
+      else if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(c.id);
     });
     card.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(c.id); }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (this.getAttribute('data-solo-subido') === '1' && typeof abrirModalVerDocConvenioDataUrl === 'function') abrirModalVerDocConvenioDataUrl(c.acuerdoArchivoDataUrl, c.nombre || 'Documento');
+        else if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(c.id);
+      }
     });
     grid.appendChild(card);
   });
@@ -7940,6 +8048,118 @@ function cerrarModalVerDocFirmadoRepo() {
   if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
   var imgEl = document.getElementById('modalVerDocFirmadoRepoImg');
   if (imgEl) imgEl.src = '';
+}
+
+var _docConvenioSubirDataUrl = null;
+
+function abrirModalVerDocConvenioDataUrl(dataUrl, titulo) {
+  if (!dataUrl || dataUrl.indexOf('data:') !== 0) return;
+  var modal = document.getElementById('modalVerDocConvenioDataUrl');
+  var tituloEl = document.getElementById('modalVerDocConvenioDataUrlTitulo');
+  var imgEl = document.getElementById('modalVerDocConvenioDataUrlImg');
+  var iframeEl = document.getElementById('modalVerDocConvenioDataUrlIframe');
+  if (!modal || !imgEl || !iframeEl) return;
+  if (tituloEl) tituloEl.textContent = titulo || 'Documento';
+  var esImagen = dataUrl.indexOf('data:image') === 0;
+  if (esImagen) {
+    imgEl.src = dataUrl;
+    imgEl.style.display = 'block';
+    iframeEl.style.display = 'none';
+    iframeEl.src = '';
+  } else {
+    iframeEl.src = dataUrl;
+    iframeEl.style.display = 'block';
+    imgEl.style.display = 'none';
+    imgEl.src = '';
+  }
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalVerDocConvenioDataUrl() {
+  var modal = document.getElementById('modalVerDocConvenioDataUrl');
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+  var imgEl = document.getElementById('modalVerDocConvenioDataUrlImg');
+  var iframeEl = document.getElementById('modalVerDocConvenioDataUrlIframe');
+  if (imgEl) { imgEl.src = ''; imgEl.style.display = 'none'; }
+  if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+}
+
+function abrirModalDocConvenioSubirAsociar(dataUrl) {
+  _docConvenioSubirDataUrl = dataUrl;
+  var modal = document.getElementById('modalDocConvenioSubirAsociar');
+  var sel = document.getElementById('docConvenioSubirSelectExistente');
+  var nombreNuevo = document.getElementById('docConvenioSubirNuevoNombre');
+  if (!modal || !sel) return;
+  sel.innerHTML = '<option value="">— Elegir convenio —</option>';
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  convenios.forEach(function (c) {
+    if (!c || !c.nombre) return;
+    var opt = document.createElement('option');
+    opt.value = c.id || '';
+    opt.textContent = c.nombre + (c.descuento != null ? ' (' + c.descuento + '%)' : '');
+    sel.appendChild(opt);
+  });
+  if (nombreNuevo) nombreNuevo.value = '';
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalDocConvenioSubirAsociar() {
+  _docConvenioSubirDataUrl = null;
+  var modal = document.getElementById('modalDocConvenioSubirAsociar');
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+  var input = document.getElementById('docConvenioSubirArchivo');
+  if (input) input.value = '';
+}
+
+function guardarDocConvenioSubido() {
+  if (!_docConvenioSubirDataUrl) return;
+  var sel = document.getElementById('docConvenioSubirSelectExistente');
+  var nombreNuevo = document.getElementById('docConvenioSubirNuevoNombre');
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  var idExistente = sel && sel.value ? sel.value.trim() : '';
+  var nombre = (nombreNuevo && nombreNuevo.value) ? nombreNuevo.value.trim() : '';
+  if (idExistente) {
+    var idx = convenios.findIndex(function (c) { return (c.id || '') === idExistente; });
+    if (idx !== -1) {
+      convenios[idx].acuerdoArchivoDataUrl = _docConvenioSubirDataUrl;
+      convenios[idx].acuerdoArchivoNombre = 'documento_subido';
+      if (!convenios[idx].documentoAcuerdo || typeof convenios[idx].documentoAcuerdo !== 'object') convenios[idx].documentoAcuerdo = {};
+      convenios[idx].documentoAcuerdo.titulo = 'Documento subido';
+      saveConvenios(convenios);
+      cerrarModalDocConvenioSubirAsociar();
+      if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+      if (typeof renderListaConvenios === 'function') renderListaConvenios();
+      return;
+    }
+  }
+  if (nombre) {
+    if (convenios.some(function (c) { return (c.nombre || '').toLowerCase() === nombre.toLowerCase(); })) {
+      alert('Ya existe un convenio con ese nombre.');
+      return;
+    }
+    var nuevo = {
+      id: typeof generateConvenioId === 'function' ? generateConvenioId() : 'conv-' + Date.now(),
+      nombre: nombre,
+      descuento: 10,
+      acuerdoArchivoDataUrl: _docConvenioSubirDataUrl,
+      acuerdoArchivoNombre: 'documento_subido',
+      documentoAcuerdo: { titulo: 'Documento subido' },
+      fechaAcuerdo: null,
+      acordadoPorTaller: '',
+      acordadoPorEmpresa: '',
+      privado: false
+    };
+    convenios.push(nuevo);
+    saveConvenios(convenios);
+    cerrarModalDocConvenioSubirAsociar();
+    if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+    if (typeof renderListaConvenios === 'function') renderListaConvenios();
+    if (typeof cargarConvenios === 'function') cargarConvenios();
+    return;
+  }
+  alert('Elige un convenio existente o escribe el nombre para crear uno nuevo.');
 }
 
 function vincularDocEditarImagenes() {
@@ -8291,12 +8511,38 @@ function guardarDocEditarEnConvenioExistente() {
   if (typeof cargarConvenios === 'function') cargarConvenios();
 }
 
+function normalizarDescuentoConvenio(val) {
+  var n = parseInt(val, 10);
+  if (isNaN(n) || n < 0) return 5;
+  if ([0, 5, 10, 15, 20].indexOf(n) !== -1) return n;
+  if (n <= 2) return 0;
+  if (n <= 7) return 5;
+  if (n <= 12) return 10;
+  if (n <= 17) return 15;
+  return 20;
+}
+
+function guardarSoloDescuentoConvenio() {
+  var idEl = document.getElementById('convenioId');
+  var descEl = document.getElementById('convenioDescuento');
+  if (!idEl || !idEl.value || !descEl) return false;
+  var convenios = getConvenios();
+  var idx = convenios.findIndex(function (c) { return (c.id || '') === idEl.value; });
+  if (idx === -1) return false;
+  var descuento = normalizarDescuentoConvenio(descEl.value);
+  convenios[idx].descuento = descuento;
+  saveConvenios(convenios);
+  if (typeof renderListaConvenios === 'function') renderListaConvenios();
+  if (typeof cargarConvenios === 'function') cargarConvenios();
+  return true;
+}
+
 function guardarConvenio(e) {
   e.preventDefault();
   const id = document.getElementById('convenioId').value;
   const convenios = getConvenios();
   const nombre = document.getElementById('convenioNombre').value.trim();
-  const descuento = parseInt(document.getElementById('convenioDescuento').value, 10) || 0;
+  const descuento = normalizarDescuentoConvenio((document.getElementById('convenioDescuento') && document.getElementById('convenioDescuento').value) || 0);
   const fechaAcuerdo = document.getElementById('convenioFechaAcuerdo').value || null;
   const acordadoPorTaller = document.getElementById('convenioAcordadoTaller').value.trim();
   const acordadoPorEmpresa = document.getElementById('convenioAcordadoEmpresa').value.trim();
