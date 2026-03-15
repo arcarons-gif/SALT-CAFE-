@@ -3045,6 +3045,17 @@ function renderInventario() {
   });
   var gruposOrden = ['VARIOS', 'CARROCERÍA', 'COMPONENTES ESENCIALES', 'TUNING', 'MAQUINARIA'];
   var restantes = Object.keys(porGrupo).filter(function (g) { return gruposOrden.indexOf(g) === -1; });
+  var valoresInputs = {};
+  wrap.querySelectorAll('tr.inventario-ficha-pieza').forEach(function (tr) {
+    var id = tr.querySelector('.inventario-input-add');
+    if (id) id = id.getAttribute('data-concepto');
+    if (!id) return;
+    var addIn = tr.querySelector('.inventario-input-add');
+    var removeIn = tr.querySelector('.inventario-input-remove');
+    var addVal = addIn && addIn.value !== '' ? addIn.value : null;
+    var removeVal = removeIn && removeIn.value !== '' ? removeIn.value : null;
+    if (addVal != null || removeVal != null) valoresInputs[id] = { add: addVal, remove: removeVal };
+  });
   wrap.innerHTML = '';
   gruposOrden.concat(restantes).forEach(function (grupoNombre) {
     var items = porGrupo[grupoNombre];
@@ -3078,6 +3089,18 @@ function renderInventario() {
       tbody.appendChild(tr);
     });
     wrap.appendChild(ficha);
+  });
+  wrap.querySelectorAll('.inventario-input-add').forEach(function (addIn) {
+    var id = addIn.getAttribute('data-concepto');
+    if (!id || !valoresInputs[id]) return;
+    var v = valoresInputs[id];
+    if (v.add != null) addIn.value = v.add;
+  });
+  wrap.querySelectorAll('.inventario-input-remove').forEach(function (removeIn) {
+    var id = removeIn.getAttribute('data-concepto');
+    if (!id || !valoresInputs[id]) return;
+    var v = valoresInputs[id];
+    if (v.remove != null) removeIn.value = v.remove;
   });
   wrap.querySelectorAll('.inventario-btn-add').forEach(function (btn) {
     btn.addEventListener('click', function () {
