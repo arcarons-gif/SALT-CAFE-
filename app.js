@@ -1837,7 +1837,7 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
 function aplicarDatosCompletosFromServer(payload) {
   if (!payload || typeof payload !== 'object') return;
   var i, key, storageKey, isString, val;
-  var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1 };
+  var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1, economiaGastos: 1 };
   for (i = 0; i < DATOS_COMPLETOS_STORAGE_MAP.length; i++) {
     key = DATOS_COMPLETOS_STORAGE_MAP[i][0];
     storageKey = DATOS_COMPLETOS_STORAGE_MAP[i][1];
@@ -3054,17 +3054,19 @@ function getCosteEfectivoInventarioConcepto(conceptoId) {
 function registrarGastoEntradaStock(conceptoId, cantidad) {
   if (!conceptoId || cantidad <= 0 || typeof addGasto !== 'function') return;
   var costeUnit = getCosteEfectivoInventarioConcepto(conceptoId);
-  if (costeUnit <= 0) return;
-  var importeTotal = Math.round(cantidad * costeUnit * 100) / 100;
+  var importeTotal = costeUnit > 0 ? Math.round(cantidad * costeUnit * 100) / 100 : 0;
   var label = typeof getCategoriaInventarioLabel === 'function' ? getCategoriaInventarioLabel(conceptoId) : conceptoId;
+  var concepto = 'Stock: ' + label + ' (+' + cantidad + ' ud)';
+  if (importeTotal === 0) concepto += ' — Indica coste/ud en Inventario para que se calcule el importe';
   addGasto({
     categoria: 'material_taller',
-    concepto: 'Stock: ' + label + ' (+' + cantidad + ' ud)',
+    concepto: concepto,
     importe: importeTotal,
     fecha: new Date().toISOString().slice(0, 10),
     registradoPor: '',
     notas: 'Entrada de inventario'
   });
+  if (typeof renderGastos === 'function') renderGastos();
 }
 
 function renderInventario() {
