@@ -94,6 +94,11 @@ function getConvenios() {
   try {
     const raw = localStorage.getItem(CONVENIOS_STORAGE);
     let list = !raw ? JSON.parse(JSON.stringify(CONVENIOS_DEFAULT)) : JSON.parse(raw);
+    if (!Array.isArray(list) || list.length === 0) {
+      var defaults = JSON.parse(JSON.stringify(CONVENIOS_DEFAULT));
+      try { localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(defaults)); } catch (e) {}
+      return defaults;
+    }
     list = list.map(c => ({ ...c, privado: c.privado === true }));
     return list;
   } catch {
@@ -113,18 +118,28 @@ function generateConvenioId() {
 function getConveniosEmpleados() {
   try {
     const raw = localStorage.getItem('benny_convenios_empleados');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      var list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
   } catch (e) {}
-  return JSON.parse(JSON.stringify(CONVENIOS_EMPLEADOS_DEFAULT));
+  var def = JSON.parse(JSON.stringify(CONVENIOS_EMPLEADOS_DEFAULT));
+  try { localStorage.setItem('benny_convenios_empleados', JSON.stringify(def)); } catch (e) {}
+  return def;
 }
 
 /** Devuelve el listado placa | empleado */
 function getConveniosPlacas() {
   try {
     const raw = localStorage.getItem('benny_convenios_placas');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      var list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
   } catch (e) {}
-  return JSON.parse(JSON.stringify(CONVENIOS_PLACAS_DEFAULT));
+  var def = JSON.parse(JSON.stringify(CONVENIOS_PLACAS_DEFAULT));
+  try { localStorage.setItem('benny_convenios_placas', JSON.stringify(def)); } catch (e) {}
+  return def;
 }
 
 /** Obtiene la empresa (nombre convenio) por nombre de empleado */

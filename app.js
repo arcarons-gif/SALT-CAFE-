@@ -1833,12 +1833,14 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
 function aplicarDatosCompletosFromServer(payload) {
   if (!payload || typeof payload !== 'object') return;
   var i, key, storageKey, isString, val;
+  var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1 };
   for (i = 0; i < DATOS_COMPLETOS_STORAGE_MAP.length; i++) {
     key = DATOS_COMPLETOS_STORAGE_MAP[i][0];
     storageKey = DATOS_COMPLETOS_STORAGE_MAP[i][1];
     isString = DATOS_COMPLETOS_STORAGE_MAP[i][2];
     if (!payload.hasOwnProperty(key)) continue;
     val = payload[key];
+    if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
     try {
       if (isString) localStorage.setItem(storageKey, typeof val === 'string' ? val : '');
       else localStorage.setItem(storageKey, JSON.stringify(val !== undefined && val !== null ? val : []));

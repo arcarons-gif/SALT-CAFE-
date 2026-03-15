@@ -223,12 +223,18 @@ function writeDatosCompletosMerge(merge) {
 }
 
 // Obtener todos los datos sincronizados (para que todos los clientes vean lo mismo)
+// users, fichajes y servicios siempre se leen de sus archivos (fuente de verdad), no de saltlab-datos-completos.json,
+// para que no se devuelvan datos desactualizados si el export completo está desfasado.
 app.get('/api/datos-completos', (req, res) => {
   try {
     let data = readDatosCompletos();
     if (Object.keys(data).length === 0) {
-      data = { users: readUsers(), fichajes: readFichajes(), servicios: readServicios(), _exportadoAt: new Date().toISOString() };
+      data = {};
     }
+    data.users = readUsers();
+    data.fichajes = readFichajes();
+    data.servicios = readServicios();
+    data._exportadoAt = new Date().toISOString();
     res.json(data || {});
   } catch (e) {
     console.error(e);
