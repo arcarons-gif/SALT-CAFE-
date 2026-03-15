@@ -876,11 +876,16 @@
         <div id="panelConvenios" class="admin-panel" style="display:none">
           <div class="convenios-tabs">
             <button type="button" class="convenios-tab active" data-convenios-tab="empresas" id="conveniosTabEmpresas">Empresas y descuentos</button>
+            <button type="button" class="convenios-tab" data-convenios-tab="documento-comercial" id="conveniosTabDocumentoComercial">Documento convenio comercial</button>
             <button type="button" class="convenios-tab" data-convenios-tab="empleados-placas" id="conveniosTabEmpleadosPlacas">Empleados y placas</button>
           </div>
           <div id="conveniosPanelEmpresas" class="convenios-panel-tab">
             <button type="button" class="btn btn-register" id="btnNuevoConvenio">+ Nuevo convenio</button>
             <div id="conveniosFichasGrid" class="convenios-fichas-grid"></div>
+          </div>
+          <div id="conveniosPanelDocumentoComercial" class="convenios-panel-tab" style="display:none">
+            <p class="convenios-documento-comercial-desc">Edita el documento tipo <strong>CONVENIO COMERCIAL DE COLABORACIÓN</strong> (SALTLAB y empresa colaboradora). Todos los datos son editables. Puedes guardar el documento como <strong>nuevo convenio</strong> o asociarlo a un <strong>convenio existente</strong> como acuerdo de dicho convenio.</p>
+            <button type="button" class="btn btn-register" id="btnAbrirEditorDocConvenioComercial">Abrir editor del documento</button>
           </div>
           <div id="conveniosPanelEmpleadosPlacas" class="convenios-panel-tab" style="display:none">
             <div class="convenios-detalle-wrap">
@@ -1674,7 +1679,7 @@
 
           <section class="convenio-documento-wrap" id="convenioDocumentoWrap">
             <h4 class="convenio-documento-titulo-seccion">Documento de acuerdo colaborativo</h4>
-            <p class="convenio-documento-hint">Edita los datos del documento de convenio (título, objeto, servicios, condiciones, tarifas, compromisos y firmas).</p>
+            <p class="convenio-documento-hint">Edita los datos del documento de convenio (título, objeto, servicios, condiciones, compromisos y firmas).</p>
             <div class="field">
               <label>Título del documento</label>
               <input type="text" id="docAcuerdoTitulo" placeholder="Ej: ACUERDO COLABORATIVO ENTRE EL SAED & BENNYS">
@@ -1693,20 +1698,7 @@
             </div>
             <div class="field">
               <label>Condiciones (una línea por punto)</label>
-              <textarea id="docAcuerdoCondiciones" rows="3" placeholder="No aplica a cirugía estética...&#10;Tarifas del seguro:"></textarea>
-            </div>
-            <div class="field convenio-tarifas-wrap">
-              <label>Tarifas del seguro (empleados / cuota mensual)</label>
-              <div class="convenio-tarifas-table-wrap">
-                <table class="convenio-tarifas-table">
-                  <thead><tr><th>Empleados</th><th>Cuota mensual (€)</th></tr></thead>
-                  <tbody id="docAcuerdoTarifasBody">
-                    <tr><td><input type="text" id="docTarifaEmpleados1" placeholder="5-10"></td><td><input type="text" id="docTarifaCuota1" placeholder="3.500"></td></tr>
-                    <tr><td><input type="text" id="docTarifaEmpleados2" placeholder="10-20"></td><td><input type="text" id="docTarifaCuota2" placeholder="5.000"></td></tr>
-                    <tr><td><input type="text" id="docTarifaEmpleados3" placeholder="20-30"></td><td><input type="text" id="docTarifaCuota3" placeholder="6.500"></td></tr>
-                  </tbody>
-                </table>
-              </div>
+              <textarea id="docAcuerdoCondiciones" rows="3" placeholder="No aplica a cirugía estética..."></textarea>
             </div>
             <div class="field">
               <label>SALTLAB / Taller se compromete a (una línea por punto)</label>
@@ -1743,6 +1735,144 @@
           <button type="submit" class="btn btn-register">Guardar</button>
         </form>
       </div>
+    </div>
+
+    <!-- Modal Editor documento convenio comercial (editable, guardar como nuevo o en existente) -->
+    <div id="modalDocConvenioComercial" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="modalDocConvenioComercialBackdrop"></div>
+      <div class="modal-content modal-doc-convenio-comercial">
+        <div class="modal-header">
+          <h3>Documento de convenio comercial</h3>
+          <button type="button" class="modal-close" id="modalDocConvenioComercialClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body scrollbar-on-scroll">
+          <p class="convenio-documento-hint">Edita todos los datos del documento tipo CONVENIO COMERCIAL DE COLABORACIÓN. El taller se muestra como SALTLAB. Luego guarda como <strong>nuevo convenio</strong> o asócialo a un convenio existente como su acuerdo.</p>
+
+          <div class="doc-editar-fields">
+            <div class="field">
+              <label>Título del documento</label>
+              <input type="text" id="docEditarTitulo" placeholder="CONVENIO COMERCIAL DE COLABORACIÓN">
+            </div>
+            <div class="field">
+              <label>Subtítulo / Partes (SALTLAB y empresa)</label>
+              <input type="text" id="docEditarSubtitulo" placeholder="SALTLAB · Nombre de la empresa colaboradora">
+            </div>
+            <div class="field">
+              <label>Partes intervinientes (Empresa A / Empresa B)</label>
+              <textarea id="docEditarPartes" rows="2" placeholder="Empresa A: SALTLAB&#10;Empresa B: Nombre empresa"></textarea>
+            </div>
+            <div class="field">
+              <label>Objeto del convenio</label>
+              <textarea id="docEditarObjeto" rows="3" placeholder="Establecer una colaboración formal entre SALTLAB y la empresa..."></textarea>
+            </div>
+            <div class="field">
+              <label>Compromisos de SALTLAB (una línea por punto)</label>
+              <textarea id="docEditarServiciosBenny" rows="5" placeholder="10% de descuento en reparación&#10;10% de descuento en full tuning..."></textarea>
+            </div>
+            <div class="field">
+              <label>Compromisos de la empresa colaboradora (una línea por punto)</label>
+              <textarea id="docEditarServiciosEmpresa" rows="5" placeholder="10% de descuento en consumiciones...&#10;Zona VIP gratuita una vez por semana..."></textarea>
+            </div>
+            <div class="field">
+              <label>Condiciones adicionales (una línea por punto)</label>
+              <textarea id="docEditarCondiciones" rows="3" placeholder="Posibilidad de ampliar hasta 15%..."></textarea>
+            </div>
+            <div class="field">
+              <label>Sello empresarial (empresa colaboradora)</label>
+              <input type="text" id="docEditarSelloEmpresa" placeholder="Sello empresarial de [Empresa]">
+            </div>
+            <div class="field">
+              <label>Fecha del documento</label>
+              <input type="text" id="docEditarFechaDocumento" placeholder="21 de febrero de 2026">
+            </div>
+            <div class="field">
+              <label>Firma SALTLAB — Nombre del firmante</label>
+              <input type="text" id="docEditarFirmaBenny" placeholder="Ej: Norah Evans">
+            </div>
+            <div class="field">
+              <label>Firma empresa colaboradora — Nombre del firmante</label>
+              <input type="text" id="docEditarFirmaEmpresa" placeholder="Ej: Marcos Mendoza">
+            </div>
+            <div class="field">
+              <label>Texto bajo firma SALTLAB (opcional)</label>
+              <input type="text" id="docEditarTextoFirmaBenny" placeholder="SALTLAB">
+            </div>
+            <div class="field doc-editar-imagenes-seccion">
+              <h4 class="convenio-documento-titulo-seccion">Logos e imágenes de firma</h4>
+              <p class="convenio-documento-hint">Opcional: sube el logo de SALTLAB, el logo de la empresa y las imágenes de las firmas para que aparezcan en el documento.</p>
+              <div class="field">
+                <label>Logo SALTLAB</label>
+                <input type="file" id="docEditarLogoSalttab" accept="image/*">
+                <span id="docEditarLogoSalttabNombre" class="doc-editar-imagen-nombre"></span>
+              </div>
+              <div class="field">
+                <label>Logo empresa colaboradora</label>
+                <input type="file" id="docEditarLogoEmpresa" accept="image/*">
+                <span id="docEditarLogoEmpresaNombre" class="doc-editar-imagen-nombre"></span>
+              </div>
+              <div class="field">
+                <label>Imagen de firma SALTLAB</label>
+                <input type="file" id="docEditarFirmaImgSalttab" accept="image/*">
+                <span id="docEditarFirmaImgSalttabNombre" class="doc-editar-imagen-nombre"></span>
+              </div>
+              <div class="field">
+                <label>Imagen de firma empresa colaboradora</label>
+                <input type="file" id="docEditarFirmaImgEmpresa" accept="image/*">
+                <span id="docEditarFirmaImgEmpresaNombre" class="doc-editar-imagen-nombre"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="convenio-documento-vista-wrap" id="docEditarVistaWrap">
+            <h4 class="convenio-documento-vista-titulo">Vista del documento</h4>
+            <div class="doc-editar-preview-actions">
+              <button type="button" class="btn btn-outline" id="docEditarBtnPantallaCompleta">Ver documento a pantalla completa</button>
+            </div>
+            <div id="docEditarPreview" class="convenio-documento-preview"></div>
+          </div>
+
+          <section class="doc-editar-acciones">
+            <h4 class="convenio-documento-titulo-seccion">Guardar documento</h4>
+            <div class="doc-editar-accion-block">
+              <p class="doc-editar-accion-label">Guardar como nuevo convenio</p>
+              <div class="field">
+                <label>Nombre de la empresa</label>
+                <input type="text" id="docEditarNuevoConvenioNombre" placeholder="Nombre de la empresa">
+              </div>
+              <div class="field">
+                <label>Descuento del convenio (%)</label>
+                <div class="convenio-descuento-buttons" role="group">
+                  <button type="button" class="btn btn-outline convenio-descuento-btn doc-editar-descuento-btn" data-descuento="0">0%</button>
+                  <button type="button" class="btn btn-outline convenio-descuento-btn doc-editar-descuento-btn" data-descuento="5">5%</button>
+                  <button type="button" class="btn btn-outline convenio-descuento-btn doc-editar-descuento-btn" data-descuento="10">10%</button>
+                  <button type="button" class="btn btn-outline convenio-descuento-btn doc-editar-descuento-btn" data-descuento="15">15%</button>
+                  <button type="button" class="btn btn-outline convenio-descuento-btn doc-editar-descuento-btn" data-descuento="20">20%</button>
+                </div>
+                <input type="hidden" id="docEditarNuevoConvenioDescuento" value="10">
+              </div>
+              <button type="button" class="btn btn-register" id="docEditarBtnGuardarNuevoConvenio">Crear convenio y guardar documento</button>
+            </div>
+            <div class="doc-editar-accion-block">
+              <p class="doc-editar-accion-label">Asociar a convenio existente (guardar como acuerdo)</p>
+              <div class="field">
+                <label>Seleccionar convenio</label>
+                <select id="docEditarConvenioExistente">
+                  <option value="">— Elegir convenio —</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-outline" id="docEditarBtnGuardarEnExistente">Guardar documento como acuerdo de este convenio</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla completa: documento convenio comercial -->
+    <div id="docConvenioFullscreen" class="doc-convenio-fullscreen" style="display:none" aria-hidden="true">
+      <div class="doc-convenio-fullscreen-header">
+        <button type="button" class="btn btn-outline" id="docConvenioFullscreenCerrar">Cerrar / Volver a editar</button>
+      </div>
+      <div id="docConvenioFullscreenContent" class="doc-convenio-fullscreen-content"></div>
     </div>
 
     <!-- Pantalla completa Ficha del empleado (sustituye modal) -->
