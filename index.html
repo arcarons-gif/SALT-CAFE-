@@ -1671,6 +1671,75 @@
             <p id="convenioAcuerdoActual" class="convenio-acuerdo-actual" style="display:none"></p>
             <button type="button" id="convenioAcuerdoQuitar" class="btn btn-outline btn-sm convenio-acuerdo-quitar" style="display:none">Quitar archivo</button>
           </div>
+
+          <section class="convenio-documento-wrap" id="convenioDocumentoWrap">
+            <h4 class="convenio-documento-titulo-seccion">Documento de acuerdo colaborativo</h4>
+            <p class="convenio-documento-hint">Edita los datos del documento de convenio (título, objeto, servicios, condiciones, tarifas, compromisos y firmas).</p>
+            <div class="field">
+              <label>Título del documento</label>
+              <input type="text" id="docAcuerdoTitulo" placeholder="Ej: ACUERDO COLABORATIVO ENTRE EL SAED & BENNYS">
+            </div>
+            <div class="field">
+              <label>Subtítulo / Nombre completo de entidades</label>
+              <input type="text" id="docAcuerdoSubtitulo" placeholder="Ej: San Andreas Medical Service (SAMS) & San Andreas Fire Department (SAFD)">
+            </div>
+            <div class="field">
+              <label>Objeto del convenio</label>
+              <textarea id="docAcuerdoObjeto" rows="3" placeholder="Establecer una colaboración formal entre..."></textarea>
+            </div>
+            <div class="field">
+              <label>Servicios que ofrece la empresa (una línea por punto)</label>
+              <textarea id="docAcuerdoServiciosEmpresa" rows="6" placeholder="Disponibilidad de unidades médicas...&#10;Seguro médico para empleados..."></textarea>
+            </div>
+            <div class="field">
+              <label>Condiciones (una línea por punto)</label>
+              <textarea id="docAcuerdoCondiciones" rows="3" placeholder="No aplica a cirugía estética...&#10;Tarifas del seguro:"></textarea>
+            </div>
+            <div class="field convenio-tarifas-wrap">
+              <label>Tarifas del seguro (empleados / cuota mensual)</label>
+              <div class="convenio-tarifas-table-wrap">
+                <table class="convenio-tarifas-table">
+                  <thead><tr><th>Empleados</th><th>Cuota mensual (€)</th></tr></thead>
+                  <tbody id="docAcuerdoTarifasBody">
+                    <tr><td><input type="text" id="docTarifaEmpleados1" placeholder="5-10"></td><td><input type="text" id="docTarifaCuota1" placeholder="3.500"></td></tr>
+                    <tr><td><input type="text" id="docTarifaEmpleados2" placeholder="10-20"></td><td><input type="text" id="docTarifaCuota2" placeholder="5.000"></td></tr>
+                    <tr><td><input type="text" id="docTarifaEmpleados3" placeholder="20-30"></td><td><input type="text" id="docTarifaCuota3" placeholder="6.500"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="field">
+              <label>SALTLAB / Taller se compromete a (una línea por punto)</label>
+              <textarea id="docAcuerdoServiciosBenny" rows="5" placeholder="10% de descuento en reparación&#10;10% de descuento en full tuning..."></textarea>
+            </div>
+            <div class="field">
+              <label>Texto sello empresarial (empresa con la que se firma)</label>
+              <input type="text" id="docAcuerdoSelloEmpresa" placeholder="Ej: Sello empresarial del SAED">
+            </div>
+            <div class="field">
+              <label>Fecha del documento</label>
+              <input type="text" id="docAcuerdoFechaDocumento" placeholder="Ej: 21 de febrero de 2026">
+            </div>
+            <div class="field">
+              <label>Firma SALTLAB — Nombre del firmante</label>
+              <input type="text" id="docAcuerdoFirmaBenny" placeholder="Ej: Norah Evans">
+            </div>
+            <div class="field">
+              <label>Firma empresa colaboradora — Nombre del firmante</label>
+              <input type="text" id="docAcuerdoFirmaEmpresa" placeholder="Ej: Marcas Mendoza">
+            </div>
+            <div class="field">
+              <label>Firma SALTLAB — Texto bajo la firma (opcional)</label>
+              <input type="text" id="docAcuerdoTextoFirmaBenny" placeholder="Ej: SALTLAB">
+            </div>
+
+            <div class="convenio-documento-vista-wrap" id="convenioDocumentoVistaWrap">
+              <h4 class="convenio-documento-vista-titulo">Vista del documento</h4>
+              <p class="convenio-documento-vista-hint">El documento se actualiza al editar los campos. En el documento se usa siempre el nombre SALTLAB para el taller.</p>
+              <div id="convenioDocumentoPreview" class="convenio-documento-preview"></div>
+            </div>
+          </section>
+
           <button type="submit" class="btn btn-register">Guardar</button>
         </form>
       </div>
