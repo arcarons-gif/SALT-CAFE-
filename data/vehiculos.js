@@ -111,6 +111,7 @@ const VEHICULOS_DB = [
   { modelo: 'nightblade', nombreIC: 'Nightblade', categoria: 'Motos', precioBase: 25000, fullTuningPrecio: 52000, imagenUrl: imgUrl('nightblade') },
   { modelo: 'pizzaboy', nombreIC: 'Pizzaboy', categoria: 'Motos', precioBase: 3000, fullTuningPrecio: 52000, imagenUrl: imgUrl('pizzaboy') },
   { modelo: 'ratbike', nombreIC: 'Rat Bike', categoria: 'Motos', precioBase: 3000, fullTuningPrecio: 52000, imagenUrl: imgUrl('ratbike') },
+  { modelo: 'ruffian', nombreIC: 'Ruffian', categoria: 'Motos', precioBase: 15000, fullTuningPrecio: 52000, imagenUrl: imgUrl('ruffian') },
   { modelo: 'shotaro', nombreIC: 'Shotaro', categoria: 'Motos', precioBase: 250000, fullTuningPrecio: 52000, imagenUrl: imgUrl('shotaro') },
   { modelo: 'zombiea', nombreIC: 'Zombie Bobber', categoria: 'Motos', precioBase: 22000, fullTuningPrecio: 52000, imagenUrl: imgUrl('zombiea') },
   { modelo: 'zombieb', nombreIC: 'Buccaneer Rider', categoria: 'Motos', precioBase: 22000, fullTuningPrecio: 52000, imagenUrl: imgUrl('zombieb') },

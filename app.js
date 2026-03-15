@@ -775,12 +775,13 @@ function vincularIndicadoresHistorial() {
 }
 
 function renderUltimasReparaciones() {
+  if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
   const list = document.getElementById('ultimasReparacionesList');
   if (!list) return;
   const todos = getRegistroServicios()
     .slice()
     .sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); });
-  const servicios = todos.slice(0, 50);
+  const servicios = todos.slice(0, 150);
   const users = typeof getUsers === 'function' ? getUsers() : [];
   function nombreEmpleado(s) {
     const uid = (s.empleado || s.userId || '').toString().trim();
@@ -811,7 +812,7 @@ function renderUltimasReparaciones() {
       if (!li) return;
       var idx = parseInt(li.getAttribute('data-ultimas-index'), 10);
       if (isNaN(idx)) return;
-      var ordenados = getRegistroServicios().slice().sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); });
+      var ordenados = getRegistroServicios().slice().sort(function (a, b) { return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime(); }).slice(0, 150);
       if (ordenados[idx]) mostrarResumenReparacion(ordenados[idx]);
     });
     list.addEventListener('keydown', function (e) {
@@ -1845,6 +1846,19 @@ function aplicarDatosCompletosFromServer(payload) {
     if (!payload.hasOwnProperty(key)) continue;
     val = payload[key];
     if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
+    if (key === 'convenios' && Array.isArray(val)) {
+      try {
+        var rawLocal = localStorage.getItem(storageKey);
+        var localList = rawLocal ? JSON.parse(rawLocal) : [];
+        if (Array.isArray(localList)) {
+          var serverIds = {};
+          val.forEach(function (c) { if (c && c.id) serverIds[c.id] = true; });
+          localList.forEach(function (c) {
+            if (c && c.id && !serverIds[c.id]) { val = val.slice(); val.push(c); serverIds[c.id] = true; }
+          });
+        }
+      } catch (e) { /* ignore */ }
+    }
     try {
       if (isString) localStorage.setItem(storageKey, typeof val === 'string' ? val : '');
       else localStorage.setItem(storageKey, JSON.stringify(val !== undefined && val !== null ? val : []));
@@ -2362,12 +2376,20 @@ function vincularIndicadoresPanel() {
 function renderEconomiaChartInto(containerId) {
   var container = document.getElementById(containerId);
   if (!container) return;
+  var isMainDashboard = containerId === 'mainEconomiaChartContainer';
   var datos = getGastosPorMesesUltimos12();
-  var maxVal = Math.max(1, Math.max.apply(null, datos.map(function (d) { return d.total; })));
+  var ingresosPorMes = [];
+  if (isMainDashboard && typeof getRegistroServicios === 'function' && typeof getIngresosPorMesFromServicios === 'function') {
+    var servicios = getRegistroServicios();
+    ingresosPorMes = getIngresosPorMesFromServicios(servicios, 12);
+  }
+  var maxGastos = Math.max.apply(null, datos.map(function (d) { return d.total; })) || 0;
+  var maxIngresos = ingresosPorMes.length ? Math.max.apply(null, ingresosPorMes.map(function (d) { return d.total || 0; })) : 0;
+  var maxVal = Math.max(1, maxGastos, maxIngresos);
   var padding = { top: 20, right: 20, bottom: 32, left: 48 };
   var w = Math.max(320, (container.parentElement && container.parentElement.offsetWidth) || 400) - padding.left - padding.right;
   var h = 200;
-  var xs = w / Math.max(1, datos.length - 1);
+  var xs = datos.length > 1 ? w / (datos.length - 1) : w;
   var scaleY = maxVal > 0 ? (h / maxVal) : 1;
   var points = datos.map(function (d, i) {
     var x = padding.left + i * xs;
@@ -2394,14 +2416,37 @@ function renderEconomiaChartInto(containerId) {
   var circles = datos.map(function (d, i) {
     var x = padding.left + i * xs;
     var y = padding.top + h - d.total * scaleY;
-    return '<circle cx="' + x + '" cy="' + y + '" r="4" class="economia-chart-dot"/>';
+    return '<circle cx="' + x + '" cy="' + y + '" r="4" class="economia-chart-dot" style="fill:#e11d48"/>';
   }).join('');
+  var svgParts = [
+    '<path d="' + pathArea + '" class="economia-chart-area" style="fill:#e11d48;opacity:0.2"/>',
+    gridLines.join(''),
+    '<path d="' + pathLine + '" class="economia-chart-line" fill="none" style="stroke:#e11d48"/>',
+    circles
+  ];
+  if (isMainDashboard && ingresosPorMes.length === datos.length) {
+    var pointsIng = ingresosPorMes.map(function (d, i) {
+      var x = padding.left + i * xs;
+      var y = padding.top + h - (d.total || 0) * scaleY;
+      return x + ',' + y;
+    }).join(' ');
+    var pathLineIng = 'M ' + pointsIng.replace(/ /g, ' L ');
+    var circlesIng = ingresosPorMes.map(function (d, i) {
+      var x = padding.left + i * xs;
+      var y = padding.top + h - (d.total || 0) * scaleY;
+      return '<circle cx="' + x + '" cy="' + y + '" r="4" class="economia-chart-dot" style="fill:#22c55e"/>';
+    }).join('');
+    svgParts.push('<path d="' + pathLineIng + '" class="economia-chart-line" fill="none" style="stroke:#22c55e;stroke-width:2"/>', circlesIng);
+  }
+  var legend = '';
+  if (isMainDashboard && ingresosPorMes.length === datos.length) {
+    var lx = padding.left + w - 70;
+    legend = '<text x="' + lx + '" y="' + (padding.top + 12) + '" class="economia-chart-axis" style="fill:#e11d48">Gastos</text>' +
+      '<text x="' + lx + '" y="' + (padding.top + 28) + '" class="economia-chart-axis" style="fill:#22c55e">Ingresos</text>';
+  }
   container.innerHTML = '<svg class="economia-chart-svg" viewBox="0 0 ' + (padding.left + w + padding.right) + ' ' + (padding.top + h + padding.bottom) + '" preserveAspectRatio="xMidYMid meet">' +
-    '<path d="' + pathArea + '" class="economia-chart-area"/>' +
-    gridLines.join('') +
-    '<path d="' + pathLine + '" class="economia-chart-line" fill="none"/>' +
-    circles +
-    yLabels.join('') + xLabels +
+    svgParts.join('') +
+    yLabels.join('') + xLabels + legend +
     '</svg>';
 }
 
@@ -2685,6 +2730,20 @@ function renderAlmacenMateriales() {
   if (typeof getAlmacenMateriales !== 'function' || typeof TIPOS_MATERIAL_ALMACEN === 'undefined') return;
   var tbody = document.getElementById('listaAlmacenMateriales');
   var tbodyMov = document.getElementById('listaAlmacenMovimientos');
+  if (tbody) {
+    var active = document.activeElement;
+    if (active && tbody.contains(active) && (active.classList.contains('almacen-input-aportaciones') || active.classList.contains('almacen-input-retiradas'))) return;
+    var valoresInputs = {};
+    tbody.querySelectorAll('tr[data-almacen-material-id]').forEach(function (tr) {
+      var id = tr.getAttribute('data-almacen-material-id');
+      if (!id) return;
+      var inpA = tr.querySelector('.almacen-input-aportaciones');
+      var inpR = tr.querySelector('.almacen-input-retiradas');
+      var a = inpA && inpA.value !== '' ? inpA.value : null;
+      var r = inpR && inpR.value !== '' ? inpR.value : null;
+      if (a != null || r != null) valoresInputs[id] = { aportaciones: a, retiradas: r };
+    });
+  }
   var stock = getAlmacenMateriales();
   if (tbody) {
     tbody.innerHTML = '';
@@ -2703,6 +2762,16 @@ function renderAlmacenMateriales() {
           '<button type="button" class="btn btn-outline btn-sm almacen-btn-reset" data-material-id="' + escapeHtmlAttr(t.id) + '" title="Poner cantidad a cero">Reset</button>' +
         '</td>';
       tbody.appendChild(tr);
+    });
+    Object.keys(valoresInputs || {}).forEach(function (id) {
+      var v = valoresInputs[id];
+      if (!v) return;
+      var row = tbody.querySelector('tr[data-almacen-material-id="' + escapeHtmlAttr(id) + '"]');
+      if (!row) return;
+      var inpA = row.querySelector('.almacen-input-aportaciones');
+      var inpR = row.querySelector('.almacen-input-retiradas');
+      if (inpA && v.aportaciones != null) inpA.value = v.aportaciones;
+      if (inpR && v.retiradas != null) inpR.value = v.retiradas;
     });
     tbody.querySelectorAll('.almacen-btn-aplicar').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -7175,12 +7244,11 @@ function buildConveniosFichas() {
 function renderListaConvenios() {
   var grid = document.getElementById('conveniosFichasGrid');
   if (grid) {
+    buildConveniosFichas();
     if (typeof cargarListadoLogosConvenios === 'function') {
       cargarListadoLogosConvenios(function () {
         buildConveniosFichas();
       });
-    } else {
-      buildConveniosFichas();
     }
   }
   if (typeof renderConveniosEmpleadosYPlacas === 'function') renderConveniosEmpleadosYPlacas();
@@ -8812,7 +8880,8 @@ function cambiarModelo() {
     el.categoria.value = vehiculoActual.categoria;
     el.nombreModelo.textContent = vehiculoActual.nombreIC;
     el.nombreIC.placeholder = vehiculoActual.nombreIC;
-    var ftPrecio = typeof getPrecioVentaFullTuning === 'function' ? getPrecioVentaFullTuning(vehiculoActual.precioBase) : (vehiculoActual.fullTuningPrecio || 0);
+    // Norma: full tuning = 40% del valor del vehículo (precioBase)
+    var ftPrecio = typeof getPrecioVentaFullTuning === 'function' ? getPrecioVentaFullTuning(vehiculoActual.precioBase) : Math.floor((vehiculoActual.precioBase || 0) * 0.4);
     el.fullTuningPrecio.textContent = '$' + ftPrecio.toLocaleString('es-ES');
     actualizarImagenVehiculo(vehiculoActual.imagenUrl);
   } else {
