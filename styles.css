@@ -2577,6 +2577,88 @@ button.login-recovery-link {
   color: var(--text-muted);
   line-height: 1.4;
 }
+.doc-convenio-historial-titulo {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.doc-convenio-historial-desc {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.doc-convenio-historial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.doc-convenio-historial-card {
+  background: var(--primary-soft, rgba(255,255,255,0.06));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.doc-convenio-historial-card:hover {
+  border-color: var(--accent, #e11d48);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.doc-convenio-historial-card:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.doc-convenio-historial-card-preview {
+  padding: 0.75rem;
+  min-height: 100px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fff;
+  color: #1a1a1a;
+}
+.doc-convenio-historial-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.doc-convenio-historial-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.doc-convenio-historial-titulo-mini {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  display: block;
+}
+.doc-convenio-historial-subtitulo-mini {
+  font-size: 0.75rem;
+  color: #555;
+  display: block;
+}
+.doc-convenio-historial-sin-doc {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #888;
+}
+.doc-convenio-historial-card-footer {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.doc-convenio-historial-card-descuento {
+  font-weight: 600;
+  color: var(--accent, #e11d48);
+}
 .modal-doc-convenio-comercial .modal-body { max-height: 85vh; }
 .doc-editar-fields .field { margin-bottom: 0.85rem; }
 .doc-editar-acciones {
@@ -2671,6 +2753,29 @@ button.login-recovery-link {
   padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Estilos de documento por formato (formato convenios.txt) */
+.doc-preview-inner[data-formato-estilo="formato-1"] {
+  border: 2px solid #c9a227;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+.doc-preview-inner[data-formato-estilo="formato-2"] {
+  border: 3px double #2c5282;
+  background: linear-gradient(to bottom, #fafafa 0%, #fff 2rem);
+  box-shadow: inset 0 0 0 1px rgba(44,82,130,0.15);
+}
+.doc-preview-inner[data-formato-estilo="formato-2"] .doc-preview-titulo {
+  color: #2c5282;
+  border-bottom: 1px solid #2c5282;
+  padding-bottom: 0.35rem;
+}
+.doc-convenio-fullscreen-content .doc-preview-inner[data-formato-estilo="formato-1"] {
+  border: 2px solid #c9a227;
+}
+.doc-convenio-fullscreen-content .doc-preview-inner[data-formato-estilo="formato-2"] {
+  border: 3px double #2c5282;
+  background: linear-gradient(to bottom, #fafafa 0%, #fff 2rem);
 }
 
 .convenios-detalle-wrap {

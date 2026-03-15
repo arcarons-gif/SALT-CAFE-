@@ -885,7 +885,10 @@
           </div>
           <div id="conveniosPanelDocumentoComercial" class="convenios-panel-tab" style="display:none">
             <p class="convenios-documento-comercial-desc">Edita el documento tipo <strong>CONVENIO COMERCIAL DE COLABORACIÓN</strong> (SALTLAB y empresa colaboradora). Todos los datos son editables. Puedes guardar el documento como <strong>nuevo convenio</strong> o asociarlo a un <strong>convenio existente</strong> como acuerdo de dicho convenio.</p>
-            <button type="button" class="btn btn-register" id="btnAbrirEditorDocConvenioComercial">Abrir editor del documento</button>
+            <h4 class="doc-convenio-historial-titulo">Documentos de convenios</h4>
+            <p class="doc-convenio-historial-desc">Haz clic en una miniatura para editar el documento de ese convenio.</p>
+            <div id="docConvenioHistorialGrid" class="doc-convenio-historial-grid"></div>
+            <button type="button" class="btn btn-register" id="btnAbrirEditorDocConvenioComercial">+ Nuevo documento / Abrir editor</button>
           </div>
           <div id="conveniosPanelEmpleadosPlacas" class="convenios-panel-tab" style="display:none">
             <div class="convenios-detalle-wrap">
@@ -1750,6 +1753,14 @@
 
           <div class="doc-editar-fields">
             <div class="field">
+              <label>Estilo del documento</label>
+              <p class="convenio-documento-hint">Elige el formato de presentación del documento (definido en <code>input/CONTENT/Logos/convenios/formato convenios.txt</code>).</p>
+              <select id="docEditarFormatoEstilo">
+                <option value="Formato 1">Formato 1</option>
+                <option value="Formato 2">Formato 2</option>
+              </select>
+            </div>
+            <div class="field">
               <label>Título del documento</label>
               <input type="text" id="docEditarTitulo" placeholder="CONVENIO COMERCIAL DE COLABORACIÓN">
             </div>
@@ -1799,7 +1810,7 @@
             </div>
             <div class="field doc-editar-imagenes-seccion">
               <h4 class="convenio-documento-titulo-seccion">Logos e imágenes de firma</h4>
-              <p class="convenio-documento-hint">Opcional: sube el logo de SALTLAB, el logo de la empresa y las imágenes de las firmas para que aparezcan en el documento.</p>
+              <p class="convenio-documento-hint">Opcional: sube el logo de SALTLAB, el logo de la empresa y las imágenes de las firmas para que aparezcan en el documento. Las firmas predefinidas están en <code>input/CONTENT/Logos/convenios/firmas/</code> (listado en firmas.txt).</p>
               <div class="field">
                 <label>Logo SALTLAB</label>
                 <input type="file" id="docEditarLogoSalttab" accept="image/*">

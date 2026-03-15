@@ -164,7 +164,12 @@ function getEmpleadoByPlaca(placa) {
 const CONVENIOS_LOGOS_BASE = 'input/CONTENT/Logos/convenios/';
 /** Base URL para archivos de acuerdo (mismo repositorio, subcarpeta acuerdos) */
 const CONVENIOS_ACUERDOS_BASE = 'input/CONTENT/Logos/convenios/acuerdos/';
-if (typeof window !== 'undefined') window.CONVENIOS_ACUERDOS_BASE = CONVENIOS_ACUERDOS_BASE;
+/** Base URL para firmas (subcarpeta firmas: firmas.txt + imágenes .png por nombre) */
+const CONVENIOS_FIRMAS_BASE = 'input/CONTENT/Logos/convenios/firmas/';
+if (typeof window !== 'undefined') {
+  window.CONVENIOS_ACUERDOS_BASE = CONVENIOS_ACUERDOS_BASE;
+  window.CONVENIOS_FIRMAS_BASE = CONVENIOS_FIRMAS_BASE;
+}
 let _conveniosLogosMap = {};
 let _conveniosLogosFontMap = {};
 
