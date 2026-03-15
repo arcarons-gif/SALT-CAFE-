@@ -1,16 +1,43 @@
 @echo off
 title SALTLAB - Abrir app
 cd /d "%~dp0"
-
-:: Iniciar servidor en una ventana nueva (puerto 5500 para evitar conflictos con 8080)
-start "Servidor SALTLAB" cmd /k "python -m http.server 5500"
-
-:: Esperar a que el servidor arranque y abrir el navegador
-timeout /t 2 /nobreak >nul
-start http://localhost:5500/index.html
+set PUERTO=5500
+set URL=http://localhost:%PUERTO%/index.html
 
 echo.
-echo  App abierta en: http://localhost:5500/index.html
-echo  No cierres la ventana "Servidor SALTLAB" mientras uses la app.
+echo  === SALTLAB Calculator ===
+echo.
+
+:: Comprobar Node (npx)
+where npx >nul 2>&1
+if not errorlevel 1 (
+  echo  Iniciando servidor con Node en puerto %PUERTO%...
+  start /b npx -y serve -l %PUERTO% . >nul 2>&1
+  goto :abrir
+)
+
+:: Comprobar Python
+where python >nul 2>&1
+if not errorlevel 1 (
+  echo  Iniciando servidor con Python en puerto %PUERTO%...
+  start /b python -m http.server %PUERTO% >nul 2>&1
+  goto :abrir
+)
+
+echo  ERROR: No se encontró Node.js ni Python.
+echo  Instala uno de ellos para poder abrir la app:
+echo    - Node.js: https://nodejs.org
+echo    - Python:  https://python.org
+echo.
+pause
+exit /b 1
+
+:abrir
+echo  Esperando servidor...
+timeout /t 3 /nobreak >nul
+start "" "%URL%"
+echo.
+echo  App abierta en: %URL%
+echo  NO CIERRES esta ventana mientras uses la app.
 echo.
 pause

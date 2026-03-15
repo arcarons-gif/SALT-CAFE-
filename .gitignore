@@ -21,3 +21,8 @@ npm-debug.log*
 
 # Dependencies (si en el futuro usas npm)
 node_modules/
+
+# Datos del servidor / usuario (no subir para no sobrescribir lo que se guarda en la web)
+server/data/*.json
+server/data/
+**/server/data/*.json

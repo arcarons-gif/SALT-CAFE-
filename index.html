@@ -493,22 +493,6 @@
         </div>
       </div>
     </main>
-    <aside class="content-loop-wrap" id="contentLoopWrap" style="display:none" aria-label="Panel derecho: video e indicadores">
-      <div class="aside-layout">
-        <div class="content-loop-inner" id="contentLoopInner">
-          <video id="contentLoopVideo" class="content-loop-video" loop muted autoplay playsinline webkit-playsinline preload="auto">
-            <source src="" type="video/mp4">
-          </video>
-          <div id="contentLoopPlayOverlay" class="content-loop-play-overlay" style="display:none" role="button" tabindex="0" title="Clic para reproducir (el navegador puede bloquear la reproducción automática)">
-            <span class="content-loop-play-overlay-icon" aria-hidden="true">▶</span>
-            <span class="content-loop-play-overlay-text">Reproducir</span>
-          </div>
-          <div id="contentLoopFallback" class="content-loop-fallback" style="display:none">
-            <span class="content-loop-fallback-text">Vídeo no disponible. Añade vídeos en la carpeta <strong>input/CONTENT/Tapes</strong>.</span>
-          </div>
-        </div>
-      </div>
-    </aside>
     </div>
     <footer class="footer-principal" id="footerPrincipal" aria-label="Información del desarrollador">
       <p class="footer-principal-cta">¿Te gusta la aplicación? ¿Te interesaría adquirir una herramienta web personalizada para tu negocio virtual o real? Somos programadores, nos dedicamos a desarrollar herramientas maravillosas que cubren necesidades del mundo real. ¡Contacta con nosotros para más información y presupuesto!</p>
@@ -1041,7 +1025,7 @@
               <button type="button" class="btn btn-register" id="btnRegistrarMaterialesRecuperados">+ Registrar materiales recuperados</button>
               <button type="button" class="btn btn-outline btn-sm" id="btnAlmacenPonerTodoCero" title="Poner todas las cantidades del almacén a 0">Poner todo a 0</button>
             </div>
-            <div class="economia-table-wrap"><table class="economia-table economia-table-almacen"><thead><tr><th>Material</th><th>Unidad</th><th>Cantidad en almacén</th><th>Aportaciones</th><th>Retiradas</th><th>Acciones</th></tr></thead><tbody id="listaAlmacenMateriales"></tbody></table></div>
+            <div class="economia-table-wrap economia-table-wrap-almacen"><table class="economia-table economia-table-almacen"><thead><tr><th>Material</th><th>Unidad</th><th>Cantidad en almacén</th><th>Aportaciones</th><th>Retiradas</th><th>Acciones</th></tr></thead><tbody id="listaAlmacenMateriales"></tbody></table></div>
             <h4 class="economia-almacen-movimientos-titulo">Registro de materiales recuperados</h4>
             <p class="economia-almacen-registro-desc">Cada línea es una entrada manual: fecha, materiales añadidos y quien registró.</p>
             <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Materiales añadidos</th><th>Registrado por</th></tr></thead><tbody id="listaAlmacenMovimientos"></tbody></table></div>
@@ -1266,6 +1250,13 @@
         </button>
         <h2 class="pantalla-secundaria-titulo">Registro de clientes</h2>
       </div>
+      <section class="ultimas-entradas-clientes-wrap" aria-label="Últimas entradas registradas">
+        <h3 class="ultimas-entradas-clientes-titulo">Últimas entradas registradas</h3>
+        <p class="ultimas-entradas-clientes-hint">Clientes y matrículas con actividad más reciente (por última actualización). Clic en una fila para ver la ficha.</p>
+        <div class="ultimas-entradas-clientes-list-wrap">
+          <ul id="listaUltimasEntradasClientes" class="ultimas-entradas-clientes-list"></ul>
+        </div>
+      </section>
       <div class="registro-clientes-tabs">
         <button type="button" class="registro-clientes-tab active" data-tab="mificha">Mi ficha</button>
         <button type="button" class="registro-clientes-tab" data-tab="fichas">Fichas de clientes</button>
@@ -1448,8 +1439,7 @@
           <div class="field"><label>Nº socio LSCM</label><input type="text" id="editarClienteNumeroSocioLSCM" placeholder="Número de socio Los Santos Car Meet"></div>
           <div class="field field-admin-only"><label>Placa policial</label><input type="text" id="editarClientePlaca"></div>
           <div class="field"><label>Marca</label><input type="text" id="editarClienteMarca" placeholder="Marca del vehículo"></div>
-          <div class="field"><label>Código vehículo</label><input type="text" id="editarClienteCodigo"></div>
-          <div class="field"><label>Nombre vehículo / Modelo</label><input type="text" id="editarClienteNombre"></div>
+          <div class="field"><label>Modelo de vehículo</label><select id="editarClienteModeloVehiculo" aria-label="Seleccionar modelo de vehículo"><option value="">— Seleccionar modelo —</option></select></div>
           <div class="field field-admin-only"><label>Categoría</label><input type="text" id="editarClienteCategoria"></div>
           <div class="field field-admin-only"><label>Convenio</label><input type="text" id="editarClienteConvenio"></div>
           <div class="field field-admin-only"><label>1ª interacción</label><input type="datetime-local" id="editarClienteFechaPrimera" readonly class="readonly-field"></div>
@@ -1647,7 +1637,14 @@
           </div>
           <div class="field">
             <label>Convenio (%)</label>
-            <input type="number" id="convenioDescuento" min="0" max="100" value="0" required>
+            <input type="hidden" id="convenioDescuento" value="5">
+            <div class="convenio-descuento-buttons" role="group" aria-label="Porcentaje de descuento">
+              <button type="button" class="btn btn-outline convenio-descuento-btn" data-descuento="0">0%</button>
+              <button type="button" class="btn btn-outline convenio-descuento-btn" data-descuento="5">5%</button>
+              <button type="button" class="btn btn-outline convenio-descuento-btn" data-descuento="10">10%</button>
+              <button type="button" class="btn btn-outline convenio-descuento-btn" data-descuento="15">15%</button>
+              <button type="button" class="btn btn-outline convenio-descuento-btn" data-descuento="20">20%</button>
+            </div>
           </div>
           <div class="field">
             <label>Fecha acordado</label>
