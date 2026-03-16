@@ -2041,10 +2041,13 @@ function aplicarDatosCompletosFromServer(payload) {
           val.forEach(function (c, i) {
             if (!c || !c.id) return;
             var local = localById[c.id];
-            if (local && (local.descuento !== undefined || local.nombre !== undefined)) {
+            if (local) {
               val[i] = Object.assign({}, c);
               if (local.descuento !== undefined) val[i].descuento = local.descuento;
               if (local.nombre !== undefined) val[i].nombre = local.nombre;
+              if (local.documentoAcuerdo !== undefined) val[i].documentoAcuerdo = local.documentoAcuerdo;
+              if (local.acuerdoArchivoDataUrl !== undefined) val[i].acuerdoArchivoDataUrl = local.acuerdoArchivoDataUrl;
+              if (local.acuerdoArchivoNombre !== undefined) val[i].acuerdoArchivoNombre = local.acuerdoArchivoNombre;
             }
           });
         }
@@ -9600,13 +9603,21 @@ function cargarConvenios() {
     return typeof tieneDocumentoConvenioGuardado === 'function' && tieneDocumentoConvenioGuardado(c);
   });
   convenios = [...convenios].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-  convenios.forEach(c => {
+  if (convenios.length === 0) {
     const opt = document.createElement('option');
-    opt.value = c.nombre;
-    opt.textContent = c.descuento > 0 ? `${c.nombre} (${c.descuento}%)` : c.nombre;
-    opt.dataset.descuento = String(c.descuento);
+    opt.value = 'N/A';
+    opt.textContent = 'N/A (0%)';
+    opt.dataset.descuento = '0';
     el.negocios.appendChild(opt);
-  });
+  } else {
+    convenios.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.nombre;
+      opt.textContent = c.descuento > 0 ? `${c.nombre} (${c.descuento}%)` : c.nombre;
+      opt.dataset.descuento = String(c.descuento);
+      el.negocios.appendChild(opt);
+    });
+  }
 }
 
 /** Devuelve lista única de nombres de modelo para autocompletado: VEHICULOS_DB + nombres en BBDD clientes */
@@ -9949,13 +9960,19 @@ function vincularPasos() {
         if (pasoMatriculaConjunto) pasoMatriculaConjunto.style.display = 'none';
         document.getElementById('nuevoVehiculoWrap').style.display = 'block';
         const nvConvenio = document.getElementById('nuevoVehiculoConvenio');
-        if (nvConvenio && nvConvenio.options.length === 0) {
+        if (nvConvenio) {
+          nvConvenio.innerHTML = '';
           var optConvVac = document.createElement('option');
           optConvVac.value = '';
           optConvVac.textContent = '— Selecciona convenio —';
           nvConvenio.appendChild(optConvVac);
           const session = getSession();
           let convenios = typeof getConveniosVisibles === 'function' ? getConveniosVisibles(hasPermission(session, 'verConveniosPrivados')) : (typeof getConvenios === 'function' ? getConvenios() : []);
+          convenios = convenios.filter(function (c) {
+            var nombre = (c.nombre || '').trim();
+            if (nombre.toUpperCase() === 'N/A') return true;
+            return typeof tieneDocumentoConvenioGuardado === 'function' && tieneDocumentoConvenioGuardado(c);
+          });
           convenios = [...convenios].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
           convenios.forEach(c => {
             const o = document.createElement('option');
