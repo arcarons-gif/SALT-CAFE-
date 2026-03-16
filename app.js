@@ -2198,6 +2198,7 @@ function mostrarSubpanelStock(subtab) {
 
 var REPARTO_BENEFICIOS_STORAGE = 'benny_economia_reparto_beneficios';
 
+/** Ingresos totales = suma del importe de todas las reparaciones y tuneos registrados. */
 function getIngresosTotales() {
   var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
   return servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);

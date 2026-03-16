@@ -57,7 +57,13 @@ function readServicios() {
   try {
     const raw = fs.readFileSync(serviciosPath, 'utf8');
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    const list = Array.isArray(arr) ? arr : [];
+    // Asegurar id estable en cada servicio (para merge sin duplicar)
+    return list.map((s, i) => {
+      if (s && s.id) return s;
+      const id = 'legacy-' + i + '-' + (s.fecha || '').slice(0, 19).replace(/[:.]/g, '') + '-' + (s.matricula || 'x').slice(0, 10);
+      return { ...s, id };
+    });
   } catch {
     return [];
   }
@@ -66,6 +72,45 @@ function readServicios() {
 function writeServicios(servicios) {
   ensureDataDir();
   fs.writeFileSync(serviciosPath, JSON.stringify(servicios), 'utf8');
+}
+
+/** Fusiona servicios entrantes con los existentes (por id). No sobrescribe la lista del servidor, acumula/actualiza. */
+function mergeServicios(existing, incoming) {
+  const byId = new Map();
+  existing.forEach(s => { byId.set(s.id, { ...s }); });
+  incoming.forEach(s => {
+    const id = s.id || ('new-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9));
+    byId.set(id, { ...s, id });
+  });
+  const merged = Array.from(byId.values());
+  merged.sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+  return merged;
+}
+
+/** Fusiona usuarios entrantes con los existentes (por id o username). */
+function mergeUsers(existing, incoming) {
+  const byKey = new Map();
+  existing.forEach(u => { const k = (u.id || u.username || ''); if (k) byKey.set(k, { ...u }); });
+  incoming.forEach(u => {
+    const k = (u.id || u.username || '');
+    if (k) byKey.set(k, { ...u });
+  });
+  return Array.from(byKey.values());
+}
+
+/** Fusiona fichajes entrantes con los existentes (por id). */
+function mergeFichajes(existing, incoming) {
+  const byId = new Map();
+  existing.forEach((f, i) => {
+    const id = f.id || ('f-' + i + '-' + (f.entrada || '').slice(0, 19).replace(/[:.]/g, ''));
+    byId.set(id, { id, userId: f.userId || f.user_id, entrada: f.entrada, salida: f.salida || null });
+  });
+  incoming.forEach(f => {
+    const id = f.id || ('f-new-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9));
+    const norm = { id, userId: f.userId || f.user_id, entrada: f.entrada, salida: f.salida || null };
+    byId.set(id, norm);
+  });
+  return Array.from(byId.values());
 }
 
 app.use(cors({ origin: true }));
@@ -81,9 +126,9 @@ app.get('/', (req, res) => {
       <p>El servidor está en marcha. Esta es la API; la app se abre en otra URL.</p>
       <ul>
         <li><a href="/api/health">/api/health</a> – estado del servidor</li>
-        <li>/api/users – GET (lista) / POST (guardar)</li>
-        <li>/api/fichajes – GET (lista) / POST (guardar)</li>
-        <li>/api/servicios – GET (lista) / POST (guardar reparaciones/tuneos)</li>
+        <li>/api/users – GET (lista) / POST (fusionar: acumula con existentes, no sobrescribe)</li>
+        <li>/api/fichajes – GET (lista) / POST (fusionar)</li>
+        <li>/api/servicios – GET (lista) / POST (fusionar reparaciones/tuneos)</li>
         <li>/api/datos-completos – GET (todos los datos sincronizados)</li>
         <li>/api/repo-export – POST (guardar saltlab-datos-completos.json; almacén e inventario no se sobrescriben)</li>
         <li>/api/merge-almacen – POST (sumar movimiento al almacén; body: { movimiento: { acero?: number, ... } })</li>
@@ -120,8 +165,10 @@ app.post('/api/users', (req, res) => {
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Se espera { users: [...] }' });
     }
-    writeUsers(users);
-    writeDatosCompletosMerge({ users });
+    const existing = readUsers();
+    const merged = mergeUsers(existing, users);
+    writeUsers(merged);
+    writeDatosCompletosMerge({ users: merged });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -152,14 +199,10 @@ app.post('/api/fichajes', (req, res) => {
     if (!Array.isArray(fichajes)) {
       return res.status(400).json({ error: 'Se espera { fichajes: [...] }' });
     }
-    const normalized = fichajes.map(f => ({
-      id: f.id,
-      userId: f.userId || f.user_id,
-      entrada: f.entrada,
-      salida: f.salida || null,
-    }));
-    writeFichajes(normalized);
-    writeDatosCompletosMerge({ fichajes: normalized });
+    const existing = readFichajes();
+    const merged = mergeFichajes(existing, fichajes);
+    writeFichajes(merged);
+    writeDatosCompletosMerge({ fichajes: merged });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -184,8 +227,10 @@ app.post('/api/servicios', (req, res) => {
     if (!Array.isArray(servicios)) {
       return res.status(400).json({ error: 'Se espera { servicios: [...] }' });
     }
-    writeServicios(servicios);
-    writeDatosCompletosMerge({ servicios });
+    const existing = readServicios();
+    const merged = mergeServicios(existing, servicios);
+    writeServicios(merged);
+    writeDatosCompletosMerge({ servicios: merged });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
