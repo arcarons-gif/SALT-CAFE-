@@ -2152,7 +2152,7 @@ function vincularResetDatos() {
 }
 
 // ========== ECONOMÍA (compras, inventario, gastos, previsiones, almacén) ==========
-var ECONOMIA_SUBTABS = ['resumen', 'gastos', 'previsiones', 'historial', 'entregas', 'financiera'];
+var ECONOMIA_SUBTABS = ['resumen', 'ingresos', 'gastos', 'previsiones', 'historial', 'entregas', 'financiera'];
 var STOCK_SUBTABS = ['compras', 'inventario', 'limites', 'almacen', 'piezas'];
 
 function mostrarSubpanelEconomia(subtab) {
@@ -2169,6 +2169,7 @@ function mostrarSubpanelEconomia(subtab) {
   var economiaTabsEl = document.getElementById('economiaTabs');
   if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.economiaTab === subtab); });
   if (subtab === 'resumen') renderEconomiaResumen();
+  if (subtab === 'ingresos') renderEconomiaIngresos();
   if (subtab === 'gastos') renderGastos();
   if (subtab === 'previsiones') renderPrevisiones();
   if (subtab === 'historial') renderHistorialPedidos();
@@ -2393,6 +2394,43 @@ function getServiciosPorEmpleadoFromServicios(servicios) {
     byEmp[emp].ingresos += parseFloat(s.importe) || 0;
   });
   return Object.keys(byEmp).map(function (e) { return { empleado: e, count: byEmp[e].count, ingresos: byEmp[e].ingresos }; }).sort(function (a, b) { return b.count - a.count; });
+}
+
+/** Devuelve ingresos agrupados por semana (últimas numSemanas). Cada item: { key, label, total }. */
+function getIngresosPorSemanaFromServicios(servicios, numSemanas) {
+  numSemanas = Math.max(1, parseInt(numSemanas, 10) || 8);
+  function getWeekStart(d) {
+    var x = new Date(d);
+    var day = x.getDay();
+    var diff = x.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(x.getFullYear(), x.getMonth(), diff);
+  }
+  function weekKey(dateStr) {
+    var x = new Date(dateStr);
+    var start = getWeekStart(x);
+    var y = start.getFullYear();
+    var jan1 = new Date(y, 0, 1);
+    var w = Math.ceil((((start - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+    return y + '-W' + String(w).padStart(2, '0');
+  }
+  var byWeek = {};
+  servicios.forEach(function (s) {
+    if (!s.fecha) return;
+    var k = weekKey(s.fecha);
+    if (!byWeek[k]) byWeek[k] = 0;
+    byWeek[k] += parseFloat(s.importe) || 0;
+  });
+  var result = [];
+  var now = new Date();
+  for (var i = numSemanas - 1; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7 * i);
+    var start = getWeekStart(d);
+    var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    var k = weekKey(start);
+    var label = start.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) + '–' + end.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    result.push({ key: k, label: label, total: byWeek[k] || 0 });
+  }
+  return result;
 }
 
 function renderIndicadoresChartLine(containerId, datos, valueKey, color) {
@@ -2698,6 +2736,9 @@ function renderMainDashboard() {
   var kpiCompras = document.getElementById('mainKpiCompras');
   var kpiEmpleados = document.getElementById('mainKpiEmpleados');
   var kpiGastos = document.getElementById('mainKpiGastos');
+  var kpiIngresos = document.getElementById('mainKpiIngresos');
+  var kpiIngresosWrap = document.getElementById('mainKpiIngresosWrap');
+  var ingresosTotales = typeof getIngresosTotales === 'function' ? getIngresosTotales() : 0;
   if (kpiMateriales) kpiMateriales.textContent = totalMat.toLocaleString('es-ES');
   if (kpiMaterialesWrap) {
     kpiMaterialesWrap.style.cursor = 'pointer';
@@ -2711,6 +2752,20 @@ function renderMainDashboard() {
   if (kpiCompras) kpiCompras.textContent = comprasPend;
   if (kpiEmpleados) kpiEmpleados.textContent = empleados;
   if (kpiGastos) kpiGastos.textContent = gastosMes.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+  if (kpiIngresos) kpiIngresos.textContent = ingresosTotales.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  if (kpiIngresosWrap) {
+    kpiIngresosWrap.style.cursor = 'pointer';
+    kpiIngresosWrap.onclick = function () {
+      if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaGestion');
+      var cardEconomia = document.querySelector('.gestion-card[data-tab="economia"]');
+      if (cardEconomia) {
+        cardEconomia.click();
+        setTimeout(function () {
+          if (typeof mostrarSubpanelEconomia === 'function') mostrarSubpanelEconomia('ingresos');
+        }, 50);
+      }
+    };
+  }
   renderEconomiaChartInto('mainEconomiaChartContainer');
   renderMainDashboardStatsLines();
 }
@@ -2778,6 +2833,77 @@ function renderEconomiaResumen() {
       }).join('') + '</ul>');
       alertasEl.innerHTML = partes.join('');
     } else { alertasEl.innerHTML = partes.join(''); }
+  }
+}
+
+function renderEconomiaIngresos() {
+  var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+  var totalIngresos = servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
+  var porEmpleado = getServiciosPorEmpleadoFromServicios(servicios);
+  var rankingPorIngresos = porEmpleado.slice().sort(function (a, b) { return (b.ingresos || 0) - (a.ingresos || 0); });
+  var topEmpleado = rankingPorIngresos.length > 0 ? rankingPorIngresos[0].empleado : '—';
+  var topIngresos = rankingPorIngresos.length > 0 ? rankingPorIngresos[0].ingresos : 0;
+
+  var elTotal = document.getElementById('economiaIngresosTotalValor');
+  var elTop = document.getElementById('economiaIngresosTopEmpleado');
+  if (elTotal) elTotal.textContent = totalIngresos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  if (elTop) elTop.textContent = topEmpleado !== '—' ? topEmpleado + ' (' + topIngresos.toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €)' : '—';
+
+  var ingresosPorMes = typeof getIngresosPorMesFromServicios === 'function' ? getIngresosPorMesFromServicios(servicios, 12) : [];
+  var ingresosPorSemana = typeof getIngresosPorSemanaFromServicios === 'function' ? getIngresosPorSemanaFromServicios(servicios, 8) : [];
+
+  var rankingContainer = document.getElementById('economiaIngresosRankingContainer');
+  var rankingTabla = document.getElementById('economiaIngresosRankingTabla');
+  if (rankingContainer) {
+    if (rankingPorIngresos.length === 0) {
+      rankingContainer.innerHTML = '<p class="economia-ingresos-empty">Sin datos de servicios. Los ingresos se calculan a partir de reparaciones y tuneos registrados.</p>';
+    } else {
+      var rankingConIngresos = rankingPorIngresos.slice(0, 10).map(function (r) { return { empleado: r.empleado, ingresos: r.ingresos }; });
+      if (typeof renderIndicadoresChartBarras === 'function') renderIndicadoresChartBarras('economiaIngresosRankingContainer', rankingConIngresos, 'empleado', 'ingresos', '#22c55e');
+    }
+  }
+  if (rankingTabla) {
+    rankingTabla.innerHTML = '';
+    rankingPorIngresos.forEach(function (r, idx) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (idx + 1) + '</td><td>' + escapeHtml(r.empleado) + '</td><td>' + (r.ingresos || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €</td><td>' + (r.count || 0) + '</td>';
+      rankingTabla.appendChild(tr);
+    });
+    if (rankingPorIngresos.length === 0) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="4" class="economia-ingresos-empty">Sin datos.</td>';
+      rankingTabla.appendChild(tr);
+    }
+  }
+
+  var evolucionContainer = document.getElementById('economiaIngresosEvolucionContainer');
+  if (evolucionContainer) {
+    if (ingresosPorMes.length === 0) {
+      evolucionContainer.innerHTML = '<p class="economia-ingresos-empty">Sin datos para mostrar evolución.</p>';
+    } else if (typeof renderIndicadoresChartLine === 'function') {
+      renderIndicadoresChartLine('economiaIngresosEvolucionContainer', ingresosPorMes, 'total', '#22c55e');
+    }
+  }
+
+  var semanasContainer = document.getElementById('economiaIngresosSemanasContainer');
+  var semanasTabla = document.getElementById('economiaIngresosSemanasTabla');
+  if (semanasContainer) {
+    if (ingresosPorSemana.length === 0) {
+      semanasContainer.innerHTML = '<p class="economia-ingresos-empty">Sin datos por semana.</p>';
+    } else if (typeof renderIndicadoresChartLine === 'function') {
+      renderIndicadoresChartLine('economiaIngresosSemanasContainer', ingresosPorSemana, 'total', '#3b82f6');
+    }
+  }
+  if (semanasTabla) {
+    semanasTabla.innerHTML = '';
+    ingresosPorSemana.forEach(function (w, i) {
+      var prev = i > 0 ? ingresosPorSemana[i - 1].total : 0;
+      var variacion = prev > 0 ? ((w.total - prev) / prev * 100) : (w.total > 0 ? 100 : 0);
+      var variacionStr = i === 0 ? '—' : (variacion >= 0 ? '+' : '') + variacion.toFixed(1) + '%';
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + escapeHtml(w.label) + '</td><td>' + (w.total || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €</td><td>' + variacionStr + '</td>';
+      semanasTabla.appendChild(tr);
+    });
   }
 }
 

@@ -3686,6 +3686,38 @@ button.login-recovery-link {
   margin-bottom: 1rem;
 }
 
+.economia-ingresos-titulo {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text, #333);
+}
+
+.economia-ingresos-kpis { margin-bottom: 1.5rem; }
+
+.economia-ingresos-section {
+  margin-bottom: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, rgba(255,255,255,0.1));
+}
+
+.economia-ingresos-section:first-of-type { border-top: none; padding-top: 0; }
+
+.economia-ingresos-section-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--benny-gold-light, #d4af37);
+}
+
+.economia-ingresos-chart { min-height: 200px; margin-bottom: 0.75rem; }
+
+.economia-ingresos-empty {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  padding: 1rem;
+  font-style: italic;
+}
+
 .economia-filtro-label {
   margin-right: 0.5rem;
   font-size: 0.9rem;
@@ -3743,6 +3775,8 @@ button.login-recovery-link {
 .economia-almacen-registro-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
 .economia-kpi-clickable { cursor: pointer; }
 .economia-kpi-clickable:hover { opacity: 0.9; }
+.economia-kpi-ingresos .economia-kpi-value { color: #22c55e; }
+.economia-kpi-ingresos:hover .economia-kpi-value { color: #4ade80; }
 .almacen-detalle-hint { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; }
 .almacen-detalle-lista { overflow-x: auto; }
 .almacen-detalle-table { font-size: 0.9rem; }
