@@ -8397,3 +8397,92 @@ body.personalizacion-cards-elevated .economia-card {
   font-size: 0.85rem;
 }
 .chatbot-send:hover { opacity: 0.95; }
+
+/* ========== Toasts (feedback no intrusivo) ========== */
+.saltlab-toast-container {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: min(90vw, 420px);
+}
+.saltlab-toast-container > * {
+  pointer-events: auto;
+}
+.saltlab-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 0.9375rem;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.saltlab-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.saltlab-toast-out {
+  opacity: 0;
+  transform: translateY(-0.25rem);
+}
+.saltlab-toast-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.saltlab-toast-message {
+  flex: 1;
+  line-height: 1.35;
+}
+.saltlab-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem;
+  margin: -0.15rem -0.25rem -0.15rem 0;
+}
+.saltlab-toast-close:hover {
+  color: var(--text);
+}
+.saltlab-toast--success {
+  border-left: 3px solid var(--success, #2d7a4f);
+}
+.saltlab-toast--success .saltlab-toast-icon {
+  background: rgba(45, 122, 79, 0.2);
+  color: #3a9460;
+}
+.saltlab-toast--error {
+  border-left: 3px solid var(--primary, #b01a1a);
+}
+.saltlab-toast--error .saltlab-toast-icon {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.saltlab-toast--info {
+  border-left: 3px solid var(--accent);
+}
+.saltlab-toast--info .saltlab-toast-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

@@ -43,7 +43,6 @@
       { id: 'pintura_vehiculo', nombre: 'Pintura de vehículo', coste: 25 },
       { id: 'llanta_vehiculo', nombre: 'Llanta de vehículo', coste: 25 },
       { id: 'techo_vehiculo', nombre: 'Techo de vehículo', coste: 25 },
-      { id: 'faldon_lateral', nombre: 'Faldón lateral', coste: 25 },
       { id: 'aleron_vehiculo', nombre: 'Alerón de vehículo', coste: 25 },
       { id: 'humo_neumaticos', nombre: 'Humo de neumáticos', coste: 25 },
       { id: 'tinte_ventanas', nombre: 'Tinte de ventanas', coste: 25 }

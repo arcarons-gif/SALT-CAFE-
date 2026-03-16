@@ -6147,6 +6147,8 @@ function getFichajesComoEventos(userId) {
 function renderListaFichajesReciente(userId, listId) {
   const list = document.getElementById(listId || 'listaFichajesReciente');
   if (!list) return;
+  // No re-renderizar mientras haya un editor de hora de entrada abierto (evita pérdida de foco/valor)
+  if (list.querySelector('.fichaje-edit-entrada-wrap')) return;
   list.setAttribute('data-fichajes-user-id', (userId || '').toString());
   list.setAttribute('data-fichajes-list-id', (listId || 'listaFichajesReciente').toString());
   const eventos = getFichajesComoEventos(userId);
@@ -10479,6 +10481,7 @@ function copiarRegistroCalculadora() {
     navigator.clipboard.writeText(texto).then(() => {
       const btn = document.getElementById('btnCopiarRegistro');
       if (btn) { const t = btn.textContent; btn.textContent = '✓ Copiado'; setTimeout(() => { btn.textContent = t; }, 1500); }
+      if (typeof showToast === 'function') showToast('Registro copiado al portapapeles.', 'success');
     }).catch(() => { fallbackCopiar(texto); });
   } else fallbackCopiar(texto);
 }
@@ -10490,7 +10493,14 @@ function fallbackCopiar(texto) {
   ta.style.opacity = '0';
   document.body.appendChild(ta);
   ta.select();
-  try { document.execCommand('copy'); alert('Registro copiado al portapapeles.'); } catch (e) { alert('No se pudo copiar.'); }
+  try {
+    document.execCommand('copy');
+    if (typeof showToast === 'function') showToast('Registro copiado al portapapeles.', 'success');
+    else alert('Registro copiado al portapapeles.');
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('No se pudo copiar.', 'error');
+    else alert('No se pudo copiar.');
+  }
   document.body.removeChild(ta);
 }
 
@@ -10841,7 +10851,8 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   renderStatsVehiculo('');
   renderListaResultadosCalculadora();
   abrirPantallaResultadosCalculadora();
-  alert('Tuneo registrado correctamente.');
+  if (typeof showToast === 'function') showToast('Tuneo registrado correctamente.', 'success');
+  else alert('Tuneo registrado correctamente.');
 }
 
 /** Mapeo de IDs de piezas reparación (chasis/esenciales) a conceptoId del inventario economía (control único de existencias). */
@@ -10895,7 +10906,9 @@ function restarStockReparacion(chasisDesglose, esencialesDesglose) {
 /** Mapeo piezaId de tuneo (PIEZAS_TUNING) a conceptoId inventario economía (TUNING). El resto usa tuning_otro. */
 var MAPEO_PIEZAS_TUNEO_A_INVENTARIO = {
   pintura_vehiculo: 'tuning_pintura', aleron_vehiculo: 'tuning_aleron', llanta_vehiculo: 'tuning_llantas', luces_vehiculo: 'tuning_luces',
-  parachoques_delantero: 'tuning_parachoque', parachoques_trasero: 'tuning_parachoque', faldon_lateral: 'tuning_aletas', neon_vehiculo: 'tuning_luces'
+  parachoques_delantero: 'tuning_parachoque', parachoques_trasero: 'tuning_parachoque', neon_vehiculo: 'tuning_neon',
+  vinilo_vehiculo: 'tuning_vinilo', chasis_vehiculo: 'tuning_chasis', humo_neumaticos: 'tuning_humo_neumaticos',
+  exterior_vehiculo: 'tuning_exterior', interior_vehiculo: 'tuning_interior', bocina_vehiculo: 'tuning_bocina', extras_vehiculo: 'tuning_extras'
 };
 
 function conceptoInventarioParaPiezaTuneo(piezaId) {
@@ -11023,7 +11036,8 @@ function registrarReparacion() {
   renderStatsVehiculo(''); // actualizar también estadísticas generales del taller
   renderListaResultadosCalculadora();
   abrirPantallaResultadosCalculadora();
-  alert('Reparación registrada correctamente.');
+  if (typeof showToast === 'function') showToast('Reparación registrada correctamente.', 'success');
+  else alert('Reparación registrada correctamente.');
   if (typeof renderFormRegistrarMaterialesRecuperados === 'function' && confirm('¿Registrar materiales recuperados en el almacén?')) {
     renderFormRegistrarMaterialesRecuperados();
     var modal = document.getElementById('modalRegistrarMaterialesRecuperados');
