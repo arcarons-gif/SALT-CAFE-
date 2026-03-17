@@ -1515,20 +1515,17 @@ function vincularAdmin() {
   (function vincularConveniosTabs() {
     var tabEmpresas = document.getElementById('conveniosTabEmpresas');
     var tabEmpleadosPlacas = document.getElementById('conveniosTabEmpleadosPlacas');
-    var tabDocumentoComercial = document.getElementById('conveniosTabDocumentoComercial');
-    var panelEmpresas = document.getElementById('conveniosPanelEmpresas');
+    var tabConvenios = document.getElementById('conveniosTabConvenios');
+    var panelConvenios = document.getElementById('conveniosPanelConvenios');
     var panelEmpleadosPlacas = document.getElementById('conveniosPanelEmpleadosPlacas');
-    var panelDocumentoComercial = document.getElementById('conveniosPanelDocumentoComercial');
     function showConveniosTab(which) {
       document.querySelectorAll('.convenios-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-convenios-tab') === which); });
-      if (panelEmpresas) panelEmpresas.style.display = which === 'empresas' ? '' : 'none';
+      if (panelConvenios) panelConvenios.style.display = which === 'convenios' ? '' : 'none';
       if (panelEmpleadosPlacas) panelEmpleadosPlacas.style.display = which === 'empleados-placas' ? '' : 'none';
-      if (panelDocumentoComercial) panelDocumentoComercial.style.display = which === 'documento-comercial' ? '' : 'none';
-      if (which === 'documento-comercial' && typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+      if (which === 'convenios' && typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
       if (which === 'empleados-placas' && typeof renderConveniosEmpleadosYPlacas === 'function') renderConveniosEmpleadosYPlacas();
     }
-    if (tabEmpresas) tabEmpresas.addEventListener('click', function () { showConveniosTab('empresas'); });
-    if (tabDocumentoComercial) tabDocumentoComercial.addEventListener('click', function () { showConveniosTab('documento-comercial'); });
+    if (tabConvenios) tabConvenios.addEventListener('click', function () { showConveniosTab('convenios'); });
     if (tabEmpleadosPlacas) tabEmpleadosPlacas.addEventListener('click', function () { showConveniosTab('empleados-placas'); });
   })();
   (function vincularEditorDocConvenioComercial() {
@@ -1547,6 +1544,18 @@ function vincularAdmin() {
     document.getElementById('docEditarBtnGuardarEnExistente')?.addEventListener('click', function () {
       if (typeof guardarDocEditarEnConvenioExistente === 'function') guardarDocEditarEnConvenioExistente();
     });
+    document.getElementById('docEditarConvenioExistente')?.addEventListener('change', function () {
+      if (typeof syncDocEditarExistenteDescuentoFromSelect === 'function') syncDocEditarExistenteDescuentoFromSelect();
+    });
+    document.getElementById('modalDocConvenioComercial')?.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && e.target.closest('.doc-editar-existente-descuento-btn');
+      if (!btn) return;
+      e.preventDefault();
+      var n = parseInt(btn.getAttribute('data-descuento'), 10);
+      var input = document.getElementById('docEditarExistenteDescuento');
+      if (input) input.value = n;
+      document.querySelectorAll('.doc-editar-existente-descuento-btn').forEach(function (b) { b.classList.toggle('active', parseInt(b.getAttribute('data-descuento'), 10) === n); });
+    });
     document.getElementById('docEditarBtnPantallaCompleta')?.addEventListener('click', function () {
       if (typeof abrirDocConvenioFullscreen === 'function') abrirDocConvenioFullscreen();
     });
@@ -1556,6 +1565,15 @@ function vincularAdmin() {
     (function vincularPantallaEditorDocConvenio() {
       document.getElementById('editorDocConvenioVolver')?.addEventListener('click', function () {
         if (typeof cerrarPantallaEditorDocConvenio === 'function') cerrarPantallaEditorDocConvenio();
+      });
+      document.getElementById('pantallaEditorDocConvenio')?.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('.editor-doc-descuento-btn');
+        if (!btn) return;
+        e.preventDefault();
+        var n = parseInt(btn.getAttribute('data-descuento'), 10);
+        var input = document.getElementById('editorDocConvenioDescuento');
+        if (input) input.value = n;
+        btn.closest('.editor-doc-convenio-descuento-wrap')?.querySelectorAll('.editor-doc-descuento-btn').forEach(function (b) { b.classList.toggle('active', parseInt(b.getAttribute('data-descuento'), 10) === n); });
       });
       document.getElementById('editorDocConvenioBtnPersonalizacion')?.addEventListener('click', function () {
         var panel = document.getElementById('panelPersonalizacionDocConvenio');
@@ -7456,7 +7474,10 @@ function mostrarPanelAdmin(tab) {
     panelRegistroConexiones.style.display = tab === 'registro-conexiones' ? '' : 'none';
     if (tab === 'registro-conexiones' && typeof renderRegistroConexiones === 'function') renderRegistroConexiones();
   }
-  if (panelConvenios) panelConvenios.style.display = tab === 'convenios' ? '' : 'none';
+  if (panelConvenios) {
+    panelConvenios.style.display = tab === 'convenios' ? '' : 'none';
+    if (tab === 'convenios' && typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+  }
   if (panelEconomia) {
     panelEconomia.style.display = (tab === 'economia' || tab === 'stock') ? '' : 'none';
     if (tab === 'economia') {
@@ -8057,6 +8078,7 @@ function abrirEditorDocConvenioComercial(convenioId) {
       sel.appendChild(opt);
     });
     if (convenioId && convenio) sel.value = convenioId;
+    syncDocEditarExistenteDescuentoFromSelect();
   }
   vincularDocEditarPreview();
   vincularDocEditarImagenes();
@@ -8585,6 +8607,20 @@ function abrirPantallaEditorDocConvenio(convenioId) {
     if (convenioId) selExistente.value = convenioId;
     else if (convenios.length) selExistente.value = convenios[0].id || '';
   }
+  var descuentoWrap = document.getElementById('editorDocConvenioDescuentoWrap');
+  var descuentoInput = document.getElementById('editorDocConvenioDescuento');
+  if (convenio && descuentoWrap && descuentoInput) {
+    descuentoWrap.style.display = '';
+    var desc = convenio.descuento != null ? parseInt(convenio.descuento, 10) : 10;
+    if (isNaN(desc) || [0, 5, 10, 15, 20].indexOf(desc) === -1) desc = 10;
+    descuentoInput.value = desc;
+    pantalla.querySelectorAll('.editor-doc-descuento-btn').forEach(function (btn) {
+      var n = parseInt(btn.getAttribute('data-descuento'), 10);
+      btn.classList.toggle('active', n === desc);
+    });
+  } else if (descuentoWrap) {
+    descuentoWrap.style.display = 'none';
+  }
   pantalla.style.display = '';
   pantalla.setAttribute('aria-hidden', 'false');
   var gestionEl = document.getElementById('pantallaGestion');
@@ -8626,6 +8662,11 @@ function guardarDocDesdePantallaEnExistente() {
   if (idx === -1) { alert('Convenio no encontrado.'); return; }
   var doc = getDocumentoAcuerdoFromEditorPantalla();
   convenios[idx].documentoAcuerdo = doc;
+  var descEl = document.getElementById('editorDocConvenioDescuento');
+  if (descEl) {
+    var desc = parseInt(descEl.value, 10);
+    if (!isNaN(desc) && desc >= 0 && desc <= 100) convenios[idx].descuento = [0, 5, 10, 15, 20].indexOf(desc) !== -1 ? desc : normalizarDescuentoConvenio(descEl.value);
+  }
   saveConvenios(convenios);
   cerrarPantallaEditorDocConvenio();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
@@ -8650,6 +8691,20 @@ function guardarDocEditarComoNuevoConvenio() {
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof cargarConvenios === 'function') cargarConvenios();
 }
+function syncDocEditarExistenteDescuentoFromSelect() {
+  var sel = document.getElementById('docEditarConvenioExistente');
+  var id = sel && sel.value ? sel.value.trim() : '';
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  var c = id ? convenios.find(function (x) { return (x.id || '') === id; }) : null;
+  var desc = (c && c.descuento != null) ? parseInt(c.descuento, 10) : 10;
+  if (isNaN(desc) || [0, 5, 10, 15, 20].indexOf(desc) === -1) desc = 10;
+  var input = document.getElementById('docEditarExistenteDescuento');
+  if (input) input.value = desc;
+  document.querySelectorAll('.doc-editar-existente-descuento-btn').forEach(function (btn) {
+    var n = parseInt(btn.getAttribute('data-descuento'), 10);
+    btn.classList.toggle('active', n === desc);
+  });
+}
 function guardarDocEditarEnConvenioExistente() {
   var sel = document.getElementById('docEditarConvenioExistente');
   var id = sel && sel.value ? sel.value.trim() : '';
@@ -8659,6 +8714,11 @@ function guardarDocEditarEnConvenioExistente() {
   if (idx === -1) { alert('Convenio no encontrado.'); return; }
   var doc = getDocumentoAcuerdoFromDocEditorForm();
   convenios[idx].documentoAcuerdo = doc;
+  var descEl = document.getElementById('docEditarExistenteDescuento');
+  if (descEl) {
+    var desc = parseInt(descEl.value, 10);
+    if (!isNaN(desc) && desc >= 0 && desc <= 100) convenios[idx].descuento = [0, 5, 10, 15, 20].indexOf(desc) !== -1 ? desc : normalizarDescuentoConvenio(descEl.value);
+  }
   saveConvenios(convenios);
   cerrarEditorDocConvenioComercial();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
@@ -9562,6 +9622,7 @@ function init() {
   vincularMiHistorial();
   vincularResultadosCalculadora();
   vincularModalFotosTuneo();
+  vincularModalConvenioPrimeraVez();
   vincularTunnings();
   vincularIndicadoresHistorial();
   vincularPasswordToggle();
@@ -10731,6 +10792,68 @@ function getModeloDisplayParaRegistro(matricula) {
   return '-';
 }
 
+/** Si la matrícula no tiene convenio en BBDD, muestra modal para elegirlo (solo la primera vez). Llama a onListo() cuando puede continuar (ya tenía convenio o el usuario eligió y guardó). Si el usuario cancela, no llama a onListo. */
+var _convenioPrimeraVezOnListo = null;
+var _convenioPrimeraVezMatricula = '';
+function requiereConvenioParaMatricula(matricula, onListo) {
+  if (typeof onListo !== 'function') return;
+  var mat = (matricula || '').trim();
+  if (!mat) { onListo(); return; }
+  var cliente = typeof getClienteByMatricula === 'function' ? getClienteByMatricula(mat) : null;
+  if (cliente && (cliente.convenio || '').toString().trim() !== '') {
+    onListo();
+    return;
+  }
+  var modal = document.getElementById('modalConvenioPrimeraVez');
+  var select = document.getElementById('modalConvenioPrimeraVezSelect');
+  if (!modal || !select) { onListo(); return; }
+  select.innerHTML = '';
+  if (el.negocios && el.negocios.options) {
+    for (var i = 0; i < el.negocios.options.length; i++) {
+      var o = el.negocios.options[i];
+      select.appendChild(new Option(o.textContent, o.value));
+    }
+  }
+  if (select.options.length === 0) select.appendChild(new Option('N/A (0%)', 'N/A'));
+  _convenioPrimeraVezOnListo = onListo;
+  _convenioPrimeraVezMatricula = mat;
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalConvenioPrimeraVez() {
+  var modal = document.getElementById('modalConvenioPrimeraVez');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  _convenioPrimeraVezOnListo = null;
+  _convenioPrimeraVezMatricula = '';
+}
+
+function aceptarModalConvenioPrimeraVez() {
+  var mat = _convenioPrimeraVezMatricula;
+  var select = document.getElementById('modalConvenioPrimeraVezSelect');
+  var val = (select && select.value) ? (select.value || '').trim() : 'N/A';
+  if (mat && typeof addOrUpdateClienteBBDD === 'function') addOrUpdateClienteBBDD({ matricula: mat, convenio: val });
+  if (el.negocios) el.negocios.value = val;
+  if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
+  var cb = _convenioPrimeraVezOnListo;
+  cerrarModalConvenioPrimeraVez();
+  if (cb) cb();
+}
+
+function vincularModalConvenioPrimeraVez() {
+  var btnAceptar = document.getElementById('modalConvenioPrimeraVezAceptar');
+  var btnCancelar = document.getElementById('modalConvenioPrimeraVezCancelar');
+  var btnClose = document.getElementById('modalConvenioPrimeraVezClose');
+  var backdrop = document.getElementById('modalConvenioPrimeraVezBackdrop');
+  if (btnAceptar) btnAceptar.addEventListener('click', aceptarModalConvenioPrimeraVez);
+  if (btnCancelar) btnCancelar.addEventListener('click', cerrarModalConvenioPrimeraVez);
+  if (btnClose) btnClose.addEventListener('click', cerrarModalConvenioPrimeraVez);
+  if (backdrop) backdrop.addEventListener('click', cerrarModalConvenioPrimeraVez);
+}
+
 /** Asegura que la matrícula esté en la BBDD de clientes; si no existe, la añade con los datos del formulario */
 function ensureClienteEnBBDDSiFalta(matricula) {
   const mat = (matricula || '').trim();
@@ -10805,7 +10928,7 @@ function enviarRegistroServicioADiscord(servicio) {
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
 
-/** Abre el modal de fotos antes/después para registrar un tuneo. */
+/** Abre el modal de fotos antes/después para registrar un tuneo. Pide convenio la primera vez que se registra la matrícula. */
 function abrirModalFotosTuneo() {
   const p = calcularPrecios();
   const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
@@ -10818,18 +10941,22 @@ function abrirModalFotosTuneo() {
     alert('Introduce la matrícula del vehículo.');
     return;
   }
-  var inputAntes = document.getElementById('tuneoFotoAntes');
-  var inputDespues = document.getElementById('tuneoFotoDespues');
-  var checkConfirmo = document.getElementById('tuneoConfirmoFotosVehiculo');
-  if (inputAntes) inputAntes.value = '';
-  if (inputDespues) inputDespues.value = '';
-  if (checkConfirmo) checkConfirmo.checked = false;
-  var previewAntes = document.getElementById('tuneoPreviewAntes');
-  var previewDespues = document.getElementById('tuneoPreviewDespues');
-  if (previewAntes) previewAntes.innerHTML = '';
-  if (previewDespues) previewDespues.innerHTML = '';
-  var modal = document.getElementById('modalFotosTuneo');
-  if (modal) modal.classList.add('active');
+  guardarMatricula(mat);
+  if (typeof ensureClienteEnBBDDSiFalta === 'function') ensureClienteEnBBDDSiFalta(mat);
+  requiereConvenioParaMatricula(mat, function abrirModalFotosTuneoContinuar() {
+    var inputAntes = document.getElementById('tuneoFotoAntes');
+    var inputDespues = document.getElementById('tuneoFotoDespues');
+    var checkConfirmo = document.getElementById('tuneoConfirmoFotosVehiculo');
+    if (inputAntes) inputAntes.value = '';
+    if (inputDespues) inputDespues.value = '';
+    if (checkConfirmo) checkConfirmo.checked = false;
+    var previewAntes = document.getElementById('tuneoPreviewAntes');
+    var previewDespues = document.getElementById('tuneoPreviewDespues');
+    if (previewAntes) previewAntes.innerHTML = '';
+    if (previewDespues) previewDespues.innerHTML = '';
+    var modal = document.getElementById('modalFotosTuneo');
+    if (modal) modal.classList.add('active');
+  });
 }
 
 /** Vincula el modal de fotos del tuneo: envío, cancelar y preview. */
@@ -11107,10 +11234,11 @@ function registrarReparacion() {
   }
   guardarMatricula(mat);
   ensureClienteEnBBDDSiFalta(mat);
-  const session = getSession();
-  const nombreRegistradorRep = session ? (session.nombre || session.username || '') : '';
-  if (el.mecanico) el.mecanico.value = nombreRegistradorRep || '—';
-  var partesChasisReg = 0;
+  requiereConvenioParaMatricula(mat, function continuarRegistroReparacion() {
+    var session = getSession();
+    var nombreRegistradorRep = session ? (session.nombre || session.username || '') : '';
+    if (el.mecanico) el.mecanico.value = nombreRegistradorRep || '—';
+    var partesChasisReg = 0;
   var partesEsencialesReg = 0;
   var piezasChasisDesglose = [];
   var piezasEsencialesDesglose = [];
@@ -11197,6 +11325,7 @@ function registrarReparacion() {
     var modal = document.getElementById('modalRegistrarMaterialesRecuperados');
     if (modal) modal.classList.add('active');
   }
+  });
 }
 
 function actualizarModalRegistro() {
@@ -11609,6 +11738,7 @@ function vincularEventos() {
 
 // Arranque: comprobar sesión y mostrar login o app
 function onReady() {
+  if (typeof window.clearConveniosBBDDSiMigrations === 'function') window.clearConveniosBBDDSiMigrations();
   vincularPasswordToggle();
   arranqueAuth();
 }

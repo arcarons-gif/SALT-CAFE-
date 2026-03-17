@@ -96,6 +96,27 @@ function invalidateClientesBBDDCache() {
 }
 if (typeof window !== 'undefined') window.invalidateClientesBBDDCache = invalidateClientesBBDDCache;
 
+/** Una sola vez: quita el convenio de todos los clientes en la BBDD para empezar a registrarlos desde cero. */
+function clearConveniosBBDDSiMigrations() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem('benny_convenios_bbdd_cleared') === '1') return;
+    const list = getClientesBBDD();
+    let changed = false;
+    list.forEach(function (r) {
+      if ((r.convenio || '').toString().trim() !== '') {
+        r.convenio = '';
+        changed = true;
+      }
+    });
+    if (changed) saveClientesBBDD(list);
+    localStorage.setItem('benny_convenios_bbdd_cleared', '1');
+  } catch (e) {
+    console.warn('clearConveniosBBDDSiMigrations', e);
+  }
+}
+if (typeof window !== 'undefined') window.clearConveniosBBDDSiMigrations = clearConveniosBBDDSiMigrations;
+
 function saveClientesBBDD(arr) {
   try {
     const list = Array.isArray(arr) ? arr : [];
