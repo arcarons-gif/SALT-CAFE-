@@ -8192,6 +8192,8 @@ function renderDocConvenioHistorial() {
       var imgUrl = baseRepo + encodeURIComponent(filename);
       var tituloDisplay = nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
       if (tituloDisplay.toLowerCase() === 'ls customs') tituloDisplay = 'LS Customs';
+      var descRepo = typeof getConvenioRepoDescuento === 'function' ? getConvenioRepoDescuento(tituloDisplay) : null;
+      var descuentoText = descRepo != null ? descRepo + '%' : '';
       var previewHtml = '<div class="doc-convenio-historial-card-preview">';
       previewHtml += '<img src="' + imgUrl + '" alt="" class="doc-convenio-historial-logo doc-convenio-historial-repo-thumb" onerror="this.style.display=\'none\'">';
       previewHtml += '<div class="doc-convenio-historial-card-text">';
@@ -8205,13 +8207,13 @@ function renderDocConvenioHistorial() {
       cardRepo.setAttribute('data-repo-filename', filename);
       cardRepo.setAttribute('role', 'button');
       cardRepo.setAttribute('tabindex', '0');
-      cardRepo.setAttribute('aria-label', 'Ver documento firmado ' + tituloDisplay);
-      cardRepo.innerHTML = previewHtml + '<div class="doc-convenio-historial-card-footer"><span class="doc-convenio-historial-card-nombre">' + escapeHtml(tituloDisplay) + '</span></div>';
+      cardRepo.setAttribute('aria-label', 'Editar convenio ' + tituloDisplay);
+      cardRepo.innerHTML = previewHtml + '<div class="doc-convenio-historial-card-footer"><span class="doc-convenio-historial-card-nombre">' + escapeHtml(tituloDisplay) + '</span> <span class="doc-convenio-historial-card-descuento">' + descuentoText + '</span></div>';
       cardRepo.addEventListener('click', function () {
-        if (typeof abrirModalVerDocFirmadoRepo === 'function') abrirModalVerDocFirmadoRepo(tituloDisplay, filename);
+        if (typeof abrirModalEditarConvenioDesdeGridRepo === 'function') abrirModalEditarConvenioDesdeGridRepo(tituloDisplay, filename);
       });
       cardRepo.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (typeof abrirModalVerDocFirmadoRepo === 'function') abrirModalVerDocFirmadoRepo(tituloDisplay, filename); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (typeof abrirModalEditarConvenioDesdeGridRepo === 'function') abrirModalEditarConvenioDesdeGridRepo(tituloDisplay, filename); }
       });
       grid.appendChild(cardRepo);
     });
@@ -8273,8 +8275,33 @@ function cerrarModalVerDocConvenioDataUrl() {
   if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
 }
 
+/** Descuentos de convenios que vienen del repositorio (ej. LS Customs). Clave: nombre mostrado, valor: % descuento. */
+var CONVENIOS_REPO_DESCUENTOS_KEY = 'benny_convenios_repo_descuentos';
+function getConvenioRepoDescuentos() {
+  try {
+    var raw = localStorage.getItem(CONVENIOS_REPO_DESCUENTOS_KEY);
+    var o = raw ? JSON.parse(raw) : {};
+    return typeof o === 'object' && o !== null ? o : {};
+  } catch (e) { return {}; }
+}
+function getConvenioRepoDescuento(nombre) {
+  var o = getConvenioRepoDescuentos();
+  var val = o[(nombre || '').toString().trim()];
+  return val != null ? parseInt(val, 10) : null;
+}
+function setConvenioRepoDescuento(nombre, descuento) {
+  var o = getConvenioRepoDescuentos();
+  o[(nombre || '').toString().trim()] = descuento;
+  try { localStorage.setItem(CONVENIOS_REPO_DESCUENTOS_KEY, JSON.stringify(o)); } catch (e) {}
+}
+
+var _modalEditarConvenioRepoNombre = null;
+var _modalEditarConvenioRepoFilename = null;
+
 /** Abre el modal para editar convenio desde la cuadrícula (descuento, ver documento, abrir editor). */
 function abrirModalEditarConvenioDesdeGrid(convenioId) {
+  _modalEditarConvenioRepoNombre = null;
+  _modalEditarConvenioRepoFilename = null;
   var id = (convenioId || '').toString().trim();
   if (!id) return;
   var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
@@ -8284,6 +8311,7 @@ function abrirModalEditarConvenioDesdeGrid(convenioId) {
   var tituloEl = document.getElementById('modalEditarConvenioDesdeGridTitulo');
   var descEl = document.getElementById('modalEditarConvenioDesdeGridDescuento');
   var docActions = document.getElementById('modalEditarConvenioDesdeGridDocActions');
+  var btnEditor = document.getElementById('modalEditarConvenioDesdeGridEditor');
   if (idEl) idEl.value = id;
   if (tituloEl) tituloEl.textContent = 'Editar convenio: ' + (c.nombre || '');
   var desc = c.descuento != null ? parseInt(c.descuento, 10) : 10;
@@ -8295,11 +8323,39 @@ function abrirModalEditarConvenioDesdeGrid(convenioId) {
     btn.classList.toggle('active', n === desc);
   });
   if (docActions) docActions.style.display = (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) ? '' : 'none';
+  if (btnEditor) btnEditor.style.display = '';
+  var modal = document.getElementById('modalEditarConvenioDesdeGrid');
+  if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
+}
+
+/** Abre el mismo modal para un convenio de repositorio (ej. LS Customs): editar descuento y ver documento. */
+function abrirModalEditarConvenioDesdeGridRepo(nombre, filename) {
+  _modalEditarConvenioRepoNombre = (nombre || '').toString().trim();
+  _modalEditarConvenioRepoFilename = (filename || '').toString().trim();
+  var idEl = document.getElementById('modalEditarConvenioDesdeGridId');
+  var tituloEl = document.getElementById('modalEditarConvenioDesdeGridTitulo');
+  var descEl = document.getElementById('modalEditarConvenioDesdeGridDescuento');
+  var docActions = document.getElementById('modalEditarConvenioDesdeGridDocActions');
+  var btnEditor = document.getElementById('modalEditarConvenioDesdeGridEditor');
+  if (idEl) idEl.value = 'repo:' + _modalEditarConvenioRepoNombre;
+  if (tituloEl) tituloEl.textContent = 'Editar convenio: ' + _modalEditarConvenioRepoNombre;
+  var desc = getConvenioRepoDescuento(_modalEditarConvenioRepoNombre);
+  if (desc === null || isNaN(desc) || desc < 0) desc = 10;
+  if (descEl) descEl.value = desc;
+  var btns = document.querySelectorAll('.modal-editar-convenio-grid .convenio-descuento-btn');
+  if (btns && btns.length) btns.forEach(function (btn) {
+    var n = parseInt(btn.getAttribute('data-descuento'), 10);
+    btn.classList.toggle('active', n === desc);
+  });
+  if (docActions) docActions.style.display = ''; // siempre mostrar para repo (ver documento)
+  if (btnEditor) btnEditor.style.display = 'none'; // repositorio no tiene editor de plantilla
   var modal = document.getElementById('modalEditarConvenioDesdeGrid');
   if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
 }
 
 function cerrarModalEditarConvenioDesdeGrid() {
+  _modalEditarConvenioRepoNombre = null;
+  _modalEditarConvenioRepoFilename = null;
   var modal = document.getElementById('modalEditarConvenioDesdeGrid');
   if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
 }
@@ -8316,10 +8372,12 @@ function vincularModalEditarConvenioDesdeGrid() {
 
   function getConvenioActual() {
     var id = idEl && idEl.value ? idEl.value.trim() : '';
-    if (!id) return null;
+    if (!id || id.indexOf('repo:') === 0) return null;
     var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
     return convenios.find(function (x) { return (x.id || '') === id; });
   }
+
+  function isRepoMode() { return _modalEditarConvenioRepoNombre != null; }
 
   if (btnClose) btnClose.addEventListener('click', cerrarModalEditarConvenioDesdeGrid);
   if (backdrop) backdrop.addEventListener('click', cerrarModalEditarConvenioDesdeGrid);
@@ -8341,11 +8399,19 @@ function vincularModalEditarConvenioDesdeGrid() {
   });
 
   if (btnGuardar) btnGuardar.addEventListener('click', function () {
-    var conv = getConvenioActual();
-    if (!conv) return;
+    var id = idEl && idEl.value ? idEl.value.trim() : '';
     var desc = parseInt(descEl && descEl.value !== '' ? descEl.value : '10', 10);
     if (isNaN(desc) || desc < 0) desc = 10;
     if (desc > 100) desc = 100;
+    if (id.indexOf('repo:') === 0) {
+      var repoNombre = id.slice(5);
+      setConvenioRepoDescuento(repoNombre, desc);
+      cerrarModalEditarConvenioDesdeGrid();
+      if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+      return;
+    }
+    var conv = getConvenioActual();
+    if (!conv) return;
     var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
     var idx = convenios.findIndex(function (x) { return (x.id || '') === (conv.id || ''); });
     if (idx === -1) return;
@@ -8357,6 +8423,13 @@ function vincularModalEditarConvenioDesdeGrid() {
   });
 
   if (btnVerDoc) btnVerDoc.addEventListener('click', function () {
+    if (isRepoMode() && _modalEditarConvenioRepoNombre && _modalEditarConvenioRepoFilename) {
+      var repoNombre = _modalEditarConvenioRepoNombre;
+      var repoFilename = _modalEditarConvenioRepoFilename;
+      cerrarModalEditarConvenioDesdeGrid();
+      if (typeof abrirModalVerDocFirmadoRepo === 'function') abrirModalVerDocFirmadoRepo(repoNombre, repoFilename);
+      return;
+    }
     var conv = getConvenioActual();
     if (!conv || !conv.acuerdoArchivoDataUrl || conv.acuerdoArchivoDataUrl.indexOf('data:') !== 0) return;
     cerrarModalEditarConvenioDesdeGrid();
@@ -8365,7 +8438,7 @@ function vincularModalEditarConvenioDesdeGrid() {
 
   if (btnEditor) btnEditor.addEventListener('click', function () {
     var id = idEl && idEl.value ? idEl.value.trim() : '';
-    if (!id) return;
+    if (!id || id.indexOf('repo:') === 0) return;
     cerrarModalEditarConvenioDesdeGrid();
     if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(id);
   });
