@@ -10416,20 +10416,42 @@ function vincularPasos() {
           optConvVac.value = '';
           optConvVac.textContent = '— Selecciona convenio —';
           nvConvenio.appendChild(optConvVac);
-          const session = getSession();
-          let convenios = typeof getConveniosVisibles === 'function' ? getConveniosVisibles(hasPermission(session, 'verConveniosPrivados')) : (typeof getConvenios === 'function' ? getConvenios() : []);
+          var session = getSession();
+          var puedeVerPrivados = session && typeof hasPermission === 'function' && hasPermission(session, 'verConveniosPrivados');
+          var convenios = typeof getConveniosVisibles === 'function' ? getConveniosVisibles(puedeVerPrivados) : (typeof getConvenios === 'function' ? getConvenios() : []);
           convenios = convenios.filter(function (c) {
             var nombre = (c.nombre || '').trim();
             if (nombre.toUpperCase() === 'N/A') return true;
             return typeof tieneDocumentoConvenioGuardado === 'function' && tieneDocumentoConvenioGuardado(c);
           });
-          convenios = [...convenios].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-          convenios.forEach(c => {
-            const o = document.createElement('option');
-            o.value = c.nombre;
-            o.textContent = c.descuento > 0 ? c.nombre + ' (' + c.descuento + '%)' : c.nombre;
-            nvConvenio.appendChild(o);
-          });
+          convenios = convenios.slice().sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
+          function anadirOpcionesConvenio(lista) {
+            lista.forEach(function (c) {
+              var o = document.createElement('option');
+              o.value = c.nombre;
+              o.textContent = (c.descuento != null && c.descuento > 0) ? (c.nombre + ' (' + c.descuento + '%)') : c.nombre;
+              nvConvenio.appendChild(o);
+            });
+          }
+          anadirOpcionesConvenio(convenios);
+          var baseRepo = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_FIRMADOS_BASE) ? window.CONVENIOS_ACUERDOS_FIRMADOS_BASE : 'input/CONTENT/Logos/convenios/acuerdos/firmados/';
+          fetch(baseRepo + 'firmados.txt').then(function (r) { return r.text(); }).then(function (text) {
+            var lineas = (text || '').split(/\r?\n/).map(function (l) { return (l || '').trim(); }).filter(Boolean);
+            var repoConvenios = lineas.map(function (nombre) {
+              var tituloDisplay = nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
+              if (tituloDisplay.toLowerCase() === 'ls customs') tituloDisplay = 'LS Customs';
+              var desc = typeof getConvenioRepoDescuento === 'function' ? getConvenioRepoDescuento(tituloDisplay) : null;
+              return { nombre: tituloDisplay, descuento: desc != null ? desc : 0 };
+            });
+            repoConvenios.forEach(function (r) {
+              if (!convenios.some(function (c) { return (c.nombre || '').trim() === (r.nombre || '').trim(); })) {
+                var o = document.createElement('option');
+                o.value = r.nombre;
+                o.textContent = (r.descuento != null && r.descuento > 0) ? (r.nombre + ' (' + r.descuento + '%)') : r.nombre;
+                nvConvenio.appendChild(o);
+              }
+            });
+          }).catch(function () {});
         }
         fillNuevoVehiculoModeloDatalist();
         var inputModelo = document.getElementById('nuevoVehiculoModeloNombre');
