@@ -1659,6 +1659,10 @@ function vincularAdmin() {
       document.getElementById('modalSeleccionarFirmaBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalSeleccionarFirma === 'function') cerrarModalSeleccionarFirma(); });
       document.getElementById('modalVerDocFirmadoRepoCerrar')?.addEventListener('click', function () { if (typeof cerrarModalVerDocFirmadoRepo === 'function') cerrarModalVerDocFirmadoRepo(); });
       document.getElementById('modalVerDocFirmadoRepoBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalVerDocFirmadoRepo === 'function') cerrarModalVerDocFirmadoRepo(); });
+      document.getElementById('modalVerDocFirmadoRepoEditar')?.addEventListener('click', function () {
+        if (_verDocFirmadoRepoNombre != null && _verDocFirmadoRepoFilename != null && typeof cerrarModalVerDocFirmadoRepo === 'function') cerrarModalVerDocFirmadoRepo();
+        if (_verDocFirmadoRepoNombre != null && _verDocFirmadoRepoFilename != null && typeof abrirModalEditarConvenioDesdeGridRepo === 'function') abrirModalEditarConvenioDesdeGridRepo(_verDocFirmadoRepoNombre, _verDocFirmadoRepoFilename);
+      });
       document.getElementById('modalVerDocConvenioDataUrlCerrar')?.addEventListener('click', function () { if (typeof cerrarModalVerDocConvenioDataUrl === 'function') cerrarModalVerDocConvenioDataUrl(); });
       document.getElementById('modalVerDocConvenioDataUrlBackdrop')?.addEventListener('click', function () { if (typeof cerrarModalVerDocConvenioDataUrl === 'function') cerrarModalVerDocConvenioDataUrl(); });
       var docConvenioSubirInput = document.getElementById('docConvenioSubirArchivo');
@@ -8220,7 +8224,11 @@ function renderDocConvenioHistorial() {
   }).catch(function () {});
 }
 
+var _verDocFirmadoRepoNombre = null;
+var _verDocFirmadoRepoFilename = null;
 function abrirModalVerDocFirmadoRepo(titulo, filename) {
+  _verDocFirmadoRepoNombre = (titulo || '').toString().trim();
+  _verDocFirmadoRepoFilename = (filename || '').toString().trim();
   var baseRepo = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_FIRMADOS_BASE) ? window.CONVENIOS_ACUERDOS_FIRMADOS_BASE : 'input/CONTENT/Logos/convenios/acuerdos/firmados/';
   var modal = document.getElementById('modalVerDocFirmadoRepo');
   var tituloEl = document.getElementById('modalVerDocFirmadoRepoTitulo');
@@ -8324,6 +8332,8 @@ function abrirModalEditarConvenioDesdeGrid(convenioId) {
   });
   if (docActions) docActions.style.display = (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) ? '' : 'none';
   if (btnEditor) btnEditor.style.display = '';
+  var btnEliminar = document.getElementById('modalEditarConvenioDesdeGridEliminar');
+  if (btnEliminar) btnEliminar.style.display = '';
   var modal = document.getElementById('modalEditarConvenioDesdeGrid');
   if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
 }
@@ -8349,6 +8359,8 @@ function abrirModalEditarConvenioDesdeGridRepo(nombre, filename) {
   });
   if (docActions) docActions.style.display = ''; // siempre mostrar para repo (ver documento)
   if (btnEditor) btnEditor.style.display = 'none'; // repositorio no tiene editor de plantilla
+  var btnEliminar = document.getElementById('modalEditarConvenioDesdeGridEliminar');
+  if (btnEliminar) btnEliminar.style.display = 'none'; // no eliminar convenios de repositorio
   var modal = document.getElementById('modalEditarConvenioDesdeGrid');
   if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
 }
@@ -8441,6 +8453,26 @@ function vincularModalEditarConvenioDesdeGrid() {
     if (!id || id.indexOf('repo:') === 0) return;
     cerrarModalEditarConvenioDesdeGrid();
     if (typeof abrirPantallaEditorDocConvenio === 'function') abrirPantallaEditorDocConvenio(id);
+  });
+
+  var btnEliminar = document.getElementById('modalEditarConvenioDesdeGridEliminar');
+  if (btnEliminar) btnEliminar.addEventListener('click', function () {
+    var id = idEl && idEl.value ? idEl.value.trim() : '';
+    if (!id || id.indexOf('repo:') === 0) return;
+    var conv = getConvenioActual();
+    if (!conv) return;
+    if (!confirm('¿Eliminar el convenio «' + (conv.nombre || '') + '»? Esta acción no se puede deshacer.')) return;
+    var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+    var idx = convenios.findIndex(function (x) { return (x.id || '') === id; });
+    if (idx === -1) return;
+    convenios.splice(idx, 1);
+    if (typeof saveConvenios === 'function') saveConvenios(convenios);
+    cerrarModalEditarConvenioDesdeGrid();
+    if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+    if (typeof renderListaConvenios === 'function') renderListaConvenios();
+    if (typeof cargarConvenios === 'function') cargarConvenios();
+    if (typeof showToast === 'function') showToast('Convenio eliminado.', 'success');
+    else alert('Convenio eliminado.');
   });
 }
 
@@ -8824,16 +8856,29 @@ function guardarDocDesdePantallaComoNuevo() {
   if (nombre === null) return;
   nombre = (nombre || '').trim();
   if (!nombre) { alert('Indica el nombre de la empresa.'); return; }
+  if (typeof getConvenios !== 'function' || typeof saveConvenios !== 'function') {
+    alert('Error: no se puede guardar convenios en este momento.');
+    return;
+  }
   var convenios = getConvenios();
   if (convenios.some(function (c) { return (c.nombre || '').toLowerCase() === nombre.toLowerCase(); })) { alert('Ya existe un convenio con esa empresa.'); return; }
-  var doc = getDocumentoAcuerdoFromEditorPantalla();
-  var nuevo = { id: generateConvenioId(), nombre: nombre, descuento: 10, documentoAcuerdo: doc };
+  var doc = typeof getDocumentoAcuerdoFromEditorPantalla === 'function' ? getDocumentoAcuerdoFromEditorPantalla() : {};
+  var nuevoId = typeof generateConvenioId === 'function' ? generateConvenioId() : 'conv-' + Date.now();
+  var nuevo = { id: nuevoId, nombre: nombre, descuento: 10, documentoAcuerdo: doc };
   convenios.push(nuevo);
-  saveConvenios(convenios);
-  cerrarPantallaEditorDocConvenio();
+  try {
+    saveConvenios(convenios);
+  } catch (e) {
+    console.error('guardarDocDesdePantallaComoNuevo', e);
+    alert('Error al guardar. Revisa la consola.');
+    return;
+  }
+  if (typeof cerrarPantallaEditorDocConvenio === 'function') cerrarPantallaEditorDocConvenio();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
   if (typeof cargarConvenios === 'function') cargarConvenios();
+  if (typeof showToast === 'function') showToast('Convenio «' + nombre + '» creado correctamente.', 'success');
+  else alert('Convenio «' + nombre + '» creado correctamente.');
 }
 function guardarDocDesdePantallaEnExistente() {
   var convenios = getConvenios();
