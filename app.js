@@ -2025,6 +2025,16 @@ function aplicarDatosCompletosFromServer(payload) {
     if (!payload.hasOwnProperty(key)) continue;
     val = payload[key];
     if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
+    // No sobrescribir inventario ni almacén con objeto vacío del servidor si local tiene datos
+    if ((key === 'economiaInventario' || key === 'almacenMateriales') && val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) {
+      try {
+        var rawLocal = localStorage.getItem(storageKey);
+        if (rawLocal) {
+          var localObj = JSON.parse(rawLocal);
+          if (typeof localObj === 'object' && localObj !== null && Object.keys(localObj).length > 0) continue;
+        }
+      } catch (e) { /* ignore */ }
+    }
     if (key === 'convenios' && Array.isArray(val)) {
       try {
         var rawLocal = localStorage.getItem(storageKey);
