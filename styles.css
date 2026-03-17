@@ -2010,6 +2010,9 @@ button.login-recovery-link {
 .gestion-card-nav-materiales-recuperados .gestion-card-icon { filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px #0891b2) drop-shadow(0 0 20px #0e7490); }
 .gestion-card-nav-materiales-recuperados .gestion-card-label { text-shadow: 0 0 8px #06b6d4, 0 0 14px #0891b2, 0 0 22px #0e7490; }
 
+.gestion-card-nav-registro-conexiones .gestion-card-icon { filter: drop-shadow(0 0 6px #0ea5e9) drop-shadow(0 0 12px #0284c7) drop-shadow(0 0 20px #0369a1); }
+.gestion-card-nav-registro-conexiones .gestion-card-label { text-shadow: 0 0 8px #0ea5e9, 0 0 14px #0284c7, 0 0 22px #0369a1; }
+
 /* Banner de vídeo en bucle (zona inferior Gestión) */
 .gestion-banner-wrap {
   flex: 0 0 auto;
