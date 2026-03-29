@@ -849,7 +849,12 @@ function mostrarResumenReparacion(s) {
     { label: 'Empleado', value: (s.empleado || s.userId || '—').toString() },
     { label: 'Convenio', value: (s.convenio || '—').toString() }
   ];
-  if (s.descuento != null && s.descuento > 0) rows.push({ label: 'Descuento', value: s.descuento + '%' });
+  var descResumen = s.descuento != null && s.descuento > 0 ? Number(s.descuento) : 0;
+  if (descResumen === 0 && (s.convenio || '').toString().trim() && typeof getDescuentoParaNombreConvenio === 'function') {
+    var dr = getDescuentoParaNombreConvenio((s.convenio || '').trim());
+    if (dr > 0) descResumen = dr;
+  }
+  if (descResumen > 0) rows.push({ label: 'Descuento', value: descResumen + '%' });
   if (s.partesChasis != null || s.partesEsenciales != null || s.kitReparacion) {
     if (s.kitReparacion) rows.push({ label: 'Kit reparación', value: 'Sí' });
     if (s.partesChasis != null) {
@@ -10831,72 +10836,8 @@ function calcularPrecios() {
   };
 }
 
-function renderDesglosePiezasReparacion(kitActivo) {
-  var wrapChasis = document.getElementById('desglosePartesChasisWrap');
-  var listChasis = document.getElementById('desglosePartesChasisList');
-  var wrapEsenciales = document.getElementById('desglosePartesEsencialesWrap');
-  var listEsenciales = document.getElementById('desglosePartesEsencialesList');
-  if (!listChasis || !listEsenciales) return;
-  var tiposChasis = typeof TIPOS_PIEZAS_CHASIS !== 'undefined' ? TIPOS_PIEZAS_CHASIS : [];
-  var tiposEsenciales = typeof TIPOS_PIEZAS_ESENCIALES !== 'undefined' ? TIPOS_PIEZAS_ESENCIALES : [];
-  if (kitActivo) {
-    if (wrapChasis) wrapChasis.style.display = 'none';
-    if (wrapEsenciales) wrapEsenciales.style.display = 'none';
-    listChasis.innerHTML = '';
-    listEsenciales.innerHTML = '';
-    return;
-  }
-  var numChasis = parseInt(el.partesChasis && el.partesChasis.value, 10) || 0;
-  var numEsenciales = parseInt(el.partesEsenciales && el.partesEsenciales.value, 10) || 0;
-  if (numChasis > 0 && wrapChasis && listChasis) {
-    wrapChasis.style.display = 'block';
-    listChasis.innerHTML = '';
-    for (var i = 0; i < numChasis; i++) {
-      var sel = document.createElement('select');
-      sel.className = 'input-piezas-select desglose-piezas-select';
-      sel.setAttribute('data-desglose-index', String(i));
-      sel.setAttribute('data-desglose-tipo', 'chasis');
-      sel.innerHTML = '<option value="">— Seleccionar tipo —</option>' + tiposChasis.map(function (t) {
-        return '<option value="' + (t.id || '').replace(/"/g, '&quot;') + '">' + (t.nombre || t.id) + '</option>';
-      }).join('');
-      var label = document.createElement('label');
-      label.className = 'desglose-piezas-item-label';
-      label.textContent = 'Pieza chasis ' + (i + 1) + ':';
-      var div = document.createElement('div');
-      div.className = 'desglose-piezas-item';
-      div.appendChild(label);
-      div.appendChild(sel);
-      listChasis.appendChild(div);
-    }
-  } else {
-    if (wrapChasis) wrapChasis.style.display = 'none';
-    listChasis.innerHTML = '';
-  }
-  if (numEsenciales > 0 && wrapEsenciales && listEsenciales) {
-    wrapEsenciales.style.display = 'block';
-    listEsenciales.innerHTML = '';
-    for (var j = 0; j < numEsenciales; j++) {
-      var selE = document.createElement('select');
-      selE.className = 'input-piezas-select desglose-piezas-select';
-      selE.setAttribute('data-desglose-index', String(j));
-      selE.setAttribute('data-desglose-tipo', 'esenciales');
-      selE.innerHTML = '<option value="">— Seleccionar tipo —</option>' + tiposEsenciales.map(function (t) {
-        return '<option value="' + (t.id || '').replace(/"/g, '&quot;') + '">' + (t.nombre || t.id) + '</option>';
-      }).join('');
-      var labelE = document.createElement('label');
-      labelE.className = 'desglose-piezas-item-label';
-      labelE.textContent = 'Pieza esencial ' + (j + 1) + ':';
-      var divE = document.createElement('div');
-      divE.className = 'desglose-piezas-item';
-      divE.appendChild(labelE);
-      divE.appendChild(selE);
-      listEsenciales.appendChild(divE);
-    }
-  } else {
-    if (wrapEsenciales) wrapEsenciales.style.display = 'none';
-    listEsenciales.innerHTML = '';
-  }
-}
+/** Reparación: solo cantidades chasis/esenciales; no hay desglose por tipo de pieza. */
+function renderDesglosePiezasReparacion() {}
 
 var _cacheVistaEl = null;
 function _getVistaEl() {
@@ -10990,7 +10931,7 @@ function actualizarVista() {
 
   var wrapRepairParts = document.getElementById('wrapRepairParts');
   if (wrapRepairParts) wrapRepairParts.style.display = kitActivoVista ? 'none' : '';
-  if (typeof renderDesglosePiezasReparacion === 'function') renderDesglosePiezasReparacion(p.kitActivo);
+  if (typeof renderDesglosePiezasReparacion === 'function') renderDesglosePiezasReparacion();
 
   var wrapPresupuestoKit = document.getElementById('wrapPresupuestoKit');
   var presupuestoKit = document.getElementById('presupuestoKit');
@@ -11166,6 +11107,37 @@ function getModeloDisplayParaRegistro(matricula) {
   return '-';
 }
 
+/**
+ * Importe y % de descuento guardados en el registro: alineados con convenios firmados (no solo el campo de la calculadora).
+ * Con kit de reparación activo no aplica descuento por convenio.
+ */
+function getImporteYDescuentoRegistroServicio(p) {
+  var convenioNombre = (el.negocios && el.negocios.value) ? String(el.negocios.value).trim() : '';
+  var descRegistro = typeof p.descuento === 'number' ? p.descuento : 0;
+  var importeRegistro = typeof p.total === 'number' ? p.total : 0;
+  if (p.kitActivo) {
+    return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro };
+  }
+  if (typeof getDescuentoParaNombreConvenio === 'function') {
+    descRegistro = getDescuentoParaNombreConvenio(convenioNombre);
+  }
+  var sub = typeof p.subtotal === 'number' ? p.subtotal : 0;
+  importeRegistro = Math.floor(sub * (1 - descRegistro / 100));
+  return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro };
+}
+
+/** % a mostrar en listas/resumen: prioriza el guardado; si falta, lo infiere del nombre de convenio. */
+function descuentoMostrarServicio(s) {
+  var d = s && s.descuento != null ? Number(s.descuento) : 0;
+  if (d > 0) return d;
+  var conv = (s && s.convenio) ? String(s.convenio).trim() : '';
+  if (conv && typeof getDescuentoParaNombreConvenio === 'function') {
+    var r = getDescuentoParaNombreConvenio(conv);
+    return r > 0 ? r : 0;
+  }
+  return 0;
+}
+
 /** Si la matrícula no tiene convenio en BBDD, muestra modal para elegirlo (solo la primera vez). Llama a onListo() cuando puede continuar (ya tenía convenio o el usuario eligió y guardó). Si el usuario cancela, no llama a onListo. */
 var _convenioPrimeraVezOnListo = null;
 var _convenioPrimeraVezMatricula = '';
@@ -11293,12 +11265,15 @@ function enviarRegistroServicioADiscord(servicio) {
   var mod = (servicio.modificacion || ((servicio.tipo || '').toUpperCase().indexOf('REPARAC') !== -1 ? 'Reparación' : '-')).toString();
   var importeVal = servicio.importe != null ? (typeof servicio.importe === 'number' ? servicio.importe : parseFloat(servicio.importe) || 0) : 0;
   var importeStr = importeVal > 0 ? importeVal.toLocaleString('es-ES') + '$' : '-';
+  var descPct = typeof servicio.descuento === 'number' ? servicio.descuento : 0;
+  var convLine = (servicio.convenio || '-').toString();
+  if (descPct > 0) convLine += ' — descuento: ' + descPct + '%';
   var content = 'Matricula: ' + (servicio.matricula || '-') + '\n' +
     'Modelo: ' + (servicio.modelo || '-') + '\n' +
     'Modificación: ' + (mod || '-') + '\n' +
     'Importe: ' + importeStr + '\n' +
     'Empleado que realizo el servicio: ' + (servicio.empleado || '-') + '\n' +
-    'Convenio y descuento: ' + (servicio.convenio || '-');
+    'Convenio y descuento: ' + convLine;
   var body = JSON.stringify({ content: content });
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
@@ -11461,16 +11436,17 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
   var piezasTuneo = piezasSel.piezas || [];
   const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
+  const finTuneo = getImporteYDescuentoRegistroServicio(p);
   const servicio = {
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
     matricula: mat,
     modelo: modeloDisplay,
     modificacion: modLabel,
-    importe: p.total,
+    importe: finTuneo.importe,
     empleado: nombreRegistrador || el.mecanico?.value || '—',
-    convenio: el.negocios.value,
-    descuento: p.descuento,
+    convenio: finTuneo.convenioNombre,
+    descuento: finTuneo.descuento,
     userId: session ? session.username : null,
     piezasTuneo: piezasTuneo,
   };
@@ -11480,7 +11456,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   if (typeof renderLimitesStock === 'function') renderLimitesStock();
   if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
-  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistrador);
+  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, finTuneo.importe, nombreRegistrador);
   if (fotoAntes && fotoDespues && typeof addTunning === 'function') {
     addTunning({
       matricula: mat,
@@ -11489,7 +11465,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
       usuario: nombreRegistrador || (session ? session.username : ''),
       fotoAntes: fotoAntes,
       fotoDespues: fotoDespues,
-      importe: p.total,
+      importe: finTuneo.importe,
       modificacion: modLabel,
     });
   }
@@ -11530,39 +11506,19 @@ function registrarReparacion() {
   } else {
     partesChasisReg = parseInt(el.partesChasis?.value, 10) || 0;
     partesEsencialesReg = parseInt(el.partesEsenciales?.value, 10) || 0;
-    if (partesChasisReg > 0 || partesEsencialesReg > 0) {
-      var selectsChasis = document.querySelectorAll('.desglose-piezas-select[data-desglose-tipo="chasis"]');
-      var selectsEsenciales = document.querySelectorAll('.desglose-piezas-select[data-desglose-tipo="esenciales"]');
-      var idx;
-      for (idx = 0; idx < selectsChasis.length; idx++) {
-        var val = (selectsChasis[idx].value || '').trim();
-        if (!val) {
-          alert('Indica el tipo de cada pieza de chasis utilizada (pieza ' + (idx + 1) + ').');
-          return;
-        }
-        piezasChasisDesglose.push(val);
-      }
-      for (idx = 0; idx < selectsEsenciales.length; idx++) {
-        var valE = (selectsEsenciales[idx].value || '').trim();
-        if (!valE) {
-          alert('Indica el tipo de cada pieza esencial utilizada (pieza ' + (idx + 1) + ').');
-          return;
-        }
-        piezasEsencialesDesglose.push(valE);
-      }
-    }
   }
   const modeloDisplayRep = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
+  const finRep = getImporteYDescuentoRegistroServicio(p);
   const servicio = {
     tipo: 'REPARACIÓN',
     fecha: new Date().toISOString(),
     matricula: mat,
     modelo: modeloDisplayRep,
     modificacion: p.kitActivo ? 'Reparación (kit)' : 'Reparación',
-    importe: p.total,
+    importe: finRep.importe,
     empleado: nombreRegistradorRep || el.mecanico?.value || '—',
-    convenio: el.negocios.value,
-    descuento: p.descuento,
+    convenio: finRep.convenioNombre,
+    descuento: finRep.descuento,
     userId: session ? session.username : null,
     partesChasis: partesChasisReg,
     partesEsenciales: partesEsencialesReg,
@@ -11577,14 +11533,14 @@ function registrarReparacion() {
   if (typeof renderLimitesStock === 'function') renderLimitesStock();
   if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
   if (typeof enviarRegistroServicioADiscord === 'function') enviarRegistroServicioADiscord(servicio);
-  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, p.total, nombreRegistradorRep);
+  if (typeof actualizarClienteAlRegistrarServicio === 'function') actualizarClienteAlRegistrarServicio(mat, finRep.importe, nombreRegistradorRep);
   if (session && typeof hasPermission === 'function' && !hasPermission(session, 'gestionarUsuarios')) {
     addAvisoBandejaEntrada(session.username, {
       tipo: 'reparacion_registrada',
       mensaje: 'Tienes pendiente colgar las fotos de este tuneo',
       matricula: mat,
       modelo: servicio.modelo,
-      importe: p.total,
+      importe: finRep.importe,
       modificacion: servicio.modificacion || 'Reparación',
     });
   }
@@ -11613,7 +11569,7 @@ function actualizarModalRegistro() {
   registroServicios.forEach((s, i) => {
     const div = document.createElement('div');
     div.className = 'servicio-item';
-    const descPct = s.descuento != null ? s.descuento : 0;
+    const descPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? s.descuento : 0);
     div.innerHTML = `
       <strong>${s.tipo}</strong> - ${s.matricula} (${s.modelo}) - $${(s.importe || 0).toLocaleString('es-ES')} · Descuento: ${descPct}%
       <br><small>${s.empleado} · ${s.convenio} · ${new Date(s.fecha).toLocaleString('es-ES')}</small>
@@ -11646,7 +11602,7 @@ function renderListaResultadosCalculadora() {
   cont.innerHTML = registroServicios.map((s, i) => {
     const titulo = getResultadoCalculadoraTitulo(s);
     const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
-    const descuentoPct = s.descuento != null ? Number(s.descuento) : 0;
+    const descuentoPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? Number(s.descuento) : 0);
     const empleadoNombre = nombreEmpleadoRegistro(s);
     return `
       <div class="resultado-calculadora-card" data-result-index="${i}">
@@ -11672,7 +11628,7 @@ function renderListaResultadosCalculadora() {
       if (!s) return;
       const titulo = getResultadoCalculadoraTitulo(s);
       const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
-      const descuentoPct = s.descuento != null ? Number(s.descuento) : 0;
+      const descuentoPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? Number(s.descuento) : 0);
       const empleadoNombre = nombreEmpleadoRegistro(s);
       const texto = [
         titulo,

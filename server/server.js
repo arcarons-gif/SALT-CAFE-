@@ -87,15 +87,13 @@ function mergeServicios(existing, incoming) {
   return merged;
 }
 
-/** Fusiona usuarios entrantes con los existentes (por id o username). */
-function mergeUsers(existing, incoming) {
-  const byKey = new Map();
-  existing.forEach(u => { const k = (u.id || u.username || ''); if (k) byKey.set(k, { ...u }); });
-  incoming.forEach(u => {
-    const k = (u.id || u.username || '');
-    if (k) byKey.set(k, { ...u });
-  });
-  return Array.from(byKey.values());
+/**
+ * La app siempre envía la lista completa de usuarios tras crear/editar/borrar.
+ * Un merge tipo unión impedía que los borrados llegaran al servidor (el usuario reaparecía al sincronizar).
+ */
+function normalizeUsersList(users) {
+  if (!Array.isArray(users)) return [];
+  return users.filter(u => u && (u.id || u.username));
 }
 
 /** Fusiona fichajes entrantes con los existentes (por id). */
@@ -126,7 +124,7 @@ app.get('/', (req, res) => {
       <p>El servidor está en marcha. Esta es la API; la app se abre en otra URL.</p>
       <ul>
         <li><a href="/api/health">/api/health</a> – estado del servidor</li>
-        <li>/api/users – GET (lista) / POST (fusionar: acumula con existentes, no sobrescribe)</li>
+        <li>/api/users – GET (lista) / POST (reemplaza la lista con la enviada por el cliente; borrados sí se persisten)</li>
         <li>/api/fichajes – GET (lista) / POST (fusionar)</li>
         <li>/api/servicios – GET (lista) / POST (fusionar reparaciones/tuneos)</li>
         <li>/api/datos-completos – GET (todos los datos sincronizados)</li>
@@ -165,10 +163,9 @@ app.post('/api/users', (req, res) => {
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Se espera { users: [...] }' });
     }
-    const existing = readUsers();
-    const merged = mergeUsers(existing, users);
-    writeUsers(merged);
-    writeDatosCompletosMerge({ users: merged });
+    const next = normalizeUsersList(users);
+    writeUsers(next);
+    writeDatosCompletosMerge({ users: next });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
