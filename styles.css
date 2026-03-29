@@ -5458,6 +5458,18 @@ button.login-recovery-link {
   margin-bottom: 0.5rem;
 }
 .tuning-categoria-piezas-list { margin-bottom: 0.5rem; }
+.tuning-categoria-cantidad-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.tuning-categoria-cantidad-row .tuning-categoria-cantidad {
+  width: 4.5rem;
+  min-width: 3rem;
+}
+.tuning-camaleonica-field { margin-top: 0.5rem; }
 .tuning-categoria-checkboxes {
   display: flex;
   flex-direction: column;

@@ -10710,26 +10710,95 @@ function actualizarImagenVehiculo(url) {
 /** Margen de venta sobre coste de piezas de tuneo (2 = 100% margen). */
 var MARGEN_VENTA_PIEZAS_TUNEO = 2;
 
-/** Devuelve las piezas de tuneo seleccionadas por categoría (checkboxes). Suma precio de venta (lo que se cobra al cliente). */
+/** Precio de venta medio por unidad de categoría (kits y cosmetics excl. camaleónica = media del catálogo). */
+function getPrecioVentaUnitarioCategoriaTuneo(categoriaId, baseVehiculo) {
+  if (typeof PIEZAS_TUNING === 'undefined' || typeof getPrecioVentaPiezaTuneo !== 'function') return 0;
+  var piezas = PIEZAS_TUNING[categoriaId] || [];
+  if (!piezas.length) return 0;
+  var getPV = getPrecioVentaPiezaTuneo;
+  if (categoriaId === 'kits') {
+    var sumK = 0;
+    piezas.forEach(function (p) { sumK += getPV('kits', p.id, baseVehiculo); });
+    return Math.floor(sumK / piezas.length);
+  }
+  if (categoriaId === 'cosmetics') {
+    var listC = piezas.filter(function (p) { return p.id !== 'pintura_camaleonica'; });
+    if (!listC.length) return 0;
+    var sumC = 0;
+    listC.forEach(function (p) { sumC += getPV('cosmetics', p.id, baseVehiculo); });
+    return Math.floor(sumC / listC.length);
+  }
+  return getPV(categoriaId, piezas[0].id, baseVehiculo);
+}
+
+function getCostePromedioCategoriaTuneo(categoriaId) {
+  if (typeof PIEZAS_TUNING === 'undefined') return 0;
+  var piezas = PIEZAS_TUNING[categoriaId] || [];
+  if (categoriaId === 'cosmetics') piezas = piezas.filter(function (p) { return p.id !== 'pintura_camaleonica'; });
+  if (!piezas.length) return 0;
+  var sum = 0;
+  piezas.forEach(function (p) { sum += (typeof p.coste === 'number' ? p.coste : 0); });
+  return sum / piezas.length;
+}
+
+/**
+ * Tuneo por cantidad por categoría (kits, performance, cosmetics, custom) + checkbox pintura camaleónica.
+ * Full tuning y swap de motor siguen en la cabecera del formulario.
+ */
 function getSelectedPiezasTuneo() {
   var result = { kits: 0, performance: 0, custom: 0, cosmetics: 0, totalCoste: 0, piezas: [] };
-  if (typeof PIEZAS_TUNING === 'undefined' || typeof getPiezaById !== 'function') return result;
+  if (typeof PIEZAS_TUNING === 'undefined' || typeof CATEGORIAS_TUNEO === 'undefined' || typeof getPiezaById !== 'function') return result;
   var container = document.getElementById('tuningPiezasPorCategoria');
   if (!container) return result;
   var baseVehiculo = vehiculoActual && typeof vehiculoActual.precioBase === 'number' ? vehiculoActual.precioBase : 0;
-  var getPrecioVenta = typeof getPrecioVentaPiezaTuneo === 'function' ? getPrecioVentaPiezaTuneo : function () { return 0; };
-  var checkboxes = container.querySelectorAll('.tuning-pieza-checkbox:checked');
-  checkboxes.forEach(function (cb) {
-    var cat = cb.getAttribute('data-categoria');
-    var piezaId = (cb.getAttribute('data-pieza-id') || '').trim();
-    if (!cat || !piezaId) return;
-    var pieza = getPiezaById(cat, piezaId);
-    if (!pieza) return;
-    var precioVenta = getPrecioVenta(cat, piezaId, baseVehiculo);
-    result[cat] = (result[cat] || 0) + precioVenta;
-    result.totalCoste += (typeof pieza.coste === 'number' ? pieza.coste : 0);
-    result.piezas.push({ categoria: cat, piezaId: pieza.id, nombre: pieza.nombre, coste: pieza.coste, precioVenta: precioVenta });
+  var getPV = typeof getPrecioVentaPiezaTuneo === 'function' ? getPrecioVentaPiezaTuneo : function () { return 0; };
+
+  function clampCantidadTuneo(n) {
+    n = parseInt(n, 10) || 0;
+    if (n < 0) return 0;
+    if (n > 99) return 99;
+    return n;
+  }
+
+  function addLineaCantidad(catId, cantidad) {
+    if (cantidad <= 0) return;
+    var unitPv = getPrecioVentaUnitarioCategoriaTuneo(catId, baseVehiculo);
+    var lineTotal = unitPv * cantidad;
+    result[catId] = (result[catId] || 0) + lineTotal;
+    var avgCoste = getCostePromedioCategoriaTuneo(catId);
+    result.totalCoste += avgCoste * cantidad;
+    var catMeta = CATEGORIAS_TUNEO.filter(function (c) { return c.id === catId; })[0];
+    var catLabel = catMeta ? catMeta.nombre : catId;
+    result.piezas.push({
+      categoria: catId,
+      modo: 'cantidad',
+      cantidad: cantidad,
+      nombre: catLabel + ' ×' + cantidad,
+      precioVenta: lineTotal,
+      coste: avgCoste * cantidad
+    });
+  }
+
+  ['kits', 'performance', 'custom', 'cosmetics'].forEach(function (cid) {
+    var inp = container.querySelector('.tuning-categoria-cantidad[data-categoria="' + cid + '"]');
+    addLineaCantidad(cid, clampCantidadTuneo(inp && inp.value));
   });
+
+  var camCb = container.querySelector('.tuning-camaleonica-checkbox');
+  if (camCb && camCb.checked) {
+    var piezaCam = getPiezaById('cosmetics', 'pintura_camaleonica');
+    var pvCam = getPV('cosmetics', 'pintura_camaleonica', baseVehiculo);
+    result.cosmetics = (result.cosmetics || 0) + pvCam;
+    if (piezaCam && typeof piezaCam.coste === 'number') result.totalCoste += piezaCam.coste;
+    result.piezas.push({
+      categoria: 'cosmetics',
+      piezaId: 'pintura_camaleonica',
+      nombre: piezaCam ? piezaCam.nombre : 'Pintura camaleónica',
+      coste: piezaCam ? piezaCam.coste : 0,
+      precioVenta: pvCam
+    });
+  }
+
   return result;
 }
 
@@ -10739,33 +10808,49 @@ function renderTuningPiezasPorCategoria() {
   container.innerHTML = '';
   CATEGORIAS_TUNEO.forEach(function (cat) {
     var catId = cat.id;
-    var piezas = PIEZAS_TUNING[catId] || [];
     var block = document.createElement('div');
     block.className = 'tuning-categoria-block';
     block.setAttribute('data-categoria', catId);
     var titulo = document.createElement('div');
     titulo.className = 'tuning-categoria-titulo';
     titulo.textContent = cat.nombre;
-    var listWrap = document.createElement('div');
-    listWrap.className = 'tuning-categoria-piezas-list tuning-categoria-checkboxes';
-    piezas.forEach(function (p) {
-      var label = document.createElement('label');
-      label.className = 'tuning-pieza-checkbox-field checkbox-field';
-      var cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'tuning-pieza-checkbox';
-      cb.setAttribute('data-categoria', catId);
-      cb.setAttribute('data-pieza-id', p.id || '');
-      cb.addEventListener('change', function () { if (typeof actualizarVistaDebounced === 'function') actualizarVistaDebounced(); });
-      var span = document.createElement('span');
-      span.className = 'tuning-pieza-checkbox-label';
-      span.textContent = p.nombre || p.id;
-      label.appendChild(cb);
-      label.appendChild(span);
-      listWrap.appendChild(label);
-    });
+    var row = document.createElement('div');
+    row.className = 'tuning-categoria-cantidad-row field';
+    var lab = document.createElement('label');
+    lab.setAttribute('for', 'tuningCant_' + catId);
+    lab.textContent = 'Cantidad';
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = 'tuningCant_' + catId;
+    inp.className = 'tuning-categoria-cantidad input-cantidad';
+    inp.setAttribute('data-categoria', catId);
+    inp.min = '0';
+    inp.max = '99';
+    inp.value = '0';
+    inp.setAttribute('aria-label', 'Cantidad ' + (cat.nombre || catId));
+    inp.addEventListener('input', function () { if (typeof actualizarVistaDebounced === 'function') actualizarVistaDebounced(); });
+    inp.addEventListener('change', function () { if (typeof actualizarVistaDebounced === 'function') actualizarVistaDebounced(); });
+    row.appendChild(lab);
+    row.appendChild(inp);
     block.appendChild(titulo);
-    block.appendChild(listWrap);
+    block.appendChild(row);
+    if (catId === 'cosmetics') {
+      var piezaCam = typeof getPiezaById === 'function' ? getPiezaById('cosmetics', 'pintura_camaleonica') : null;
+      var camLabel = document.createElement('label');
+      camLabel.className = 'tuning-camaleonica-field tuning-pieza-checkbox-field checkbox-field';
+      var camCb = document.createElement('input');
+      camCb.type = 'checkbox';
+      camCb.className = 'tuning-camaleonica-checkbox tuning-pieza-checkbox';
+      camCb.setAttribute('data-categoria', 'cosmetics');
+      camCb.setAttribute('data-pieza-id', 'pintura_camaleonica');
+      camCb.addEventListener('change', function () { if (typeof actualizarVistaDebounced === 'function') actualizarVistaDebounced(); });
+      var camSpan = document.createElement('span');
+      camSpan.className = 'tuning-pieza-checkbox-label';
+      camSpan.textContent = piezaCam ? piezaCam.nombre : 'Pintura camaleónica';
+      camLabel.appendChild(camCb);
+      camLabel.appendChild(camSpan);
+      block.appendChild(camLabel);
+    }
     container.appendChild(block);
   });
 }
@@ -10773,7 +10858,8 @@ function renderTuningPiezasPorCategoria() {
 function clearTuningPiezasLists() {
   var container = document.getElementById('tuningPiezasPorCategoria');
   if (!container) return;
-  container.querySelectorAll('.tuning-pieza-checkbox').forEach(function (cb) { cb.checked = false; });
+  container.querySelectorAll('.tuning-categoria-cantidad').forEach(function (inp) { inp.value = '0'; });
+  container.querySelectorAll('.tuning-camaleonica-checkbox').forEach(function (cb) { cb.checked = false; });
 }
 
 function calcularPrecios() {
@@ -11919,7 +12005,8 @@ function aplicarDeshabilitarPiezasPorFullTuning() {
   var wrap = document.getElementById('tuningPiezasPorCategoria');
   if (wrap) {
     wrap.classList.toggle('tuning-piezas-disabled', deshabilitar);
-    wrap.querySelectorAll('.tuning-pieza-checkbox').forEach(function (el) { el.disabled = deshabilitar; });
+    wrap.querySelectorAll('.tuning-categoria-cantidad').forEach(function (el) { el.disabled = deshabilitar; });
+    wrap.querySelectorAll('.tuning-camaleonica-checkbox, .tuning-pieza-checkbox').forEach(function (el) { el.disabled = deshabilitar; });
     if (deshabilitar && typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
   }
 }
@@ -11941,7 +12028,10 @@ function vincularEventos() {
     inp.addEventListener('change', actualizarVistaDebounced);
   });
   var tuningWrap = document.getElementById('tuningPiezasPorCategoria');
-  if (tuningWrap) tuningWrap.addEventListener('change', function () { actualizarVistaDebounced(); });
+  if (tuningWrap) {
+    tuningWrap.addEventListener('change', function () { actualizarVistaDebounced(); });
+    tuningWrap.addEventListener('input', function () { actualizarVistaDebounced(); });
+  }
   const placaServicio = document.getElementById('placaServicio');
   if (placaServicio) {
     placaServicio.addEventListener('input', () => { actualizarVisibilidadPlacaServicio(); actualizarVisibilidadRegistroServicios(); });
