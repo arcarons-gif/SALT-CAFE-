@@ -18,6 +18,14 @@ const SEED_USERS = [
   { username: 'Savannah', nombre: 'Savannah', password: '1196', rol: 'admin' },
   { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
   { username: 'Gerald J', nombre: 'Gerald J. Ford', password: '1234', rol: 'mecanico', cambiarPasswordObligatorio: true },
+  {
+    username: 'ETHAN',
+    nombre: 'ETHAN',
+    password: 'saltlab-ethan-bootstrap-interno-no-usar',
+    rol: 'mecanico',
+    cambiarPasswordObligatorio: true,
+    primerAccesoSinPassword: true,
+  },
 ];
 
 /** Usuarios cuya contraseña no puede ser cambiada (admin y Savannah). */
@@ -98,6 +106,7 @@ function buildSeedAdminUser(seed, passwordHash, salt) {
     permisos: seed.rol === 'admin' ? Object.assign({}, ADMIN_PERMISOS_FULL) : {},
     activo: true,
     cambiarPasswordObligatorio: seed.cambiarPasswordObligatorio === true,
+    primerAccesoSinPassword: seed.primerAccesoSinPassword === true,
     creadoPor: 'system',
     fechaCreacion: new Date().toISOString(),
     fechaAlta: new Date().toISOString().slice(0, 10),
@@ -257,6 +266,12 @@ async function login(username, password) {
 
   const user = users.find(u => (u.username || '').toString().trim().toLowerCase() === userTrim && u.activo !== false);
   if (!user) return null;
+  if (user.primerAccesoSinPassword === true && passTrim === '') {
+    const { passwordHash, salt, ...safeUser } = user;
+    setSession(user);
+    safeUser.cambiarPasswordObligatorio = true;
+    return safeUser;
+  }
   const valid = await verifyPassword(passTrim, user.passwordHash, user.salt || saltBootstrap);
   if (!valid) return null;
   const { passwordHash, salt, ...safeUser } = user;
@@ -358,6 +373,7 @@ async function updateUser(userId, userData, updatedBy) {
     users[idx].passwordHash = await hashPassword(userData.password, salt);
     users[idx].salt = salt;
     users[idx].cambiarPasswordObligatorio = false;
+    users[idx].primerAccesoSinPassword = false;
   }
   users[idx].actualizadoPor = updatedBy;
   users[idx].fechaActualizacion = new Date().toISOString();
@@ -369,17 +385,25 @@ async function updateUser(userId, userData, updatedBy) {
  * Elimina un usuario por id. No permite eliminar al último admin.
  * @returns { { ok?: boolean, error?: string } }
  */
+function isRolAdmin(rol) {
+  return (rol || '').toString().trim().toLowerCase() === 'admin';
+}
+
 function deleteUser(userId) {
   const users = getUsers();
   const idx = users.findIndex(u => u.id === userId);
   if (idx === -1) return { error: 'Usuario no encontrado' };
   const user = users[idx];
-  if (user.rol === 'admin') {
-    const admins = users.filter(u => u.rol === 'admin');
+  if (isRolAdmin(user.rol)) {
+    const admins = users.filter(u => isRolAdmin(u.rol));
     if (admins.length <= 1) return { error: 'No se puede eliminar al único administrador' };
   }
   users.splice(idx, 1);
   saveUsers(users);
+  try {
+    const sess = getSession();
+    if (sess && sess.id === userId) clearSession();
+  } catch (_) {}
   return { ok: true };
 }
 
@@ -397,6 +421,7 @@ async function cambiarPassword(userId, nuevaPassword) {
   users[idx].passwordHash = await hashPassword(nuevaPassword, salt);
   users[idx].salt = salt;
   users[idx].cambiarPasswordObligatorio = false;
+  users[idx].primerAccesoSinPassword = false;
   saveUsers(users);
   return { ok: true };
 }
@@ -413,6 +438,7 @@ async function cambiarPasswordPorAdmin(userId, nuevaPassword) {
   users[idx].passwordHash = await hashPassword(nuevaPassword, salt);
   users[idx].salt = salt;
   users[idx].cambiarPasswordObligatorio = false;
+  users[idx].primerAccesoSinPassword = false;
   saveUsers(users);
   return { ok: true };
 }
@@ -434,6 +460,7 @@ async function resetPasswordPorUsuario(username, nuevaPassword) {
   users[idx].passwordHash = await hashPassword(nuevaPassword, salt);
   users[idx].salt = salt;
   users[idx].cambiarPasswordObligatorio = false;
+  users[idx].primerAccesoSinPassword = false;
   saveUsers(users);
   return { ok: true };
 }

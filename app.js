@@ -1780,6 +1780,10 @@ function vincularAdmin() {
     if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
     var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
     if (res && res.error) { alert(res.error); return; }
+    if (typeof getSession === 'function' && !getSession()) {
+      if (typeof manejarLogout === 'function') manejarLogout();
+      return;
+    }
     cerrarTodasPantallasSecundarias();
     if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
     if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
@@ -6788,6 +6792,7 @@ function renderListaUsuarios() {
       '<div class="empleado-ficha-actions">' +
       '<button type="button" class="btn btn-outline btn-sm btn-editar-ficha" data-edit="' + escapeHtmlAttr(u.id) + '">Editar</button>' +
       '<button type="button" class="btn btn-outline btn-sm btn-vehiculos-ficha" data-user-id="' + escapeHtmlAttr(u.id) + '" title="Ver vehículos del empleado">Vehículos</button>' +
+      (puedeEliminar ? '<button type="button" class="btn btn-outline btn-sm btn-eliminar-ficha-empleado" data-delete-id="' + escapeHtmlAttr(u.id) + '" title="Eliminar empleado">Eliminar</button>' : '') +
       '</div></div></div>';
   }
 
@@ -6824,6 +6829,28 @@ function renderListaUsuarios() {
           seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
+    });
+  });
+  lista.querySelectorAll('.btn-eliminar-ficha-empleado').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-delete-id');
+      if (!id) return;
+      var users = typeof getUsers === 'function' ? getUsers() : [];
+      var u = users.find(function (x) { return x.id === id; });
+      var nombre = (u && (u.nombre || u.username)) || id;
+      if (!confirm('¿Eliminar al empleado "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+      var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
+      if (res && res.error) { alert(res.error); return; }
+      if (typeof getSession === 'function' && !getSession()) {
+        if (typeof manejarLogout === 'function') manejarLogout();
+        return;
+      }
+      cerrarTodasPantallasSecundarias();
+      if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+      if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
+      if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
+        renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
+      }
     });
   });
 }
@@ -7548,7 +7575,10 @@ function renderTablaUsuarios() {
     const btnCambiarHtml = puedeCambiarPassword
       ? '<button type="button" class="btn btn-outline btn-sm btn-cambiar-password" data-user-id="' + escapeHtml(u.id) + '" data-username="' + escapeHtml(username) + '">Cambiar contraseña</button>'
       : '<span class="btn btn-outline btn-sm btn-disabled" title="No se puede cambiar la contraseña de este usuario">Cambiar contraseña</span>';
-    tr.innerHTML = '<td>' + escapeHtml(username) + '</td><td>' + escapeHtml(nombre) + '</td><td>••••</td><td>' + escapeHtml(rol) + '</td><td>' + btnCambiarHtml + ' <button type="button" class="btn btn-outline btn-sm btn-editar-usuario-tabla" data-user-id="' + escapeHtml(u.id) + '">Editar</button></td>';
+    var btnEliminarTabla = esAdmin
+      ? ' <button type="button" class="btn btn-outline btn-sm btn-eliminar-usuario-tabla" data-user-id="' + escapeHtmlAttr(u.id) + '" data-username="' + escapeHtmlAttr(username) + '">Eliminar</button>'
+      : '';
+    tr.innerHTML = '<td>' + escapeHtml(username) + '</td><td>' + escapeHtml(nombre) + '</td><td>••••</td><td>' + escapeHtml(rol) + '</td><td>' + btnCambiarHtml + ' <button type="button" class="btn btn-outline btn-sm btn-editar-usuario-tabla" data-user-id="' + escapeHtml(u.id) + '">Editar</button>' + btnEliminarTabla + '</td>';
     var btnCambiar = tr.querySelector('.btn-cambiar-password');
     if (btnCambiar) btnCambiar.addEventListener('click', function () {
       var id = this.getAttribute('data-user-id');
@@ -7558,6 +7588,24 @@ function renderTablaUsuarios() {
     tr.querySelector('.btn-editar-usuario-tabla').addEventListener('click', function () {
       var id = this.getAttribute('data-user-id');
       if (typeof abrirFormUsuario === 'function') abrirFormUsuario(id);
+    });
+    var btnElimTabla = tr.querySelector('.btn-eliminar-usuario-tabla');
+    if (btnElimTabla) btnElimTabla.addEventListener('click', function () {
+      var id = this.getAttribute('data-user-id');
+      var uname = this.getAttribute('data-username') || id;
+      if (!id) return;
+      if (!confirm('¿Eliminar al empleado "' + uname + '"? Esta acción no se puede deshacer.')) return;
+      var res = typeof deleteUser === 'function' ? deleteUser(id) : { error: 'No disponible' };
+      if (res && res.error) { alert(res.error); return; }
+      if (typeof getSession === 'function' && !getSession()) {
+        if (typeof manejarLogout === 'function') manejarLogout();
+        return;
+      }
+      if (typeof renderListaUsuarios === 'function') renderListaUsuarios();
+      if (typeof renderTablaUsuarios === 'function') renderTablaUsuarios();
+      if (typeof renderOrganigrama === 'function' && document.getElementById('pantallaOrganigrama') && document.getElementById('pantallaOrganigrama').style.display === 'flex') {
+        renderOrganigrama('organigramaContainer', !!window._organigramaEditMode);
+      }
     });
     tbody.appendChild(tr);
   });
