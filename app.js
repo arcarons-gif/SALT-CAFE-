@@ -15,7 +15,8 @@ function debounce(fn, ms) {
 
 // Factores de precio (ajusta según tu Excel)
 const CONFIG = {
-  factorPiezaTuneo: 0.0015,      // precioBase * factor por pieza (Motor, Perf, Custom, Cosmetic)
+  /** @deprecated El cambio de motor usa getPrecioVentaSwapMotor (% valor vehículo). Se mantiene por compatibilidad. */
+  factorPiezaTuneo: 0.0015,
   factorChasis: 0.00125,         // precioBase * factor por parte chasis
   factorEsencial: 0.00125,       // precioBase * factor por parte esencial
   factorServicio: 0.0016,        // precioBase * factor por parte servicio
@@ -3190,8 +3191,9 @@ function renderPreciosPiezas() {
   var filas = [
     { id: 'chasis', nombre: 'Partes del chasis (carrocería)', tipo: 'euro', data: precios.chasis, ventaDefault: 30 },
     { id: 'esenciales', nombre: 'Partes esenciales', tipo: 'euro', data: precios.esenciales, ventaDefault: 65 },
-    { id: 'swapMotor', nombre: 'Swap motor', tipo: 'porcentaje', data: precios.swapMotor, ventaDefault: 25 },
-    { id: 'performance', nombre: 'Piezas performance', tipo: 'porcentaje', data: precios.performance, ventaDefault: 5 },
+    { id: 'swapMotor', nombre: 'Cambio / swap motor', tipo: 'porcentaje', data: precios.swapMotor, ventaDefault: 16 },
+    { id: 'performance', nombre: 'Piezas performance', tipo: 'porcentaje', data: precios.performance, ventaDefault: 16 },
+    { id: 'custom', nombre: 'Piezas custom', tipo: 'porcentaje', data: precios.custom, ventaDefault: 6 },
     { id: 'cosmetic', nombre: 'Piezas cosmetic', tipo: 'porcentaje', data: precios.cosmetic, ventaDefault: 5 },
     { id: 'fullTuning', nombre: 'Full tuning', tipo: 'porcentaje', data: precios.fullTuning, ventaDefault: 40 }
   ];
@@ -3257,12 +3259,16 @@ function renderPreciosPiezas() {
         preciosActual.esenciales = { coste: coste, precioVenta: venta };
       } else if (id === 'swapMotor') {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
-        var pct = parseFloat(pctInp && pctInp.value) || 25;
+        var pct = parseFloat(pctInp && pctInp.value) || 16;
         preciosActual.swapMotor = { coste: coste, precioVentaPorcentaje: pct };
       } else if (id === 'performance') {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
-        var pct = parseFloat(pctInp && pctInp.value) || 5;
+        var pct = parseFloat(pctInp && pctInp.value) || 16;
         preciosActual.performance = { coste: coste, precioVentaPorcentaje: pct };
+      } else if (id === 'custom') {
+        var pctInpC = row.querySelector('.input-pieza-venta-pct');
+        var pctC = parseFloat(pctInpC && pctInpC.value) || 6;
+        preciosActual.custom = { coste: coste, precioVentaPorcentaje: pctC };
       } else if (id === 'cosmetic') {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
         var pct = parseFloat(pctInp && pctInp.value) || 5;
@@ -8351,6 +8357,65 @@ function setConvenioRepoDescuento(nombre, descuento) {
   try { localStorage.setItem(CONVENIOS_REPO_DESCUENTOS_KEY, JSON.stringify(o)); } catch (e) {}
 }
 
+/** Misma regla que al leer firmados.txt: nombre mostrado en desplegables y claves de descuento repo. */
+function normalizarNombreConvenioFirmados(linea) {
+  var nombre = (linea || '').toString().trim();
+  if (!nombre) return '';
+  if (nombre.toLowerCase() === 'ls customs') return 'LS Customs';
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
+}
+
+/**
+ * % descuento aplicable al convenio: primero registro en app (benny_convenios, p. ej. documento firmado guardado),
+ * luego override en localStorage (repo) con clave exacta o sin distinguir mayúsculas.
+ */
+function getDescuentoParaNombreConvenio(nombreMostrado) {
+  var n = (nombreMostrado || '').toString().trim();
+  if (!n || n.toUpperCase() === 'N/A') return 0;
+  var nl = n.toLowerCase();
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  for (var i = 0; i < convenios.length; i++) {
+    var c = convenios[i];
+    if (!c || !(c.nombre || '').toString().trim()) continue;
+    if ((c.nombre || '').toString().trim().toLowerCase() === nl) {
+      if (c.descuento != null && c.descuento !== '') {
+        var dApp = parseInt(c.descuento, 10);
+        if (!isNaN(dApp)) return dApp;
+      }
+      break;
+    }
+  }
+  if (typeof getConvenioRepoDescuento === 'function') {
+    var r1 = getConvenioRepoDescuento(n);
+    if (r1 != null && !isNaN(r1)) return r1;
+    var norm = normalizarNombreConvenioFirmados(n);
+    if (norm && norm !== n) {
+      var r2 = getConvenioRepoDescuento(norm);
+      if (r2 != null && !isNaN(r2)) return r2;
+    }
+    var o = getConvenioRepoDescuentos();
+    for (var k in o) {
+      if (!Object.prototype.hasOwnProperty.call(o, k)) continue;
+      if ((k || '').toString().trim().toLowerCase() === nl) {
+        var v = parseInt(o[k], 10);
+        if (!isNaN(v)) return v;
+      }
+    }
+  }
+  return 0;
+}
+
+/** Actualiza #descuentoPorcentaje según el convenio seleccionado en #negocios. */
+function aplicarDescuentoDesdeConvenioNegocios() {
+  if (!el.negocios || !el.descuentoPorcentaje) return;
+  var nombre = (el.negocios.value || '').trim();
+  var desc = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nombre) : 0;
+  if (isNaN(desc)) desc = 0;
+  el.descuentoPorcentaje.value = String(desc);
+  if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
+  if (typeof actualizarVista === 'function') actualizarVista();
+}
+
 var _modalEditarConvenioRepoNombre = null;
 var _modalEditarConvenioRepoFilename = null;
 
@@ -10080,22 +10145,46 @@ function cargarConvenios() {
   convenios = convenios.slice().sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
 
   function renderOpcionesConvenios(lista) {
+    var prevVal = (el.negocios && el.negocios.value) ? el.negocios.value.trim() : '';
     el.negocios.innerHTML = '';
     if (!lista || lista.length === 0) {
-      var opt = document.createElement('option');
-      opt.value = 'N/A';
-      opt.textContent = 'N/A (0%)';
-      opt.dataset.descuento = '0';
-      el.negocios.appendChild(opt);
+      var optNa = document.createElement('option');
+      optNa.value = 'N/A';
+      optNa.textContent = 'N/A (0%)';
+      optNa.setAttribute('data-descuento', '0');
+      el.negocios.appendChild(optNa);
     } else {
       lista.forEach(function (c) {
         var opt = document.createElement('option');
-        opt.value = c.nombre;
-        opt.textContent = (c.descuento != null && c.descuento > 0) ? (c.nombre + ' (' + c.descuento + '%)') : c.nombre;
-        opt.dataset.descuento = String(c.descuento != null ? c.descuento : 0);
+        var nombre = (c.nombre || '').trim();
+        opt.value = nombre;
+        var desc = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nombre) : (parseInt(c.descuento, 10) || 0);
+        if (isNaN(desc)) desc = 0;
+        opt.setAttribute('data-descuento', String(desc));
+        opt.textContent = desc > 0 ? (nombre + ' (' + desc + '%)') : nombre;
         el.negocios.appendChild(opt);
       });
     }
+    if (prevVal) {
+      var found = false;
+      for (var j = 0; j < el.negocios.options.length; j++) {
+        if ((el.negocios.options[j].value || '').trim() === prevVal) {
+          el.negocios.selectedIndex = j;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        var prevL = prevVal.toLowerCase();
+        for (j = 0; j < el.negocios.options.length; j++) {
+          if ((el.negocios.options[j].value || '').trim().toLowerCase() === prevL) {
+            el.negocios.selectedIndex = j;
+            break;
+          }
+        }
+      }
+    }
+    if (typeof aplicarDescuentoDesdeConvenioNegocios === 'function') aplicarDescuentoDesdeConvenioNegocios();
   }
 
   renderOpcionesConvenios(convenios);
@@ -10103,15 +10192,14 @@ function cargarConvenios() {
   var baseRepo = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_FIRMADOS_BASE) ? window.CONVENIOS_ACUERDOS_FIRMADOS_BASE : 'input/CONTENT/Logos/convenios/acuerdos/firmados/';
   fetch(baseRepo + 'firmados.txt').then(function (r) { return r.text(); }).then(function (text) {
     var lineas = (text || '').split(/\r?\n/).map(function (l) { return (l || '').trim(); }).filter(Boolean);
-    var repoConvenios = lineas.map(function (nombre) {
-      var tituloDisplay = nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
-      if (tituloDisplay.toLowerCase() === 'ls customs') tituloDisplay = 'LS Customs';
-      var desc = typeof getConvenioRepoDescuento === 'function' ? getConvenioRepoDescuento(tituloDisplay) : null;
-      return { nombre: tituloDisplay, descuento: desc != null ? desc : 0 };
+    var repoConvenios = lineas.map(function (linea) {
+      return { nombre: normalizarNombreConvenioFirmados(linea) };
     });
     var merged = convenios.slice();
     repoConvenios.forEach(function (r) {
-      if (!merged.some(function (c) { return (c.nombre || '').trim() === (r.nombre || '').trim(); })) merged.push(r);
+      var rn = (r.nombre || '').trim().toLowerCase();
+      if (!rn) return;
+      if (!merged.some(function (c) { return (c.nombre || '').trim().toLowerCase() === rn; })) merged.push(r);
     });
     merged.sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
     renderOpcionesConvenios(merged);
@@ -10359,16 +10447,23 @@ function aplicarRegistroACalculadora(reg) {
       var sapd = convenios.find(function (c) { return (c.nombre || '').toUpperCase() === 'SAPD'; });
       if (sapd) convenioAUsar = sapd.nombre;
     }
+    var convenioTrim = convenioAUsar.trim();
     var opts = el.negocios.options;
+    var convenioL = convenioTrim.toLowerCase();
     for (var i = 0; i < opts.length; i++) {
       var optVal = (opts[i].value || '').trim();
-      if (optVal === convenioAUsar.trim()) {
+      if (optVal === convenioTrim || optVal.toLowerCase() === convenioL) {
         el.negocios.selectedIndex = i;
-        var d = parseInt(opts[i].dataset.descuento, 10);
-        if (!isNaN(d)) el.descuentoPorcentaje.value = d;
         break;
       }
     }
+    var nombreParaDesc = convenioTrim;
+    if (el.negocios.selectedIndex >= 0) {
+      nombreParaDesc = (el.negocios.options[el.negocios.selectedIndex].value || convenioTrim).trim();
+    }
+    var descReg = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nombreParaDesc) : NaN;
+    if (!isNaN(descReg) && el.descuentoPorcentaje) el.descuentoPorcentaje.value = String(descReg);
+    if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
   }
   var placa = document.getElementById('placaServicio');
   if (placa) placa.value = esPolicia ? placaVal : '';
@@ -10476,8 +10571,12 @@ function vincularPasos() {
           function anadirOpcionesConvenio(lista) {
             lista.forEach(function (c) {
               var o = document.createElement('option');
-              o.value = c.nombre;
-              o.textContent = (c.descuento != null && c.descuento > 0) ? (c.nombre + ' (' + c.descuento + '%)') : c.nombre;
+              var nom = (c.nombre || '').trim();
+              o.value = nom;
+              var dnv = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nom) : (parseInt(c.descuento, 10) || 0);
+              if (isNaN(dnv)) dnv = 0;
+              o.setAttribute('data-descuento', String(dnv));
+              o.textContent = dnv > 0 ? (nom + ' (' + dnv + '%)') : nom;
               nvConvenio.appendChild(o);
             });
           }
@@ -10485,17 +10584,20 @@ function vincularPasos() {
           var baseRepo = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_FIRMADOS_BASE) ? window.CONVENIOS_ACUERDOS_FIRMADOS_BASE : 'input/CONTENT/Logos/convenios/acuerdos/firmados/';
           fetch(baseRepo + 'firmados.txt').then(function (r) { return r.text(); }).then(function (text) {
             var lineas = (text || '').split(/\r?\n/).map(function (l) { return (l || '').trim(); }).filter(Boolean);
-            var repoConvenios = lineas.map(function (nombre) {
-              var tituloDisplay = nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
-              if (tituloDisplay.toLowerCase() === 'ls customs') tituloDisplay = 'LS Customs';
-              var desc = typeof getConvenioRepoDescuento === 'function' ? getConvenioRepoDescuento(tituloDisplay) : null;
-              return { nombre: tituloDisplay, descuento: desc != null ? desc : 0 };
+            var repoConvenios = lineas.map(function (linea) {
+              return { nombre: normalizarNombreConvenioFirmados(linea) };
             });
             repoConvenios.forEach(function (r) {
-              if (!convenios.some(function (c) { return (c.nombre || '').trim() === (r.nombre || '').trim(); })) {
+              var rn = (r.nombre || '').trim().toLowerCase();
+              if (!rn) return;
+              if (!convenios.some(function (c) { return (c.nombre || '').trim().toLowerCase() === rn; })) {
                 var o = document.createElement('option');
-                o.value = r.nombre;
-                o.textContent = (r.descuento != null && r.descuento > 0) ? (r.nombre + ' (' + r.descuento + '%)') : r.nombre;
+                var nom = (r.nombre || '').trim();
+                o.value = nom;
+                var dnv = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nom) : 0;
+                if (isNaN(dnv)) dnv = 0;
+                o.setAttribute('data-descuento', String(dnv));
+                o.textContent = dnv > 0 ? (nom + ' (' + dnv + '%)') : nom;
                 nvConvenio.appendChild(o);
               }
             });
@@ -10665,6 +10767,7 @@ function getSelectedPiezasTuneo() {
   if (typeof PIEZAS_TUNING === 'undefined' || typeof getPiezaById !== 'function') return result;
   var container = document.getElementById('tuningPiezasPorCategoria');
   if (!container) return result;
+  var baseVehiculo = vehiculoActual && typeof vehiculoActual.precioBase === 'number' ? vehiculoActual.precioBase : 0;
   var getPrecioVenta = typeof getPrecioVentaPiezaTuneo === 'function' ? getPrecioVentaPiezaTuneo : function () { return 0; };
   var checkboxes = container.querySelectorAll('.tuning-pieza-checkbox:checked');
   checkboxes.forEach(function (cb) {
@@ -10673,7 +10776,7 @@ function getSelectedPiezasTuneo() {
     if (!cat || !piezaId) return;
     var pieza = getPiezaById(cat, piezaId);
     if (!pieza) return;
-    var precioVenta = getPrecioVenta(cat, piezaId);
+    var precioVenta = getPrecioVenta(cat, piezaId, baseVehiculo);
     result[cat] = (result[cat] || 0) + precioVenta;
     result.totalCoste += (typeof pieza.coste === 'number' ? pieza.coste : 0);
     result.piezas.push({ categoria: cat, piezaId: pieza.id, nombre: pieza.nombre, coste: pieza.coste, precioVenta: precioVenta });
@@ -10738,9 +10841,14 @@ function calcularPrecios() {
       performance = cuarta;
       custom = cuarta;
       cosmetic = fullTuningTotal - cuarta * 3;
-      if (el.tuneMotor.checked) motor += Math.floor(base * CONFIG.factorPiezaTuneo);
+      if (el.tuneMotor.checked) {
+        var addMotor = typeof getPrecioVentaSwapMotor === 'function' ? getPrecioVentaSwapMotor(base) : Math.floor(base * 0.16);
+        motor += addMotor;
+      }
     } else {
-      if (el.tuneMotor.checked) motor = Math.floor(base * CONFIG.factorPiezaTuneo);
+      if (el.tuneMotor.checked) {
+        motor = typeof getPrecioVentaSwapMotor === 'function' ? getPrecioVentaSwapMotor(base) : Math.floor(base * 0.16);
+      }
       var sel = getSelectedPiezasTuneo();
       kits = sel.kits || 0;
       performance = sel.performance || 0;
@@ -11159,7 +11267,8 @@ function aceptarModalConvenioPrimeraVez() {
   var val = (select && select.value) ? (select.value || '').trim() : 'N/A';
   if (mat && typeof addOrUpdateClienteBBDD === 'function') addOrUpdateClienteBBDD({ matricula: mat, convenio: val });
   if (el.negocios) el.negocios.value = val;
-  if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
+  if (typeof aplicarDescuentoDesdeConvenioNegocios === 'function') aplicarDescuentoDesdeConvenioNegocios();
+  else if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
   var cb = _convenioPrimeraVezOnListo;
   cerrarModalConvenioPrimeraVez();
   if (cb) cb();
@@ -11939,11 +12048,7 @@ function vincularEventos() {
     placaServicio.addEventListener('change', () => { actualizarVisibilidadPlacaServicio(); actualizarVisibilidadRegistroServicios(); });
   }
   el.negocios.addEventListener('change', () => {
-    const opt = el.negocios.options[el.negocios.selectedIndex];
-    const desc = parseInt(opt?.dataset?.descuento, 10);
-    if (!isNaN(desc)) el.descuentoPorcentaje.value = desc;
-    actualizarDescuentoSuperior();
-    actualizarVista();
+    if (typeof aplicarDescuentoDesdeConvenioNegocios === 'function') aplicarDescuentoDesdeConvenioNegocios();
   });
   el.negocios.addEventListener('input', actualizarVistaDebounced);
   if (el.descuentoPorcentaje) el.descuentoPorcentaje.addEventListener('input', actualizarDescuentoSuperior);

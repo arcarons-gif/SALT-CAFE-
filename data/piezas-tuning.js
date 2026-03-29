@@ -1,6 +1,7 @@
 /**
  * Piezas de tuneo y sus costes de compra (según input/CONTENT/ALMACEN/precios piezas tuning.txt).
  * Categorías: kits, performance, cosmetics, custom.
+ * Precio de venta al cliente: kits = coste×2 o override en localStorage; performance/custom/cosmetics = % valor vehículo (data/precios-piezas.js); pintura camaleónica = 5000 $ fijos.
  */
 (function (global) {
   var CATEGORIAS_TUNEO = [
@@ -41,6 +42,7 @@
       { id: 'matricula_vehiculo', nombre: 'Matrícula de vehículo', coste: 25 },
       { id: 'parachoques_trasero', nombre: 'Parachoques trasero', coste: 25 },
       { id: 'pintura_vehiculo', nombre: 'Pintura de vehículo', coste: 25 },
+      { id: 'pintura_camaleonica', nombre: 'Pintura camaleónica', coste: 2500 },
       { id: 'llanta_vehiculo', nombre: 'Llanta de vehículo', coste: 25 },
       { id: 'techo_vehiculo', nombre: 'Techo de vehículo', coste: 25 },
       { id: 'aleron_vehiculo', nombre: 'Alerón de vehículo', coste: 25 },
@@ -79,10 +81,32 @@
     } catch (e) {}
   }
 
-  /** Precio de venta para el cliente (lo que se cobra). Si no está definido, usa coste * 2. */
-  function getPrecioVentaPiezaTuneo(categoriaId, piezaId) {
+  var PRECIO_FIJO_PINTURA_CAMALEONICA = 5000;
+
+  /**
+   * Precio de venta al cliente. performance / custom / cosmetics: % del valor del vehículo por pieza (config en Precios piezas).
+   * kits: override localStorage o coste×2. pintura_camaleonica: 5000 $ siempre.
+   * @param {string} categoriaId
+   * @param {string} piezaId
+   * @param {number} [valorVehiculo] precioBase del vehículo seleccionado
+   */
+  function getPrecioVentaPiezaTuneo(categoriaId, piezaId, valorVehiculo) {
     var pieza = getPiezaById(categoriaId, piezaId);
     if (!pieza) return 0;
+    if (piezaId === 'pintura_camaleonica') return PRECIO_FIJO_PINTURA_CAMALEONICA;
+    var base = typeof valorVehiculo === 'number' && valorVehiculo > 0 ? valorVehiculo : 0;
+    if (base > 0 && categoriaId === 'performance' && typeof global.getPrecioVentaPerformancePorcentaje === 'function') {
+      var pp = global.getPrecioVentaPerformancePorcentaje();
+      return Math.floor(base * (pp / 100));
+    }
+    if (base > 0 && categoriaId === 'custom' && typeof global.getPrecioVentaCustomPorcentaje === 'function') {
+      var pc = global.getPrecioVentaCustomPorcentaje();
+      return Math.floor(base * (pc / 100));
+    }
+    if (base > 0 && categoriaId === 'cosmetics' && typeof global.getPrecioVentaCosmeticPorcentaje === 'function') {
+      var pco = global.getPrecioVentaCosmeticPorcentaje();
+      return Math.floor(base * (pco / 100));
+    }
     var coste = typeof pieza.coste === 'number' ? pieza.coste : 0;
     var precios = getPreciosPiezasTuneo();
     var p = precios[piezaId];
