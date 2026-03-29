@@ -1417,9 +1417,9 @@ function vincularAdmin() {
       card.style.display = visible ? '' : 'none';
     });
     var economiaTabsEl = document.getElementById('economiaTabs');
-    if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (tab) {
+    if (economiaTabsEl)     economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (tab) {
       var t = tab.dataset.economiaTab;
-      var soloAdmin = (t === 'gastos' || t === 'previsiones' || t === 'financiera');
+      var soloAdmin = (t === 'gastos' || t === 'previsiones' || t === 'financiera' || t === 'piezas');
       tab.style.display = (soloAdmin && !hasPermission(s, 'gestionarUsuarios')) ? 'none' : '';
     });
     document.querySelectorAll('.stock-tab').forEach(function (tab) {
@@ -2190,7 +2190,7 @@ function vincularResetDatos() {
 }
 
 // ========== ECONOMÍA (compras, inventario, gastos, previsiones, almacén) ==========
-var ECONOMIA_SUBTABS = ['resumen', 'ingresos', 'gastos', 'previsiones', 'historial', 'entregas', 'financiera'];
+var ECONOMIA_SUBTABS = ['resumen', 'ingresos', 'gastos', 'previsiones', 'historial', 'entregas', 'piezas', 'financiera'];
 var STOCK_SUBTABS = ['compras', 'inventario', 'limites', 'almacen', 'piezas'];
 
 function mostrarSubpanelEconomia(subtab) {
@@ -2212,6 +2212,7 @@ function mostrarSubpanelEconomia(subtab) {
   if (subtab === 'previsiones') renderPrevisiones();
   if (subtab === 'historial') renderHistorialPedidos();
   if (subtab === 'entregas') renderEntregasMaterial();
+  if (subtab === 'piezas') renderPreciosPiezas();
   if (subtab === 'financiera') renderEconomiaFinanciera();
 }
 
@@ -3282,63 +3283,6 @@ function renderPreciosPiezas() {
       renderPreciosPiezas();
     });
   });
-  var tbodyTuneo = document.getElementById('listaPreciosPiezasTuneo');
-  if (tbodyTuneo && typeof PIEZAS_TUNING === 'object' && typeof CATEGORIAS_TUNEO !== 'undefined' && typeof getPreciosPiezasTuneo === 'function' && typeof savePreciosPiezasTuneo === 'function') {
-    var preciosTuneo = getPreciosPiezasTuneo();
-    tbodyTuneo.innerHTML = '';
-    CATEGORIAS_TUNEO.forEach(function (cat) {
-      var piezas = PIEZAS_TUNING[cat.id] || [];
-      piezas.forEach(function (p) {
-        var stored = preciosTuneo[p.id] || {};
-        var costeVal = stored.coste != null ? stored.coste : (p.coste != null ? p.coste : 0);
-        var ventaVal = stored.precioVenta != null ? stored.precioVenta : (p.coste != null ? p.coste * 2 : 0);
-        var margenEur = ventaVal - costeVal;
-        var margenPct = costeVal > 0 ? ((margenEur / costeVal) * 100).toFixed(1) + '%' : '—';
-        var tr = document.createElement('tr');
-        tr.setAttribute('data-pieza-id', p.id || '');
-        tr.innerHTML =
-          '<td>' + escapeHtml(cat.nombre) + '</td>' +
-          '<td>' + escapeHtml(p.nombre || p.id) + '</td>' +
-          '<td><input type="number" class="input-pieza-tuneo-coste" min="0" step="1" value="' + costeVal + '" data-pieza-id="' + escapeHtmlAttr(p.id) + '"></td>' +
-          '<td><input type="number" class="input-pieza-tuneo-venta" min="0" step="1" value="' + ventaVal + '" data-pieza-id="' + escapeHtmlAttr(p.id) + '"></td>' +
-          '<td class="economia-piezas-margen-eur">' + margenEur.toFixed(2) + ' $</td>' +
-          '<td class="economia-piezas-margen-pct">' + margenPct + '</td>' +
-          '<td><button type="button" class="btn btn-outline btn-sm btn-guardar-pieza-tuneo" data-pieza-id="' + escapeHtmlAttr(p.id) + '">Guardar</button></td>';
-        tbodyTuneo.appendChild(tr);
-      });
-    });
-    tbodyTuneo.querySelectorAll('.input-pieza-tuneo-coste, .input-pieza-tuneo-venta').forEach(function (inp) {
-      inp.addEventListener('input', function () {
-        var row = inp.closest('tr');
-        if (!row) return;
-        var costeInp = row.querySelector('.input-pieza-tuneo-coste');
-        var ventaInp = row.querySelector('.input-pieza-tuneo-venta');
-        var coste = parseFloat(costeInp && costeInp.value) || 0;
-        var venta = parseFloat(ventaInp && ventaInp.value) || 0;
-        var margenEur = venta - coste;
-        var margenPct = coste > 0 ? ((margenEur / coste) * 100).toFixed(1) + '%' : '—';
-        var margenEurEl = row.querySelector('.economia-piezas-margen-eur');
-        var margenPctEl = row.querySelector('.economia-piezas-margen-pct');
-        if (margenEurEl) margenEurEl.textContent = margenEur.toFixed(2) + ' $';
-        if (margenPctEl) margenPctEl.textContent = margenPct;
-      });
-    });
-    tbodyTuneo.querySelectorAll('.btn-guardar-pieza-tuneo').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = btn.getAttribute('data-pieza-id');
-        if (!id) return;
-        var row = btn.closest('tr');
-        var costeInp = row && row.querySelector('.input-pieza-tuneo-coste');
-        var ventaInp = row && row.querySelector('.input-pieza-tuneo-venta');
-        var coste = parseFloat(costeInp && costeInp.value) || 0;
-        var venta = parseFloat(ventaInp && ventaInp.value) || 0;
-        var precios = getPreciosPiezasTuneo();
-        precios[id] = { coste: coste, precioVenta: venta };
-        savePreciosPiezasTuneo(precios);
-        renderPreciosPiezas();
-      });
-    });
-  }
   var tbodyMaq = document.getElementById('listaPreciosMaquinaria');
   if (tbodyMaq) {
     var maquinaria = [

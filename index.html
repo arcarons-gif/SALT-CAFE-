@@ -1062,6 +1062,7 @@
             <button type="button" class="economia-tab" data-economia-tab="previsiones">Previsiones</button>
             <button type="button" class="economia-tab" data-economia-tab="historial">Historial de pedidos</button>
             <button type="button" class="economia-tab" data-economia-tab="entregas">Entregas a trabajadores</button>
+            <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="piezas">Precios piezas</button>
             <button type="button" class="economia-tab economia-tab-admin-only" data-economia-tab="financiera">Gestión financiera</button>
           </div>
           <div class="economia-tabs stock-tabs" id="stockTabs" style="display:none">
@@ -1173,20 +1174,12 @@
             <div class="economia-table-wrap"><table class="economia-table"><thead><tr><th>Fecha</th><th>Materiales añadidos</th><th>Registrado por</th></tr></thead><tbody id="listaAlmacenMovimientos"></tbody></table></div>
           </div>
           <div id="economiaPiezas" class="economia-subpanel" style="display:none">
-            <h3 class="economia-piezas-titulo">Coste, precio de venta y margen por artículo (reparación / tuneo general)</h3>
-            <p class="economia-historial-desc">Control del coste, precio de venta y margen por artículo. Chasis: 30 €/ud. Esenciales: 65 €/ud. Swap motor: 25% valor veh. Performance y cosmetic: 5% valor veh. (por pieza). Full tuning: 40% valor veh. Solo administradores.</p>
+            <h3 class="economia-piezas-titulo">Precios piezas (reparación y tuneo)</h3>
+            <p class="economia-historial-desc">Chasis y esenciales: precio fijo por unidad en reparación. Cambio de motor, performance, custom, cosmetic y full tuning: <strong>porcentaje del valor del vehículo</strong>; ese % se aplica a <strong>todas</strong> las piezas marcadas de esa categoría en el tuneo (la pintura camaleónica sigue con precio fijo en catálogo; los kits NOS usan su coste×2). Solo administradores.</p>
             <div class="economia-table-wrap">
               <table class="economia-table economia-table-piezas">
                 <thead><tr><th>Artículo</th><th>Coste (€)</th><th>Precio venta</th><th>Margen (€)</th><th>Margen %</th><th></th></tr></thead>
                 <tbody id="listaPreciosPiezas"></tbody>
-              </table>
-            </div>
-            <h3 class="economia-piezas-titulo">Piezas de tuneo: coste y precio de venta</h3>
-            <p class="economia-historial-desc">Coste de compra para el taller y precio de venta al cliente por cada pieza. El total del presupuesto en la calculadora usa el precio de venta de las piezas seleccionadas.</p>
-            <div class="economia-table-wrap" id="wrapPreciosPiezasTuneo">
-              <table class="economia-table economia-table-piezas">
-                <thead><tr><th>Categoría</th><th>Artículo</th><th>Coste ($)</th><th>Precio venta ($)</th><th>Margen ($)</th><th>Margen %</th><th></th></tr></thead>
-                <tbody id="listaPreciosPiezasTuneo"></tbody>
               </table>
             </div>
             <h3 class="economia-piezas-titulo">Maquinaria</h3>
