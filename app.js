@@ -11194,11 +11194,26 @@ function getModeloDisplayParaRegistro(matricula) {
 }
 
 /**
+ * Convenio a guardar: primero el desplegable de la calculadora; si está vacío, el guardado en BBDD del cliente (p. ej. tras modal primera vez).
+ */
+function resolverConvenioNombreParaRegistro(matriculaOpt) {
+  var desdeForm = (el.negocios && el.negocios.value) ? String(el.negocios.value).trim() : '';
+  if (desdeForm) return desdeForm;
+  var mat = (matriculaOpt || '').trim();
+  if (!mat || typeof getClienteByMatricula !== 'function') return '';
+  var cli = getClienteByMatricula(mat);
+  if (!cli) return '';
+  return (cli.convenio || '').toString().trim();
+}
+
+/**
  * Importe y % de descuento guardados en el registro: alineados con convenios firmados (no solo el campo de la calculadora).
  * Con kit de reparación activo no aplica descuento por convenio.
+ * @param {object} p - resultado de calcularPrecios()
+ * @param {string} [matriculaOpt] - matrícula para leer convenio de BBDD si el desplegable está vacío
  */
-function getImporteYDescuentoRegistroServicio(p) {
-  var convenioNombre = (el.negocios && el.negocios.value) ? String(el.negocios.value).trim() : '';
+function getImporteYDescuentoRegistroServicio(p, matriculaOpt) {
+  var convenioNombre = resolverConvenioNombreParaRegistro(matriculaOpt);
   var descRegistro = typeof p.descuento === 'number' ? p.descuento : 0;
   var importeRegistro = typeof p.total === 'number' ? p.total : 0;
   if (p.kitActivo) {
@@ -11522,7 +11537,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
   var piezasTuneo = piezasSel.piezas || [];
   const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
-  const finTuneo = getImporteYDescuentoRegistroServicio(p);
+  const finTuneo = getImporteYDescuentoRegistroServicio(p, mat);
   const servicio = {
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
@@ -11579,6 +11594,7 @@ function registrarReparacion() {
   guardarMatricula(mat);
   ensureClienteEnBBDDSiFalta(mat);
   requiereConvenioParaMatricula(mat, function continuarRegistroReparacion() {
+    var pReg = calcularPrecios();
     var session = getSession();
     var nombreRegistradorRep = session ? (session.nombre || session.username || '') : '';
     if (el.mecanico) el.mecanico.value = nombreRegistradorRep || '—';
@@ -11586,7 +11602,7 @@ function registrarReparacion() {
   var partesEsencialesReg = 0;
   var piezasChasisDesglose = [];
   var piezasEsencialesDesglose = [];
-  if (p.kitActivo) {
+  if (pReg.kitActivo) {
     partesChasisReg = 20;
     partesEsencialesReg = 6;
   } else {
@@ -11594,13 +11610,13 @@ function registrarReparacion() {
     partesEsencialesReg = parseInt(el.partesEsenciales?.value, 10) || 0;
   }
   const modeloDisplayRep = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
-  const finRep = getImporteYDescuentoRegistroServicio(p);
+  const finRep = getImporteYDescuentoRegistroServicio(pReg, mat);
   const servicio = {
     tipo: 'REPARACIÓN',
     fecha: new Date().toISOString(),
     matricula: mat,
     modelo: modeloDisplayRep,
-    modificacion: p.kitActivo ? 'Reparación (kit)' : 'Reparación',
+    modificacion: pReg.kitActivo ? 'Reparación (kit)' : 'Reparación',
     importe: finRep.importe,
     empleado: nombreRegistradorRep || el.mecanico?.value || '—',
     convenio: finRep.convenioNombre,
@@ -11609,7 +11625,7 @@ function registrarReparacion() {
     partesChasis: partesChasisReg,
     partesEsenciales: partesEsencialesReg,
     partesServicio: 0,
-    kitReparacion: p.kitActivo || false,
+    kitReparacion: pReg.kitActivo || false,
     piezasChasisDesglose: piezasChasisDesglose,
     piezasEsencialesDesglose: piezasEsencialesDesglose,
   };
