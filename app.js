@@ -11359,13 +11359,6 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   const modLabel = el.fullTuning?.checked ? 'Full Tuning' : (el.reparacion?.checked ? 'Reparación + Tuneo' : 'Tuneo');
   var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
   var piezasTuneo = piezasSel.piezas || [];
-  if (piezasTuneo.length > 0) {
-    var resultTuneo = comprobarStockTuneo(piezasTuneo);
-    if (!resultTuneo || !resultTuneo.ok) {
-      alert(resultTuneo && resultTuneo.error ? resultTuneo.error : 'No hay stock suficiente de piezas de tuning. Añade existencias en Economía > Inventario.');
-      return;
-    }
-  }
   const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const servicio = {
     tipo: 'TUNEO',
@@ -11382,7 +11375,6 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
-  if (piezasTuneo.length > 0 && typeof restarStockTuneo === 'function') restarStockTuneo(piezasTuneo);
   if (typeof renderInventario === 'function') renderInventario();
   if (typeof renderLimitesStock === 'function') renderLimitesStock();
   if (typeof renderEconomiaResumen === 'function') renderEconomiaResumen();
@@ -11408,91 +11400,6 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   abrirPantallaResultadosCalculadora();
   if (typeof showToast === 'function') showToast('Tuneo registrado correctamente.', 'success');
   else alert('Tuneo registrado correctamente.');
-}
-
-/** Mapeo de IDs de piezas reparación (chasis/esenciales) a conceptoId del inventario economía (control único de existencias). */
-var MAPEO_PIEZAS_REPARACION_A_INVENTARIO = {
-  chasis: { capo: 'carroceria_capo', maletero: 'carroceria_maletero', puerta: 'carroceria_puerta', rueda: 'esenciales_rueda', ventana: 'carroceria_cristal' },
-  esenciales: { transmision: 'esenciales_transmision', bomba_direccion: 'esenciales_bomba_direccion', alternador: 'esenciales_alternador', inyector: 'esenciales_inyector', frenos: 'esenciales_frenos', radiador: 'esenciales_radiador', celulas_bateria: 'esenciales_otro', motor_electrico: 'esenciales_otro' }
-};
-
-/** Comprueba si hay stock suficiente en inventario (economía) para las piezas de la reparación. Devuelve { ok: true } o { ok: false, error: string }. */
-function comprobarStockReparacion(chasisDesglose, esencialesDesglose) {
-  if (typeof getStock !== 'function') return { ok: true };
-  var mapCh = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.chasis || {};
-  var mapEs = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.esenciales || {};
-  var nombres = { chasis: { capo: 'Capó', maletero: 'Maletero', puerta: 'Puerta', rueda: 'Rueda', ventana: 'Cristal' }, esenciales: { transmision: 'Transmisión', bomba_direccion: 'Bomba de dirección', alternador: 'Alternador', inyector: 'Inyector', frenos: 'Frenos', radiador: 'Radiador', celulas_bateria: 'Células de batería', motor_electrico: 'Motor eléctrico' } };
-  chasisDesglose = Array.isArray(chasisDesglose) ? chasisDesglose : [];
-  esencialesDesglose = Array.isArray(esencialesDesglose) ? esencialesDesglose : [];
-  var i, id, conceptoId, stock, nombre;
-  for (i = 0; i < chasisDesglose.length; i++) {
-    id = chasisDesglose[i];
-    conceptoId = mapCh[id] || 'carroceria_otro';
-    stock = getStock(conceptoId);
-    if (stock < 1) {
-      nombre = (nombres.chasis && nombres.chasis[id]) ? nombres.chasis[id] : id;
-      return { ok: false, error: 'Stock insuficiente de "' + nombre + '" (carrocería). Ve a Economía > Inventario para añadir existencias.' };
-    }
-  }
-  for (i = 0; i < esencialesDesglose.length; i++) {
-    id = esencialesDesglose[i];
-    conceptoId = mapEs[id] || 'esenciales_otro';
-    stock = getStock(conceptoId);
-    if (stock < 1) {
-      nombre = (nombres.esenciales && nombres.esenciales[id]) ? nombres.esenciales[id] : id;
-      return { ok: false, error: 'Stock insuficiente de "' + nombre + '" (componentes esenciales). Ve a Economía > Inventario para añadir existencias.' };
-    }
-  }
-  return { ok: true };
-}
-
-/** Resta del inventario (economía) las piezas usadas en la reparación. Solo llamar después de comprobarStockReparacion(). */
-function restarStockReparacion(chasisDesglose, esencialesDesglose) {
-  if (typeof removeStock !== 'function') return;
-  var mapCh = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.chasis || {};
-  var mapEs = MAPEO_PIEZAS_REPARACION_A_INVENTARIO.esenciales || {};
-  chasisDesglose = Array.isArray(chasisDesglose) ? chasisDesglose : [];
-  esencialesDesglose = Array.isArray(esencialesDesglose) ? esencialesDesglose : [];
-  var i;
-  for (i = 0; i < chasisDesglose.length; i++) removeStock(mapCh[chasisDesglose[i]] || 'carroceria_otro', 1);
-  for (i = 0; i < esencialesDesglose.length; i++) removeStock(mapEs[esencialesDesglose[i]] || 'esenciales_otro', 1);
-}
-
-/** Mapeo piezaId de tuneo (PIEZAS_TUNING) a conceptoId inventario economía (TUNING). El resto usa tuning_otro. */
-var MAPEO_PIEZAS_TUNEO_A_INVENTARIO = {
-  pintura_vehiculo: 'tuning_pintura', aleron_vehiculo: 'tuning_aleron', llanta_vehiculo: 'tuning_llantas', luces_vehiculo: 'tuning_luces',
-  parachoques_delantero: 'tuning_parachoque', parachoques_trasero: 'tuning_parachoque', neon_vehiculo: 'tuning_neon',
-  vinilo_vehiculo: 'tuning_vinilo', chasis_vehiculo: 'tuning_chasis', humo_neumaticos: 'tuning_humo_neumaticos',
-  exterior_vehiculo: 'tuning_exterior', interior_vehiculo: 'tuning_interior', bocina_vehiculo: 'tuning_bocina', extras_vehiculo: 'tuning_extras'
-};
-
-function conceptoInventarioParaPiezaTuneo(piezaId) {
-  return MAPEO_PIEZAS_TUNEO_A_INVENTARIO[piezaId] || 'tuning_otro';
-}
-
-/** Comprueba stock en inventario para las piezas de tuneo seleccionadas. Devuelve { ok: true } o { ok: false, error: string }. */
-function comprobarStockTuneo(piezas) {
-  if (typeof getStock !== 'function' || !Array.isArray(piezas) || !piezas.length) return { ok: true };
-  var requerido = {};
-  piezas.forEach(function (p) {
-    var cid = conceptoInventarioParaPiezaTuneo(p.piezaId || p.id);
-    requerido[cid] = (requerido[cid] || 0) + 1;
-  });
-  var cid, stock;
-  for (cid in requerido) {
-    if (!requerido.hasOwnProperty(cid)) continue;
-    stock = getStock(cid);
-    if (stock < (requerido[cid] || 0)) return { ok: false, error: 'Stock insuficiente de piezas de tuning. Ve a Economía > Inventario para añadir existencias (Tuning).' };
-  }
-  return { ok: true };
-}
-
-/** Resta del inventario las piezas de tuneo usadas (1 ud por pieza). */
-function restarStockTuneo(piezas) {
-  if (typeof removeStock !== 'function' || !Array.isArray(piezas)) return;
-  piezas.forEach(function (p) {
-    removeStock(conceptoInventarioParaPiezaTuneo(p.piezaId || p.id), 1);
-  });
 }
 
 function registrarReparacion() {
@@ -11542,12 +11449,6 @@ function registrarReparacion() {
         }
         piezasEsencialesDesglose.push(valE);
       }
-      var result = comprobarStockReparacion(piezasChasisDesglose, piezasEsencialesDesglose);
-      if (!result || !result.ok) {
-        alert(result && result.error ? result.error : 'No hay stock suficiente para las piezas indicadas. Añade existencias en Economía > Inventario.');
-        return;
-      }
-      restarStockReparacion(piezasChasisDesglose, piezasEsencialesDesglose);
     }
   }
   const modeloDisplayRep = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');

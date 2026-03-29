@@ -9,13 +9,13 @@ const PASSWORD_PREDETERMINADA = '1234';
 const ADMIN_RESET_FLAG = 'benny_admin_reset_1234';
 /** Al migrar a v2, se sustituye la lista de usuarios por solo estos tres. */
 const USUARIOS_PREDEFINIDOS_MIGRATION = 'benny_usuarios_predefinidos_v2';
-/** Una vez: sincroniza contraseñas de admin y Savannah con las del seed (7264). */
-const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v1';
+/** Una vez: sincroniza contraseñas de admin y Savannah con las del seed (admin 7264; Savannah 1196). */
+const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v2';
 
 /** Únicos usuarios predefinidos. Cualquier otro usuario se elimina en la migración. */
 const SEED_USERS = [
   { username: 'admin', nombre: 'Administrador', password: '7264', rol: 'admin' },
-  { username: 'Savannah', nombre: 'Savannah', password: '7264', rol: 'admin' },
+  { username: 'Savannah', nombre: 'Savannah', password: '1196', rol: 'admin' },
   { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
   { username: 'Gerald J', nombre: 'Gerald J. Ford', password: '1234', rol: 'mecanico', cambiarPasswordObligatorio: true },
 ];
