@@ -11217,17 +11217,22 @@ function resolverConvenioNombreParaRegistro(matriculaOpt) {
  */
 function getImporteYDescuentoRegistroServicio(p, matriculaOpt) {
   var convenioNombre = resolverConvenioNombreParaRegistro(matriculaOpt);
-  var descRegistro = typeof p.descuento === 'number' ? p.descuento : 0;
-  var importeRegistro = typeof p.total === 'number' ? p.total : 0;
+  var cn = (convenioNombre || '').toString().trim();
+  var dForm = typeof p.descuento === 'number' && !isNaN(p.descuento) ? p.descuento : (parseFloat(p.descuento) || 0);
+  var sub = typeof p.subtotal === 'number' && !isNaN(p.subtotal) ? p.subtotal : (parseFloat(p.subtotal) || 0);
+  var importeRegistro = typeof p.total === 'number' && !isNaN(p.total) ? p.total : (parseFloat(p.total) || 0);
   if (p.kitActivo) {
-    return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro };
+    return { convenioNombre: convenioNombre, descuento: dForm, importe: importeRegistro, subtotal: sub };
   }
-  if (typeof getDescuentoParaNombreConvenio === 'function') {
-    descRegistro = getDescuentoParaNombreConvenio(convenioNombre);
+  var dConv = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(cn) : 0;
+  var descRegistro;
+  if (cn !== '' && cn.toUpperCase() !== 'N/A') {
+    descRegistro = dConv > 0 ? dConv : dForm;
+  } else {
+    descRegistro = dForm;
   }
-  var sub = typeof p.subtotal === 'number' ? p.subtotal : 0;
   importeRegistro = Math.floor(sub * (1 - descRegistro / 100));
-  return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro };
+  return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro, subtotal: sub };
 }
 
 /** % a mostrar en listas/resumen: prioriza el guardado; si falta, lo infiere del nombre de convenio. */
@@ -11367,17 +11372,27 @@ function enviarRegistroServicioADiscord(servicio) {
   var url = (typeof CONFIG !== 'undefined' && CONFIG.discordWebhookUrl) ? CONFIG.discordWebhookUrl : '';
   if (!url || !servicio) return;
   var mod = (servicio.modificacion || ((servicio.tipo || '').toUpperCase().indexOf('REPARAC') !== -1 ? 'Reparación' : '-')).toString();
-  var importeVal = servicio.importe != null ? (typeof servicio.importe === 'number' ? servicio.importe : parseFloat(servicio.importe) || 0) : 0;
+  var importeVal = Number(servicio.importe);
+  if (isNaN(importeVal)) importeVal = 0;
+  var subVal = servicio.subtotal != null ? Number(servicio.subtotal) : NaN;
+  if (isNaN(subVal)) subVal = null;
+  var descPct = Number(servicio.descuento);
+  if (isNaN(descPct)) descPct = 0;
+  var convRaw = (servicio.convenio || '').toString().trim();
+  var convLabel = convRaw ? convRaw : 'N/A';
   var importeStr = importeVal > 0 ? importeVal.toLocaleString('es-ES') + '$' : '-';
-  var descPct = typeof servicio.descuento === 'number' ? servicio.descuento : 0;
-  var convLine = (servicio.convenio || '-').toString();
-  if (descPct > 0) convLine += ' — descuento: ' + descPct + '%';
-  var content = 'Matricula: ' + (servicio.matricula || '-') + '\n' +
-    'Modelo: ' + (servicio.modelo || '-') + '\n' +
-    'Modificación: ' + (mod || '-') + '\n' +
-    'Importe: ' + importeStr + '\n' +
-    'Empleado que realizo el servicio: ' + (servicio.empleado || '-') + '\n' +
-    'Convenio y descuento: ' + convLine;
+  var subStr = subVal != null && subVal > 0 ? subVal.toLocaleString('es-ES') + '$' : null;
+  var lineas = [
+    'Matricula: ' + (servicio.matricula || '-'),
+    'Modelo: ' + (servicio.modelo || '-'),
+    'Modificación: ' + (mod || '-'),
+  ];
+  if (subStr) lineas.push('Subtotal (antes de descuento): ' + subStr);
+  lineas.push('Descuento aplicado: ' + descPct + '%');
+  lineas.push('Importe final (con descuento): ' + importeStr);
+  lineas.push('Convenio: ' + convLabel + ' (' + descPct + '%)');
+  lineas.push('Empleado que realizo el servicio: ' + (servicio.empleado || '-'));
+  var content = lineas.join('\n');
   var body = JSON.stringify({ content: content });
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
 }
@@ -11548,6 +11563,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
     modelo: modeloDisplay,
     modificacion: modLabel,
     importe: finTuneo.importe,
+    subtotal: finTuneo.subtotal,
     empleado: nombreRegistrador || el.mecanico?.value || '—',
     convenio: finTuneo.convenioNombre,
     descuento: finTuneo.descuento,
@@ -11621,6 +11637,7 @@ function registrarReparacion() {
     modelo: modeloDisplayRep,
     modificacion: pReg.kitActivo ? 'Reparación (kit)' : 'Reparación',
     importe: finRep.importe,
+    subtotal: finRep.subtotal,
     empleado: nombreRegistradorRep || el.mecanico?.value || '—',
     convenio: finRep.convenioNombre,
     descuento: finRep.descuento,

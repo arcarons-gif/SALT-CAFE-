@@ -1,22 +1,24 @@
 /**
  * Configuración de la app SALTLAB Calculator.
  * URL del backend: si la defines aquí, los usuarios no tendrán que escribirla.
- * Cambia la IP/puerto si tu servidor está en otra máquina.
+ *
+ * Comprueba que API_URL_PRODUCCION coincida EXACTAMENTE con la URL pública de tu servicio
+ * (Render, etc.), sin barra final. Si apunta a otro host o a un servicio apagado, la sync
+ * de usuarios fallará (consola: POST /api/users falló). En GitHub Pages la app debe servirse
+ * por HTTPS; el backend también debe ser HTTPS (Render lo es) para evitar contenido mixto.
  */
 
 /** Backend cuando la app se abre en local (mismo PC). Usa localhost:3001 si el servidor corre en esta máquina; si está en otro PC de la red, pon su IP (ej. http://192.168.0.63:3001). */
 var API_URL_LOCAL = 'http://localhost:3001';
 
 /**
- * Backend cuando la app se abre desde GitHub Pages (production).
- * Sustituye por la URL de tu backend en Render (ej. https://salt-cafe.onrender.com).
- * Así todos los que abran https://arcarons-gif.github.io/SALT-CAFE-/ usarán el mismo backend
- * y los datos se sincronizarán aunque tu PC esté apagado.
+ * Backend cuando la app se abre desde GitHub Pages (cualquier *.github.io).
+ * Debe ser la URL que te da el panel del hosting (ej. https://tu-api.onrender.com).
  */
 var API_URL_PRODUCCION = 'https://salt-cafe.onrender.com';
 
 if (typeof window !== 'undefined') {
-  var esProduccion = /arcarons-gif\.github\.io|github\.io/i.test(window.location.hostname || '');
+  var esProduccion = /github\.io/i.test(window.location.hostname || '');
   window.SALTLAB_API_URL = esProduccion ? (window.SALTLAB_API_URL_PRODUCCION || API_URL_PRODUCCION) : API_URL_LOCAL;
 }
 

@@ -151,7 +151,15 @@
       if (res.ok && typeof window.clearUsersRemovedIds === 'function') {
         window.clearUsersRemovedIds();
       } else if (!res.ok) {
-        console.warn('SALTLAB API: POST usuarios respondió', res.status);
+        var base = getBaseUrl();
+        var hint = res.status === 0 ? ' (red/CORS/bloqueo; revisa URL y que el servidor responda)' : '';
+        console.warn(
+          'SALTLAB API: POST /api/users falló',
+          res.status,
+          res.statusText || '',
+          base ? '(' + base + ')' : '',
+          hint
+        );
       }
     } catch (e) {
       console.warn('SALTLAB API: no se pudo sincronizar usuarios', e);

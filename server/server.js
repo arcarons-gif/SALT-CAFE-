@@ -111,8 +111,43 @@ function mergeFichajes(existing, incoming) {
   return Array.from(byId.values());
 }
 
-app.use(cors({ origin: true }));
+/**
+ * CORS: origin: true refleja el Origin de la petición (válido para GitHub Pages, Live Server, IP local).
+ * Cualquier origen puede llamar a la API; no usamos cookies de sesión en el API (solo JSON).
+ * Si en el navegador ves errores de CORS, suele ser: URL del API incorrecta, API caída, o mezcla http/https.
+ */
+app.use(
+  cors({
+    origin: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
+  })
+);
 app.use(express.json({ limit: '2mb' }));
+
+/** Registro breve de peticiones: en Render añade SALTLAB_LOG_HTTP=1 en Environment. */
+if (process.env.SALTLAB_LOG_HTTP === '1') {
+  app.use((req, res, next) => {
+    const started = Date.now();
+    res.on('finish', () => {
+      let extra = '';
+      if (req.method === 'POST' && req.path === '/api/users' && req.body && Array.isArray(req.body.users)) {
+        extra = ' body.users.length=' + req.body.users.length;
+      }
+      console.log(
+        '[SALTLAB HTTP]',
+        req.method,
+        req.path,
+        res.statusCode,
+        Date.now() - started + 'ms',
+        'origin=' + (req.headers.origin || '-'),
+        extra
+      );
+    });
+    next();
+  });
+}
 
 // Raíz: página mínima para que el navegador no muestre "invalid response"
 app.get('/', (req, res) => {
@@ -161,14 +196,18 @@ app.post('/api/users', (req, res) => {
   try {
     const users = req.body.users;
     if (!Array.isArray(users)) {
+      console.warn('[SALTLAB API] POST /api/users 400: body.users no es un array');
       return res.status(400).json({ error: 'Se espera { users: [...] }' });
     }
     const next = normalizeUsersList(users);
     writeUsers(next);
     writeDatosCompletosMerge({ users: next });
+    if (process.env.SALTLAB_LOG_HTTP === '1') {
+      console.log('[SALTLAB API] POST /api/users guardado OK, usuarios=' + next.length);
+    }
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    console.error('[SALTLAB API] POST /api/users error:', e);
     res.status(500).json({ error: String(e.message) });
   }
 });
@@ -534,4 +573,5 @@ app.post('/api/discord-materiales', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('SALTLAB Calculator API en http://localhost:' + PORT);
+  console.log('CORS: reflejo de Origin activo (cualquier origen web). Diagnóstico HTTP: SALTLAB_LOG_HTTP=1');
 });
