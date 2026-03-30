@@ -10858,10 +10858,16 @@ function renderTuningPiezasPorCategoria() {
   });
 }
 
-function clearTuningPiezasLists() {
+function clearTuningCantidadesPorCategoria() {
   var container = document.getElementById('tuningPiezasPorCategoria');
   if (!container) return;
   container.querySelectorAll('.tuning-categoria-cantidad').forEach(function (inp) { inp.value = '0'; });
+}
+
+function clearTuningPiezasLists() {
+  var container = document.getElementById('tuningPiezasPorCategoria');
+  if (!container) return;
+  clearTuningCantidadesPorCategoria();
   container.querySelectorAll('.tuning-camaleonica-checkbox').forEach(function (cb) { cb.checked = false; });
 }
 
@@ -10882,6 +10888,12 @@ function calcularPrecios() {
       if (el.tuneMotor.checked) {
         var addMotor = typeof getPrecioVentaSwapMotor === 'function' ? getPrecioVentaSwapMotor(base) : Math.floor(base * 0.16);
         motor += addMotor;
+      }
+      var wrapCam = document.getElementById('tuningPiezasPorCategoria');
+      var camCbFt = wrapCam && wrapCam.querySelector('.tuning-camaleonica-checkbox');
+      if (camCbFt && camCbFt.checked && typeof getPrecioVentaPiezaTuneo === 'function') {
+        var pvCamFt = getPrecioVentaPiezaTuneo('cosmetics', 'pintura_camaleonica', base);
+        cosmetic += pvCamFt;
       }
     } else {
       if (el.tuneMotor.checked) {
@@ -12041,9 +12053,10 @@ function aplicarDeshabilitarPiezasPorFullTuning() {
   var wrap = document.getElementById('tuningPiezasPorCategoria');
   if (wrap) {
     wrap.classList.toggle('tuning-piezas-disabled', deshabilitar);
-    wrap.querySelectorAll('.tuning-categoria-cantidad').forEach(function (el) { el.disabled = deshabilitar; });
-    wrap.querySelectorAll('.tuning-camaleonica-checkbox, .tuning-pieza-checkbox').forEach(function (el) { el.disabled = deshabilitar; });
-    if (deshabilitar && typeof clearTuningPiezasLists === 'function') clearTuningPiezasLists();
+    wrap.querySelectorAll('.tuning-categoria-cantidad').forEach(function (inp) { inp.disabled = deshabilitar; });
+    wrap.querySelectorAll('.tuning-pieza-checkbox').forEach(function (cb) { cb.disabled = deshabilitar; });
+    wrap.querySelectorAll('.tuning-camaleonica-checkbox').forEach(function (cb) { cb.disabled = false; });
+    if (deshabilitar && typeof clearTuningCantidadesPorCategoria === 'function') clearTuningCantidadesPorCategoria();
   }
 }
 
