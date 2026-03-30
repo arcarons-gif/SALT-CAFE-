@@ -77,7 +77,8 @@
       const users = await fetchJson(getBaseUrl() + '/api/users');
       if (users.length > 0) {
         const prev = localStorage.getItem(AUTH_STORAGE);
-        const next = JSON.stringify(users);
+        var merged = typeof mergeUsersFromServer === 'function' ? mergeUsersFromServer(users) : users;
+        const next = JSON.stringify(merged);
         localStorage.setItem(AUTH_STORAGE, next);
         if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
         return prev !== next;
@@ -142,11 +143,16 @@
   async function syncUsersToServer(users) {
     if (!Array.isArray(users)) return;
     try {
-      await fetch(getBaseUrl() + '/api/users', {
+      var res = await fetch(getBaseUrl() + '/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ users }),
       });
+      if (res.ok && typeof window.clearUsersRemovedIds === 'function') {
+        window.clearUsersRemovedIds();
+      } else if (!res.ok) {
+        console.warn('SALTLAB API: POST usuarios respondió', res.status);
+      }
     } catch (e) {
       console.warn('SALTLAB API: no se pudo sincronizar usuarios', e);
     }

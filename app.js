@@ -2057,6 +2057,9 @@ function aplicarDatosCompletosFromServer(payload) {
     isString = DATOS_COMPLETOS_STORAGE_MAP[i][2];
     if (!payload.hasOwnProperty(key)) continue;
     val = payload[key];
+    if (key === 'users' && Array.isArray(val) && typeof mergeUsersFromServer === 'function') {
+      val = mergeUsersFromServer(val);
+    }
     if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
     // No sobrescribir inventario ni almacén con objeto vacío del servidor si local tiene datos
     if ((key === 'economiaInventario' || key === 'almacenMateriales') && val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) {

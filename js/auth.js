@@ -12,6 +12,13 @@ const USUARIOS_PREDEFINIDOS_MIGRATION = 'benny_usuarios_predefinidos_v2';
 /** Una vez: sincroniza contraseñas de admin y Savannah con las del seed (admin 7264; Savannah 1196). */
 const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v2';
 
+/**
+ * Solo estos logins se vuelven a crear solos si faltan (cuentas de sistema).
+ * Gerald J, ETHAN, etc. están en SEED_USERS para la migración inicial o nuevas instalaciones,
+ * pero un admin puede borrarlos y no deben reaparecer al recargar.
+ */
+const USERNAMES_SEED_SIEMPRE_RECREAR = ['admin', 'savannah', 'tyrone'];
+
 /** Únicos usuarios predefinidos. Cualquier otro usuario se elimina en la migración. */
 const SEED_USERS = [
   { username: 'admin', nombre: 'Administrador', password: '7264', rol: 'admin' },
@@ -160,9 +167,88 @@ function invalidateUsersCache() {
 }
 if (typeof window !== 'undefined') window.invalidateUsersCache = invalidateUsersCache;
 
+const USERS_REMOVED_IDS_KEY = 'benny_users_removed_ids';
+
+function trackUserDeletedFromDirectory(userId) {
+  if (!userId) return;
+  try {
+    var raw = localStorage.getItem(USERS_REMOVED_IDS_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr)) arr = [];
+    if (arr.indexOf(userId) === -1) arr.push(userId);
+    localStorage.setItem(USERS_REMOVED_IDS_KEY, JSON.stringify(arr));
+  } catch (_) {}
+}
+
+function clearUsersRemovedIds() {
+  try {
+    localStorage.removeItem(USERS_REMOVED_IDS_KEY);
+  } catch (_) {}
+}
+
 /**
- * Migración: deja solo los usuarios predefinidos (admin, Savannah, Tyrone) y elimina el resto.
- * Luego asegura que existan los tres con sus contraseñas.
+ * Fusiona la lista del servidor con la local: por id gana la copia con fecha más reciente;
+ * excluye ids borrados en este dispositivo hasta que un POST al servidor confirme el guardado.
+ */
+function mergeUsersFromServer(serverList) {
+  if (!Array.isArray(serverList)) return [];
+  var localRaw = localStorage.getItem(AUTH_STORAGE);
+  var localList = [];
+  try {
+    localList = localRaw ? JSON.parse(localRaw) : [];
+  } catch (_) {
+    localList = [];
+  }
+  if (!Array.isArray(localList)) localList = [];
+  var removed = [];
+  try {
+    var removedRaw = localStorage.getItem(USERS_REMOVED_IDS_KEY);
+    removed = removedRaw ? JSON.parse(removedRaw) : [];
+  } catch (_) {
+    removed = [];
+  }
+  if (!Array.isArray(removed)) removed = [];
+  var removedSet = {};
+  removed.forEach(function (id) {
+    if (id) removedSet[id] = true;
+  });
+
+  function ts(u) {
+    if (!u) return 0;
+    var t = u.fechaActualizacion || u.fechaCreacion || '';
+    return t ? new Date(t).getTime() : 0;
+  }
+  var byId = {};
+  serverList.forEach(function (u) {
+    if (!u || !u.id) return;
+    byId[u.id] = u;
+  });
+  localList.forEach(function (u) {
+    if (!u || !u.id) return;
+    var ex = byId[u.id];
+    if (!ex) {
+      byId[u.id] = u;
+      return;
+    }
+    byId[u.id] = ts(u) >= ts(ex) ? u : ex;
+  });
+  return Object.keys(byId)
+    .map(function (k) {
+      return byId[k];
+    })
+    .filter(function (u) {
+      return u && !removedSet[u.id];
+    });
+}
+
+if (typeof window !== 'undefined') {
+  window.clearUsersRemovedIds = clearUsersRemovedIds;
+  window.mergeUsersFromServer = mergeUsersFromServer;
+}
+
+/**
+ * Migración inicial: carga todos los SEED_USERS una vez.
+ * Después solo se recrean si faltan admin, Savannah o Tyrone (USERNAMES_SEED_SIEMPRE_RECREAR).
  */
 async function ensureSeedUsers() {
   if (!localStorage.getItem(USUARIOS_PREDEFINIDOS_MIGRATION)) {
@@ -179,6 +265,12 @@ async function ensureSeedUsers() {
   let users = getUsers();
   let changed = false;
   for (const seed of SEED_USERS) {
+    const seedName = (seed.username || '').toString().trim().toLowerCase();
+    if (!USERNAMES_SEED_SIEMPRE_RECREAR.some(function (n) {
+      return n.toLowerCase() === seedName;
+    })) {
+      continue;
+    }
     const exists = users.some(function (u) {
       return (u.username || '').toString().trim().toLowerCase() === (seed.username || '').toString().trim().toLowerCase();
     });
@@ -399,6 +491,7 @@ function deleteUser(userId) {
     if (admins.length <= 1) return { error: 'No se puede eliminar al único administrador' };
   }
   users.splice(idx, 1);
+  trackUserDeletedFromDirectory(userId);
   saveUsers(users);
   try {
     const sess = getSession();
