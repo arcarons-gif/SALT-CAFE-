@@ -5499,11 +5499,12 @@ function vincularClubLscm() {
       }
     } else {
       var nom = (document.getElementById('lscmNuevoNombrePropietario') && document.getElementById('lscmNuevoNombrePropietario').value) || '';
-      var mat = (document.getElementById('lscmNuevoMatricula') && document.getElementById('lscmNuevoMatricula').value) || '';
+      var matRaw = (document.getElementById('lscmNuevoMatricula') && document.getElementById('lscmNuevoMatricula').value) || '';
+      var mat = (matRaw || '').trim();
       var tel = (document.getElementById('lscmNuevoTelefono') && document.getElementById('lscmNuevoTelefono').value) || '';
-      if (!(mat || '').trim()) {
-        alert('Para un cliente nuevo hace falta al menos una matrícula (vehículo en BBDD).');
-        return;
+      if (!mat) {
+        var numNorm = typeof normalizeNumSocioLscmKey === 'function' ? normalizeNumSocioLscmKey(num) : String(num).trim();
+        mat = 'LSCM-' + (numNorm || String(num).trim());
       }
       if (typeof generateIdCliente !== 'function' || typeof addOrUpdateClienteBBDD !== 'function') {
         alert('BBDD de clientes no disponible.');
@@ -5512,7 +5513,7 @@ function vincularClubLscm() {
       var newId = generateIdCliente();
       addOrUpdateClienteBBDD({
         idCliente: newId,
-        matricula: mat.trim(),
+        matricula: mat,
         nombrePropietario: nom.trim(),
         telefonoCliente: tel.trim(),
         placaPolicial: '-',

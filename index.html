@@ -1584,7 +1584,7 @@
           <button type="button" class="modal-close" id="modalLscmNuevoSocioClose" aria-label="Cerrar">&times;</button>
         </div>
         <form id="formLscmNuevoSocio" class="modal-body">
-          <p class="lscm-modal-hint">Vincula un cliente que ya exista en la BBDD o crea uno nuevo (requiere matrícula del primer vehículo).</p>
+          <p class="lscm-modal-hint">Vincula un cliente que ya exista en la BBDD o crea uno nuevo. La matrícula es opcional: si la dejas vacía se usará una provisional <code>LSCM-</code> + nº de socio.</p>
           <div class="field">
             <label for="lscmInputNumSocioNuevo">Nº de socio otorgado</label>
             <input type="text" id="lscmInputNumSocioNuevo" class="input-buscar-registro" required autocomplete="off" placeholder="Ej. 042">
@@ -1599,8 +1599,8 @@
             <input type="text" id="lscmNuevoNombrePropietario" class="input-buscar-registro" autocomplete="name">
           </div>
           <div class="field">
-            <label for="lscmNuevoMatricula">Matrícula (primer vehículo)</label>
-            <input type="text" id="lscmNuevoMatricula" class="input-buscar-registro" autocomplete="off" placeholder="Obligatoria solo para cliente nuevo">
+            <label for="lscmNuevoMatricula">Matrícula (primer vehículo, opcional)</label>
+            <input type="text" id="lscmNuevoMatricula" class="input-buscar-registro" autocomplete="off" placeholder="Vacío = LSCM- + nº de socio">
           </div>
           <div class="field">
             <label for="lscmNuevoTelefono">Teléfono (opcional)</label>
