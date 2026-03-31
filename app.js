@@ -32,7 +32,8 @@ const CONFIG = {
 
 // Estado (servicios: cache en memoria para evitar parse repetido; se invalida al guardar o al sincronizar)
 let vehiculoActual = null;
-const SERVICIOS_MAX = 1000;
+/** Límite de servicios en localStorage / sync; subir con cuidado por tamaño en Render. */
+const SERVICIOS_MAX = 5000;
 let _cachedServicios = null;
 function getRegistroServicios() {
   if (_cachedServicios !== null) return _cachedServicios;
@@ -50,11 +51,11 @@ function invalidateServiciosCache() {
 }
 if (typeof window !== 'undefined') window.invalidateServiciosCache = invalidateServiciosCache;
 
-/** Huella para alinear filas sin id entre local y servidor (evita duplicados al sincronizar). */
+/** Huella para alinear filas sin id entre local y servidor (fecha ISO completa + campos para no colisionar en el mismo segundo). */
 function fingerprintServicioRegistro(s) {
   if (!s) return '';
   var imp = s.importe !== undefined && s.importe !== null ? Number(s.importe) : '';
-  return (s.fecha || '').toString().slice(0, 19) + '|' + (s.matricula || '').toString().toUpperCase() + '|' + (s.tipo || '') + '|' + imp + '|' + (s.empleado || '').toString().slice(0, 40);
+  return (s.fecha || '').toString() + '|' + (s.matricula || '').toString().toUpperCase() + '|' + (s.tipo || '') + '|' + imp + '|' + (s.empleado || '').toString().slice(0, 80) + '|' + (s.modificacion || '').toString().slice(0, 80);
 }
 
 /**
@@ -91,9 +92,7 @@ function mergeServiciosFromServer(serverList) {
   out.sort(function (a, b) {
     return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
   });
-  if (out.length > SERVICIOS_MAX) {
-    out = out.slice(0, SERVICIOS_MAX);
-  }
+  /* El recorte a SERVICIOS_MAX solo en saveRegistroServicios: aquí mantenemos la unión completa para no tirar filas del servidor al fusionar. */
   return out;
 }
 if (typeof window !== 'undefined') window.mergeServiciosFromServer = mergeServiciosFromServer;
@@ -276,7 +275,7 @@ function applyPreferencias(prefs) {
   }
 }
 
-const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaVacantes', 'pantallaBandejaEntrada', 'pantallaResultadosCalculadora', 'pantallaTunnings', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion', 'pantallaMaterialesRecuperados'];
+const PANTALLAS_SECUNDARIAS_IDS = ['pantallaFichajes', 'pantallaGestion', 'pantallaOrganigrama', 'pantallaRegistroClientes', 'pantallaClubLscm', 'pantallaVacantes', 'pantallaBandejaEntrada', 'pantallaResultadosCalculadora', 'pantallaTunnings', 'pantallaFichaTrabajador', 'pantallaFichaEmpleado', 'pantallaPersonalizacion', 'pantallaMaterialesRecuperados'];
 
 const MEDIA_PENDING_STORAGE = 'benny_media_pending';
 const MEDIA_APPROVED_STORAGE = 'benny_media_approved';
@@ -676,10 +675,23 @@ function _normalizaTipo(tipo) {
 /** Estadísticas generales del taller (todos los clientes que han pasado por el taller) */
 function getStatsGeneralesTaller() {
   const servicios = getRegistroServicios();
+  let archRep = 0;
+  let archTuneo = 0;
+  let archImp = 0;
+  let archPiezas = 0;
+  if (typeof getServiciosArchivoMensual === 'function') {
+    getServiciosArchivoMensual().forEach((a) => {
+      archRep += parseInt(a.reparaciones, 10) || 0;
+      archTuneo += parseInt(a.tuneos, 10) || 0;
+      archImp += parseFloat(a.importeTotal) || 0;
+      archPiezas +=
+        (parseInt(a.piezasChasis, 10) || 0) + (parseInt(a.piezasEsenciales, 10) || 0) + (parseInt(a.partesServicio, 10) || 0);
+    });
+  }
   const reparaciones = servicios.filter(s => _normalizaTipo(s.tipo) === 'REPARACION' || (s.tipo || '').toUpperCase().indexOf('REPARAC') !== -1);
   const tuneos = servicios.filter(s => _normalizaTipo(s.tipo) === 'TUNEO' || (s.tipo || '').toUpperCase().indexOf('TUNEO') !== -1);
-  const dinero = servicios.reduce((sum, s) => sum + (Number(s.importe) || 0), 0);
-  const totalPiezas = reparaciones.reduce((sum, s) => sum + (Number(s.partesChasis) || 0) + (Number(s.partesEsenciales) || 0) + (Number(s.partesServicio) || 0), 0);
+  const dinero = servicios.reduce((sum, s) => sum + (Number(s.importe) || 0), 0) + archImp;
+  const totalPiezas = reparaciones.reduce((sum, s) => sum + (Number(s.partesChasis) || 0) + (Number(s.partesEsenciales) || 0) + (Number(s.partesServicio) || 0), 0) + archPiezas;
   const byMecanico = {};
   reparaciones.forEach(s => {
     const m = s.empleado || s.userId || '—';
@@ -693,11 +705,11 @@ function getStatsGeneralesTaller() {
     mecanicoTop = u ? (u.nombre || u.username || topKey) : topKey;
   }
   return {
-    totalReparaciones: reparaciones.length,
+    totalReparaciones: reparaciones.length + archRep,
     mecanicoTop,
     dineroGenerado: dinero,
     totalPiezas,
-    totalTuneos: tuneos.length,
+    totalTuneos: tuneos.length + archTuneo,
   };
 }
 
@@ -1538,6 +1550,10 @@ function vincularAdmin() {
         if (typeof abrirPantallaMaterialesRecuperados === 'function') abrirPantallaMaterialesRecuperados();
         return;
       }
+      if (nav === 'club-lscm') {
+        if (typeof abrirPantallaClubLscm === 'function') abrirPantallaClubLscm();
+        return;
+      }
       if (nav && gestionNavToBtn[nav]) {
         var btn = document.getElementById(gestionNavToBtn[nav]);
         if (btn) btn.click();
@@ -2040,6 +2056,8 @@ function getDatosCompletosParaExportar() {
     users: typeof getUsers === 'function' ? getUsers() : get('benny_users', []),
     fichajes: typeof getFichajes === 'function' ? getFichajes() : get('benny_fichajes', []),
     servicios: typeof getRegistroServicios === 'function' ? getRegistroServicios() : get('benny_servicios', []),
+    serviciosArchivoMensual: typeof getServiciosArchivoMensual === 'function' ? getServiciosArchivoMensual() : get('benny_servicios_archivo_mensual', []),
+    lscmSocios: typeof getLscmSociosRegistry === 'function' ? getLscmSociosRegistry() : get('benny_lscm_socios', []),
     repartoBeneficios: (function () { try { return localStorage.getItem('benny_economia_reparto_beneficios') || ''; } catch (e) { return ''; } })()
   };
   var keys = [
@@ -2064,6 +2082,8 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
   ['users', 'benny_users', false],
   ['fichajes', 'benny_fichajes', false],
   ['servicios', 'benny_servicios', false],
+  ['serviciosArchivoMensual', 'benny_servicios_archivo_mensual', false],
+  ['lscmSocios', 'benny_lscm_socios', false],
   ['repartoBeneficios', 'benny_economia_reparto_beneficios', true],
   ['clientesBBDD', 'benny_clientes_bbdd', false],
   ['clientesPendientes', 'benny_clientes_pendientes', false],
@@ -2098,7 +2118,7 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
 function aplicarDatosCompletosFromServer(payload) {
   if (!payload || typeof payload !== 'object') return;
   var i, key, storageKey, isString, val;
-  var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1, economiaGastos: 1 };
+  var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1, serviciosArchivoMensual: 1, lscmSocios: 1, economiaGastos: 1 };
   for (i = 0; i < DATOS_COMPLETOS_STORAGE_MAP.length; i++) {
     key = DATOS_COMPLETOS_STORAGE_MAP[i][0];
     storageKey = DATOS_COMPLETOS_STORAGE_MAP[i][1];
@@ -2110,6 +2130,12 @@ function aplicarDatosCompletosFromServer(payload) {
     }
     if (key === 'servicios' && Array.isArray(val) && typeof mergeServiciosFromServer === 'function') {
       val = mergeServiciosFromServer(val);
+    }
+    if (key === 'serviciosArchivoMensual' && Array.isArray(val) && typeof mergeServiciosArchivoFromServer === 'function') {
+      val = mergeServiciosArchivoFromServer(val);
+    }
+    if (key === 'lscmSocios' && Array.isArray(val) && typeof mergeLscmSociosFromServer === 'function') {
+      val = mergeLscmSociosFromServer(val);
     }
     if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
     // No sobrescribir inventario ni almacén con objeto vacío del servidor si local tiene datos
@@ -2158,6 +2184,8 @@ function aplicarDatosCompletosFromServer(payload) {
   if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
   if (typeof window.invalidateFichajesCache === 'function') window.invalidateFichajesCache();
   if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
+  if (typeof window.invalidateServiciosArchivoCache === 'function') window.invalidateServiciosArchivoCache();
+  if (typeof window.invalidateLscmSociosCache === 'function') window.invalidateLscmSociosCache();
   if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache();
   if (typeof window.invalidateEconomiaCaches === 'function') window.invalidateEconomiaCaches();
   registroServicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
@@ -2299,7 +2327,14 @@ var REPARTO_BENEFICIOS_STORAGE = 'benny_economia_reparto_beneficios';
 /** Ingresos totales = suma del importe de todas las reparaciones y tuneos registrados. */
 function getIngresosTotales() {
   var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
-  return servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
+  var detalle = servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
+  var arch = 0;
+  if (typeof getServiciosArchivoMensual === 'function') {
+    getServiciosArchivoMensual().forEach(function (a) {
+      arch += parseFloat(a.importeTotal) || 0;
+    });
+  }
+  return detalle + arch;
 }
 
 function getCostesTotales() {
@@ -2442,10 +2477,13 @@ function getServiciosEnPeriodo(periodoMeses) {
 }
 
 function getIngresosPorMesFromServicios(servicios, periodoMeses) {
+  var archMap = typeof window.getMapaServiciosArchivoPorMes === 'function' ? window.getMapaServiciosArchivoPorMes() : {};
+  var mesCerrado = typeof window.esMesCerradoServicio === 'function' ? window.esMesCerradoServicio : function () { return false; };
   var byMonth = {};
   servicios.forEach(function (s) {
     if (!s.fecha) return;
     var d = new Date(s.fecha);
+    if (isNaN(d.getTime())) return;
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     if (!byMonth[key]) byMonth[key] = { total: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
     byMonth[key].total += parseFloat(s.importe) || 0;
@@ -2456,16 +2494,25 @@ function getIngresosPorMesFromServicios(servicios, periodoMeses) {
   for (var i = n - 1; i >= 0; i--) {
     var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    result.push({ key: key, total: byMonth[key] ? byMonth[key].total : 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) });
+    var total = 0;
+    if (mesCerrado(key) && archMap[key]) {
+      total = parseFloat(archMap[key].importeTotal) || 0;
+    } else {
+      total = byMonth[key] ? byMonth[key].total : 0;
+    }
+    result.push({ key: key, total: total, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) });
   }
   return result;
 }
 
 function getRepTuneoPorMesFromServicios(servicios, periodoMeses) {
+  var archMap = typeof window.getMapaServiciosArchivoPorMes === 'function' ? window.getMapaServiciosArchivoPorMes() : {};
+  var mesCerrado = typeof window.esMesCerradoServicio === 'function' ? window.esMesCerradoServicio : function () { return false; };
   var byMonth = {};
   servicios.forEach(function (s) {
     if (!s.fecha) return;
     var d = new Date(s.fecha);
+    if (isNaN(d.getTime())) return;
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     if (!byMonth[key]) byMonth[key] = { rep: 0, tuneo: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
     var t = (s.tipo || '').toLowerCase();
@@ -2478,10 +2525,139 @@ function getRepTuneoPorMesFromServicios(servicios, periodoMeses) {
   for (var i = n - 1; i >= 0; i--) {
     var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    var m = byMonth[key] || { rep: 0, tuneo: 0, label: d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' }) };
-    result.push({ key: key, rep: m.rep, tuneo: m.tuneo, label: m.label });
+    var rep = 0;
+    var tuneo = 0;
+    var label = d.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' });
+    if (mesCerrado(key) && archMap[key]) {
+      var a = archMap[key];
+      rep = parseInt(a.reparaciones, 10) || 0;
+      tuneo = parseInt(a.tuneos, 10) || 0;
+    } else {
+      var m = byMonth[key];
+      if (m) {
+        rep = m.rep;
+        tuneo = m.tuneo;
+        label = m.label;
+      }
+    }
+    result.push({ key: key, rep: rep, tuneo: tuneo, label: label });
   }
   return result;
+}
+
+/**
+ * Mueve al archivo mensual (totales por YYYY-MM) todos los servicios con fecha anterior al mes calendario actual,
+ * los elimina del detalle sincronizado y sube el archivo al servidor. Conviene ejecutar tras sincronizar y solo desde un dispositivo admin.
+ */
+function archivarServiciosMesesAnterioresAlActual() {
+  if (
+    typeof getRegistroServicios !== 'function' ||
+    typeof getServiciosArchivoMensual !== 'function' ||
+    typeof setServiciosArchivoMensual !== 'function' ||
+    typeof saveRegistroServicios !== 'function'
+  ) {
+    alert('No está disponible el módulo de archivo mensual.');
+    return { archivados: 0, detalleRestante: 0 };
+  }
+  var inicioActual = new Date();
+  inicioActual.setDate(1);
+  inicioActual.setHours(0, 0, 0, 0);
+  var servicios = getRegistroServicios().slice();
+  var detalle = [];
+  var porMes = {};
+  servicios.forEach(function (s) {
+    if (!s.fecha) {
+      detalle.push(s);
+      return;
+    }
+    var d = new Date(s.fecha);
+    if (isNaN(d.getTime())) {
+      detalle.push(s);
+      return;
+    }
+    if (d >= inicioActual) {
+      detalle.push(s);
+      return;
+    }
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    if (!porMes[key]) {
+      porMes[key] = {
+        mes: key,
+        reparaciones: 0,
+        tuneos: 0,
+        importeTotal: 0,
+        piezasChasis: 0,
+        piezasEsenciales: 0,
+        partesServicio: 0,
+        archivadoEn: new Date().toISOString(),
+      };
+    }
+    var bucket = porMes[key];
+    var nt = _normalizaTipo(s.tipo);
+    var tu = (s.tipo || '').toUpperCase();
+    var esRep = nt === 'REPARACION' || tu.indexOf('REPARAC') !== -1;
+    var esTun = nt === 'TUNEO' || tu.indexOf('TUNEO') !== -1;
+    if (esRep) bucket.reparaciones++;
+    else if (esTun) bucket.tuneos++;
+    bucket.importeTotal += parseFloat(s.importe) || 0;
+    if (esRep) {
+      bucket.piezasChasis += parseInt(s.partesChasis, 10) || 0;
+      bucket.piezasEsenciales += parseInt(s.partesEsenciales, 10) || 0;
+      bucket.partesServicio += parseInt(s.partesServicio, 10) || 0;
+    }
+  });
+  if (Object.keys(porMes).length === 0) {
+    alert('No hay servicios de meses anteriores al actual para archivar.');
+    return { archivados: 0, detalleRestante: servicios.length };
+  }
+  if (
+    !confirm(
+      'Se archivarán los servicios anteriores a ' +
+        inicioActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) +
+        ' (meses: ' +
+        Object.keys(porMes).sort().join(', ') +
+        '). Se guardarán totales por mes en el servidor y se quitarán del listado detallado. ¿Continuar?'
+    )
+  ) {
+    return { archivados: 0, detalleRestante: servicios.length };
+  }
+  var archivoExistente = getServiciosArchivoMensual();
+  var byMes = {};
+  archivoExistente.forEach(function (r) {
+    if (r && r.mes) byMes[r.mes] = Object.assign({}, r);
+  });
+  Object.keys(porMes).forEach(function (k) {
+    var agg = porMes[k];
+    if (byMes[k]) {
+      byMes[k].reparaciones = (parseInt(byMes[k].reparaciones, 10) || 0) + agg.reparaciones;
+      byMes[k].tuneos = (parseInt(byMes[k].tuneos, 10) || 0) + agg.tuneos;
+      byMes[k].importeTotal = (parseFloat(byMes[k].importeTotal) || 0) + agg.importeTotal;
+      byMes[k].piezasChasis = (parseInt(byMes[k].piezasChasis, 10) || 0) + agg.piezasChasis;
+      byMes[k].piezasEsenciales = (parseInt(byMes[k].piezasEsenciales, 10) || 0) + agg.piezasEsenciales;
+      byMes[k].partesServicio = (parseInt(byMes[k].partesServicio, 10) || 0) + agg.partesServicio;
+      byMes[k].archivadoEn = agg.archivadoEn;
+    } else {
+      byMes[k] = agg;
+    }
+  });
+  var nuevoArchivo = Object.keys(byMes)
+    .sort()
+    .map(function (k) {
+      return byMes[k];
+    });
+  setServiciosArchivoMensual(nuevoArchivo);
+  saveRegistroServicios(detalle);
+  registroServicios = detalle;
+  if (typeof invalidateServiciosCache === 'function') invalidateServiciosCache();
+  if (typeof actualizarVista === 'function') actualizarVista();
+  alert(
+    'Archivo actualizado: ' +
+      Object.keys(porMes).length +
+      ' mes(es). Registros detallados restantes: ' +
+      detalle.length +
+      '.'
+  );
+  return { archivados: Object.keys(porMes).length, detalleRestante: detalle.length };
 }
 
 function getServiciosPorEmpleadoFromServicios(servicios) {
@@ -2665,9 +2841,32 @@ function renderIndicadoresPanel() {
     return true;
   });
 
-  var totalIngresos = serviciosFiltrados.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
-  var totalRep = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('reparac') !== -1; }).length;
-  var totalTuneo = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('tuneo') !== -1; }).length;
+  var mesCerradoFn = typeof window.esMesCerradoServicio === 'function' ? window.esMesCerradoServicio : function () { return false; };
+  var archMapInd = typeof window.getMapaServiciosArchivoPorMes === 'function' ? window.getMapaServiciosArchivoPorMes() : {};
+  var nPer = Math.max(1, parseInt(periodo, 10) || 12);
+  var nowP = new Date();
+  var extraIng = 0;
+  var extraRep = 0;
+  var extraTun = 0;
+  for (var im = 0; im < nPer; im++) {
+    var dm = new Date(nowP.getFullYear(), nowP.getMonth() - im, 1);
+    var mk = dm.getFullYear() + '-' + String(dm.getMonth() + 1).padStart(2, '0');
+    if (!mesCerradoFn(mk) || !archMapInd[mk]) continue;
+    var ar = archMapInd[mk];
+    var rC = parseInt(ar.reparaciones, 10) || 0;
+    var tC = parseInt(ar.tuneos, 10) || 0;
+    var denom = rC + tC;
+    var imp = parseFloat(ar.importeTotal) || 0;
+    if (incluirRepVal && incluirTuneoVal) extraIng += imp;
+    else if (incluirRepVal && !incluirTuneoVal) extraIng += denom ? imp * (rC / denom) : 0;
+    else if (!incluirRepVal && incluirTuneoVal) extraIng += denom ? imp * (tC / denom) : imp;
+    if (incluirRepVal) extraRep += rC;
+    if (incluirTuneoVal) extraTun += tC;
+  }
+
+  var totalIngresos = serviciosFiltrados.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0) + extraIng;
+  var totalRep = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('reparac') !== -1; }).length + extraRep;
+  var totalTuneo = serviciosFiltrados.filter(function (s) { return (s.tipo || '').toLowerCase().indexOf('tuneo') !== -1; }).length + extraTun;
   var porEmpleado = getServiciosPorEmpleadoFromServicios(serviciosFiltrados);
   var empleadoTop = porEmpleado.length > 0 ? porEmpleado[0].empleado : '—';
 
@@ -2937,7 +3136,7 @@ function renderEconomiaResumen() {
 
 function renderEconomiaIngresos() {
   var servicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
-  var totalIngresos = servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
+  var totalIngresos = typeof getIngresosTotales === 'function' ? getIngresosTotales() : servicios.reduce(function (sum, s) { return sum + (parseFloat(s.importe) || 0); }, 0);
   var porEmpleado = getServiciosPorEmpleadoFromServicios(servicios);
   var rankingPorIngresos = porEmpleado.slice().sort(function (a, b) { return (b.ingresos || 0) - (a.ingresos || 0); });
   var topEmpleado = rankingPorIngresos.length > 0 ? rankingPorIngresos[0].empleado : '—';
@@ -2947,6 +3146,13 @@ function renderEconomiaIngresos() {
   var elTop = document.getElementById('economiaIngresosTopEmpleado');
   if (elTotal) elTotal.textContent = totalIngresos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   if (elTop) elTop.textContent = topEmpleado !== '—' ? topEmpleado + ' (' + topIngresos.toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' €)' : '—';
+
+  var wrapArch = document.getElementById('economiaArchivoServiciosWrap');
+  if (wrapArch) {
+    var sessionArch = typeof getSession === 'function' ? getSession() : null;
+    var puedeArch = sessionArch && typeof hasPermission === 'function' && hasPermission(sessionArch, 'gestionarUsuarios');
+    wrapArch.style.display = puedeArch ? '' : 'none';
+  }
 
   var ingresosPorMes = typeof getIngresosPorMesFromServicios === 'function' ? getIngresosPorMesFromServicios(servicios, 12) : [];
   var ingresosPorSemana = typeof getIngresosPorSemanaFromServicios === 'function' ? getIngresosPorSemanaFromServicios(servicios, 8) : [];
@@ -3952,6 +4158,13 @@ function abrirModalGasto(id) {
 }
 
 function vincularEconomia() {
+  var btnArchivarServicios = document.getElementById('btnArchivarServiciosMesesPasados');
+  if (btnArchivarServicios && !btnArchivarServicios.dataset.bound) {
+    btnArchivarServicios.dataset.bound = '1';
+    btnArchivarServicios.addEventListener('click', function () {
+      if (typeof archivarServiciosMesesAnterioresAlActual === 'function') archivarServiciosMesesAnterioresAlActual();
+    });
+  }
   var economiaTabsEl = document.getElementById('economiaTabs');
   if (economiaTabsEl) economiaTabsEl.querySelectorAll('.economia-tab').forEach(function (tab) {
     tab.addEventListener('click', function () { mostrarSubpanelEconomia(tab.dataset.economiaTab); });
@@ -4461,6 +4674,19 @@ function escapeHtmlAttr(s) {
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** Insignia LS Car Meet Member en esquina (solo si el idCliente es socio LSCM en registro o BBDD). */
+function htmlLscmMemberBadgeCorner(idCliente) {
+  if (!idCliente || typeof isIdClienteSocioLscm !== 'function' || !isIdClienteSocioLscm(idCliente)) return '';
+  var num = typeof getNumeroSocioLscmParaCliente === 'function' ? getNumeroSocioLscmParaCliente(idCliente) : '';
+  var cat = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(num) : '';
+  var title = 'Socio club LSCM' + (num ? ' · nº ' + num : '') + (cat ? ' · ' + cat : '');
+  return (
+    '<div class="lscm-member-badge-corner" role="img" aria-label="' +
+    escapeHtmlAttr(title) +
+    '"><img src="assets/lscm-member-badge.png" alt="" class="lscm-member-badge-img" width="40" height="40" loading="lazy" onerror="var p=this.closest(\'.lscm-member-badge-corner\');if(p)p.style.display=\'none\';"></div>'
+  );
 }
 
 /** Genera HTML de una placa para tablas/listas: imagen de placa + número centrado, o solo número en marco simple. */
@@ -5057,6 +5283,305 @@ function mostrarChatbotWrap(mostrar) {
   }
 }
 
+// ========== CLUB LSCM (socios vinculados a BBDD por idCliente) ==========
+var _lscmSocioSeleccionadoId = null;
+
+function abrirPantallaClubLscm() {
+  if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+  if (typeof renderLscmClubPanel === 'function') renderLscmClubPanel();
+  if (typeof ocultarAppBodyMostrarSecundaria === 'function') ocultarAppBodyMostrarSecundaria('pantallaClubLscm');
+}
+
+function renderLscmClubPanel() {
+  if (typeof refrescarNumerosLscmEnTodasLasFilasBBDD === 'function') refrescarNumerosLscmEnTodasLasFilasBBDD();
+  var tbody = document.getElementById('tablaLscmSocios');
+  var emptyEl = document.getElementById('lscmSociosEmpty');
+  var detalle = document.getElementById('panelLscmSocioDetalle');
+  if (!tbody) return;
+  var reg = typeof getLscmSociosRegistry === 'function' ? getLscmSociosRegistry() : [];
+  var q = ((document.getElementById('filtroLscmSocios') && document.getElementById('filtroLscmSocios').value) || '').toLowerCase().trim();
+  tbody.innerHTML = '';
+  var filtrados = reg.filter(function (s) {
+    if (!q) return true;
+    var nom = (typeof getNombreClienteBBDD === 'function' ? getNombreClienteBBDD(s.idCliente) : '') || '';
+    var catN = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(s.numSocio) : '';
+    var vehs = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(s.idCliente) : [];
+    var mats = vehs.map(function (v) { return (v.matricula || '').toString(); }).join(' ');
+    var blob = ((s.numSocio || '') + ' ' + nom + ' ' + catN + ' ' + (s.idCliente || '') + ' ' + mats).toLowerCase();
+    return blob.indexOf(q) !== -1;
+  });
+  if (emptyEl) emptyEl.style.display = filtrados.length === 0 ? '' : 'none';
+  filtrados.forEach(function (s) {
+    var nom = typeof getNombreClienteBBDD === 'function' ? getNombreClienteBBDD(s.idCliente) : '—';
+    var nVeh = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(s.idCliente).length : 0;
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-lscm-id', s.id);
+    var catLabel = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(s.numSocio) : '';
+    var tdNum =
+      '<span class="lscm-td-num">' +
+      escapeHtml((s.numSocio || '').toString()) +
+      '</span>' +
+      (catLabel
+        ? '<span class="lscm-td-cat">' + escapeHtml(catLabel) + '</span>'
+        : '<span class="lscm-td-cat lscm-td-cat-vacio">—</span>');
+    tr.innerHTML =
+      '<td class="lscm-td-numcell">' +
+      tdNum +
+      '</td><td>' +
+      escapeHtml(nom || '—') +
+      '</td><td>' +
+      nVeh +
+      '</td><td class="lscm-tabla-acciones"><button type="button" class="btn btn-outline btn-sm btn-lscm-ver">Ver</button></td>';
+    tr.querySelector('.btn-lscm-ver').addEventListener('click', function (e) {
+      e.stopPropagation();
+      mostrarDetalleLscmSocio(s.id);
+    });
+    tr.addEventListener('click', function () {
+      mostrarDetalleLscmSocio(s.id);
+    });
+    tbody.appendChild(tr);
+  });
+  if (_lscmSocioSeleccionadoId && !filtrados.some(function (x) { return x.id === _lscmSocioSeleccionadoId; })) {
+    _lscmSocioSeleccionadoId = null;
+    if (detalle) detalle.style.display = 'none';
+  } else if (_lscmSocioSeleccionadoId) {
+    mostrarDetalleLscmSocio(_lscmSocioSeleccionadoId);
+  }
+}
+
+function mostrarDetalleLscmSocio(lscmId) {
+  var detalle = document.getElementById('panelLscmSocioDetalle');
+  if (!detalle || typeof getLscmSociosRegistry !== 'function') return;
+  var reg = getLscmSociosRegistry();
+  var s = reg.find(function (x) { return x.id === lscmId; });
+  if (!s) {
+    detalle.style.display = 'none';
+    return;
+  }
+  _lscmSocioSeleccionadoId = lscmId;
+  detalle.style.display = '';
+  var idCliente = (s.idCliente || '').toString().trim();
+  var nom = typeof getNombreClienteBBDD === 'function' ? getNombreClienteBBDD(idCliente) : '';
+  var elId = document.getElementById('lscmDetalleIdCliente');
+  var elNum = document.getElementById('lscmDetalleNumSocio');
+  var elNom = document.getElementById('lscmDetalleNombre');
+  if (elId) elId.textContent = idCliente;
+  if (elNum) elNum.value = (s.numSocio || '').toString();
+  if (elNom) elNom.value = nom || '';
+  var hintCat = document.getElementById('lscmDetalleCatalogoHint');
+  if (hintCat) {
+    var cn = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(s.numSocio) : '';
+    var nk = typeof normalizeNumSocioLscmKey === 'function' ? normalizeNumSocioLscmKey(s.numSocio) : '';
+    var enCatalogo = nk && typeof LSCM_CATALOGO_SOCIOS !== 'undefined' && Object.prototype.hasOwnProperty.call(LSCM_CATALOGO_SOCIOS, nk);
+    if (cn) {
+      hintCat.style.display = '';
+      hintCat.textContent = 'Catálogo oficial LSCM: ' + cn;
+    } else if (enCatalogo) {
+      hintCat.style.display = '';
+      hintCat.textContent = 'Nº registrado en catálogo oficial (plaza sin nombre asignado).';
+    } else {
+      hintCat.style.display = 'none';
+      hintCat.textContent = '';
+    }
+  }
+  var tbodyV = document.getElementById('tablaLscmVehiculos');
+  if (tbodyV) {
+    tbodyV.innerHTML = '';
+    var vehs = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(idCliente) : [];
+    vehs.forEach(function (v) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' +
+        escapeHtml((v.matricula || '').toString()) +
+        '</td><td>' +
+        escapeHtml((v.codigoVehiculo || v.marca || '—').toString()) +
+        '</td><td>' +
+        escapeHtml((v.nombreVehiculo || '—').toString()) +
+        '</td>';
+      tbodyV.appendChild(tr);
+    });
+    if (vehs.length === 0) {
+      var tr0 = document.createElement('tr');
+      tr0.innerHTML = '<td colspan="3" class="lscm-empty">Sin vehículos en BBDD. Añade uno con la matrícula.</td>';
+      tbodyV.appendChild(tr0);
+    }
+  }
+  var inpMat = document.getElementById('lscmNuevaMatricula');
+  if (inpMat) inpMat.value = '';
+  document.querySelectorAll('.lscm-socios-table tbody tr').forEach(function (tr) {
+    tr.classList.toggle('lscm-fila-seleccionada', tr.getAttribute('data-lscm-id') === lscmId);
+  });
+}
+
+function rellenarSelectClientesParaLscm() {
+  var sel = document.getElementById('lscmSelectClienteExistente');
+  if (!sel || typeof getClientesBBDD !== 'function') return;
+  var ya = typeof getIdClientesYaSocios === 'function' ? getIdClientesYaSocios() : {};
+  var list = getClientesBBDD();
+  var seen = {};
+  var opts = [];
+  list.forEach(function (r) {
+    var idc = (r.idCliente || '').toString().trim();
+    if (!idc || seen[idc] || ya[idc]) return;
+    seen[idc] = true;
+    var label = (r.nombrePropietario || 'Sin nombre') + ' · ' + idc + (r.matricula ? ' · ' + r.matricula : '');
+    opts.push({ id: idc, label: label });
+  });
+  opts.sort(function (a, b) { return a.label.localeCompare(b.label, 'es'); });
+  sel.innerHTML = '<option value="">— Nuevo cliente (crear en BBDD) —</option>';
+  opts.forEach(function (o) {
+    var opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = o.label;
+    sel.appendChild(opt);
+  });
+}
+
+function abrirModalLscmNuevoSocio() {
+  rellenarSelectClientesParaLscm();
+  var modal = document.getElementById('modalLscmNuevoSocio');
+  var num = document.getElementById('lscmInputNumSocioNuevo');
+  var nom = document.getElementById('lscmNuevoNombrePropietario');
+  var mat = document.getElementById('lscmNuevoMatricula');
+  var tel = document.getElementById('lscmNuevoTelefono');
+  if (num) num.value = '';
+  if (nom) nom.value = '';
+  if (mat) mat.value = '';
+  if (tel) tel.value = '';
+  if (modal) modal.classList.add('active');
+}
+
+function vincularClubLscm() {
+  var btnHome = document.getElementById('btnClubLscmHome');
+  if (btnHome) btnHome.addEventListener('click', function () {
+    if (typeof cerrarTodasPantallasSecundarias === 'function') cerrarTodasPantallasSecundarias();
+  });
+  var btnNav = document.getElementById('btnClubLscm');
+  if (btnNav) {
+    btnNav.addEventListener('click', function () {
+      if (typeof getSession === 'function' && typeof hasPermission === 'function') {
+        var s = getSession();
+        if (!s || !hasPermission(s, 'gestionarClubLscm')) return;
+      }
+      abrirPantallaClubLscm();
+    });
+  }
+  var filtro = document.getElementById('filtroLscmSocios');
+  if (filtro) {
+    filtro.addEventListener('input', function () {
+      if (typeof renderLscmClubPanel === 'function') renderLscmClubPanel();
+    });
+  }
+  document.getElementById('btnLscmAnadirSocio')?.addEventListener('click', function () {
+    abrirModalLscmNuevoSocio();
+  });
+  function cerrarModalLscmNuevo() {
+    document.getElementById('modalLscmNuevoSocio')?.classList.remove('active');
+  }
+  document.getElementById('modalLscmNuevoSocioClose')?.addEventListener('click', cerrarModalLscmNuevo);
+  document.getElementById('modalLscmNuevoSocioCancelar')?.addEventListener('click', cerrarModalLscmNuevo);
+  document.getElementById('modalLscmNuevoSocioBackdrop')?.addEventListener('click', cerrarModalLscmNuevo);
+  document.getElementById('formLscmNuevoSocio')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var sel = document.getElementById('lscmSelectClienteExistente');
+    var numEl = document.getElementById('lscmInputNumSocioNuevo');
+    var num = (numEl && numEl.value) ? numEl.value.trim() : '';
+    var idExistente = (sel && sel.value) ? sel.value.trim() : '';
+    if (!num) {
+      alert('Indica el número de socio.');
+      return;
+    }
+    if (idExistente) {
+      var r1 = typeof addLscmSocioEntry === 'function' ? addLscmSocioEntry(idExistente, num) : { error: 'No disponible' };
+      if (r1.error) {
+        alert(r1.error);
+        return;
+      }
+    } else {
+      var nom = (document.getElementById('lscmNuevoNombrePropietario') && document.getElementById('lscmNuevoNombrePropietario').value) || '';
+      var mat = (document.getElementById('lscmNuevoMatricula') && document.getElementById('lscmNuevoMatricula').value) || '';
+      var tel = (document.getElementById('lscmNuevoTelefono') && document.getElementById('lscmNuevoTelefono').value) || '';
+      if (!(mat || '').trim()) {
+        alert('Para un cliente nuevo hace falta al menos una matrícula (vehículo en BBDD).');
+        return;
+      }
+      if (typeof generateIdCliente !== 'function' || typeof addOrUpdateClienteBBDD !== 'function') {
+        alert('BBDD de clientes no disponible.');
+        return;
+      }
+      var newId = generateIdCliente();
+      addOrUpdateClienteBBDD({
+        idCliente: newId,
+        matricula: mat.trim(),
+        nombrePropietario: nom.trim(),
+        telefonoCliente: tel.trim(),
+        placaPolicial: '-',
+        numeroSocioLSCM: num,
+        interacciones: 0,
+        totalInvertido: 0,
+      });
+      var r2 = typeof addLscmSocioEntry === 'function' ? addLscmSocioEntry(newId, num) : { error: 'No disponible' };
+      if (r2.error) {
+        alert(r2.error);
+        return;
+      }
+    }
+    cerrarModalLscmNuevo();
+    renderLscmClubPanel();
+    if (_lscmSocioSeleccionadoId) mostrarDetalleLscmSocio(_lscmSocioSeleccionadoId);
+  });
+  document.getElementById('btnLscmGuardarDetalle')?.addEventListener('click', function () {
+    if (!_lscmSocioSeleccionadoId) return;
+    var reg = typeof getLscmSociosRegistry === 'function' ? getLscmSociosRegistry() : [];
+    var s = reg.find(function (x) { return x.id === _lscmSocioSeleccionadoId; });
+    if (!s) return;
+    var num = (document.getElementById('lscmDetalleNumSocio') && document.getElementById('lscmDetalleNumSocio').value) || '';
+    var nom = (document.getElementById('lscmDetalleNombre') && document.getElementById('lscmDetalleNombre').value) || '';
+    var rN = typeof updateLscmSocioNumero === 'function' ? updateLscmSocioNumero(_lscmSocioSeleccionadoId, num.trim()) : { error: 'No disponible' };
+    if (rN.error) {
+      alert(rN.error);
+      return;
+    }
+    if (typeof updateNombrePropietarioClienteBBDD === 'function') updateNombrePropietarioClienteBBDD(s.idCliente, nom.trim());
+    renderLscmClubPanel();
+    mostrarDetalleLscmSocio(_lscmSocioSeleccionadoId);
+  });
+  document.getElementById('btnLscmAbrirFichaCliente')?.addEventListener('click', function () {
+    if (!_lscmSocioSeleccionadoId) return;
+    var reg = typeof getLscmSociosRegistry === 'function' ? getLscmSociosRegistry() : [];
+    var s = reg.find(function (x) { return x.id === _lscmSocioSeleccionadoId; });
+    if (!s || !s.idCliente) return;
+    if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(s.idCliente);
+  });
+  document.getElementById('btnLscmAnadirVehiculo')?.addEventListener('click', function () {
+    if (!_lscmSocioSeleccionadoId) return;
+    var reg = typeof getLscmSociosRegistry === 'function' ? getLscmSociosRegistry() : [];
+    var s = reg.find(function (x) { return x.id === _lscmSocioSeleccionadoId; });
+    if (!s) return;
+    var mat = (document.getElementById('lscmNuevaMatricula') && document.getElementById('lscmNuevaMatricula').value) || '';
+    if (!(mat || '').trim()) {
+      alert('Escribe una matrícula.');
+      return;
+    }
+    var r = typeof addVehiculoSocioBBDD === 'function' ? addVehiculoSocioBBDD(s.idCliente, mat.trim(), {}) : { error: 'No disponible' };
+    if (r.error) {
+      alert(r.error);
+      return;
+    }
+    mostrarDetalleLscmSocio(_lscmSocioSeleccionadoId);
+    renderLscmClubPanel();
+  });
+  document.getElementById('btnLscmQuitarSocio')?.addEventListener('click', function () {
+    if (!_lscmSocioSeleccionadoId) return;
+    if (!confirm('¿Quitar este socio del club LSCM? Se borrará el nº de socio de la BBDD; los vehículos del cliente se mantienen.')) return;
+    if (typeof removeLscmSocioEntry === 'function') removeLscmSocioEntry(_lscmSocioSeleccionadoId);
+    _lscmSocioSeleccionadoId = null;
+    var detalle = document.getElementById('panelLscmSocioDetalle');
+    if (detalle) detalle.style.display = 'none';
+    renderLscmClubPanel();
+  });
+}
+
 // ========== REGISTRO DE CLIENTES (BBDD + pendientes) ==========
 function vincularRegistroClientes() {
   const btnRegistro = document.getElementById('btnRegistroClientes');
@@ -5158,9 +5683,16 @@ function vincularRegistroClientes() {
     cont.innerHTML = '';
     rows.forEach(function (r) {
       var card = document.createElement('div');
-      card.className = 'ficha-cliente-card';
+      var badgeM = typeof htmlLscmMemberBadgeCorner === 'function' ? htmlLscmMemberBadgeCorner(idCliente) : '';
+      card.className = 'ficha-cliente-card' + (badgeM ? ' ficha-cliente-card-socio' : '');
       var marcaModelo = [r.marca, r.nombreVehiculo || r.codigoVehiculo].filter(Boolean).join(' · ') || '—';
-      card.innerHTML = '<div class="ficha-cliente-card-placa">' + (typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(r.matricula || '—') : escapeHtml(r.matricula || '—')) + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(marcaModelo) + '</div><div class="ficha-cliente-card-vehiculos">Ver ficha</div>';
+      card.innerHTML =
+        badgeM +
+        '<div class="ficha-cliente-card-inner"><div class="ficha-cliente-card-placa">' +
+        (typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(r.matricula || '—') : escapeHtml(r.matricula || '—')) +
+        '</div><div class="ficha-cliente-card-meta">' +
+        escapeHtml(marcaModelo) +
+        '</div><div class="ficha-cliente-card-vehiculos">Ver ficha</div></div>';
       card.addEventListener('click', function () {
         if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(idCliente);
       });
@@ -5216,7 +5748,8 @@ function vincularRegistroClientes() {
 
   function textoClienteParaBusqueda(cli) {
     if (!cli) return '';
-    var s = [cli.idCliente, cli.matricula, cli.nombreRegistrador, cli.telefonoCliente, cli.nombrePropietario, cli.numeroSocioLSCM, cli.placaPolicial, cli.codigoVehiculo, cli.nombreVehiculo, cli.categoria, cli.convenio].join(' ');
+    var catNom = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(cli.numeroSocioLSCM) : '';
+    var s = [cli.idCliente, cli.matricula, cli.nombreRegistrador, cli.telefonoCliente, cli.nombrePropietario, cli.numeroSocioLSCM, catNom, cli.placaPolicial, cli.codigoVehiculo, cli.nombreVehiculo, cli.categoria, cli.convenio].join(' ');
     return (s || '').toLowerCase().trim();
   }
   function cumpleFiltroCliente(cli, q) {
@@ -5598,8 +6131,19 @@ function vincularRegistroClientes() {
       const modeloCategoria = ((first.nombreVehiculo || first.codigoVehiculo || '').toString().trim() || '—') + ' - ' + ((first.categoria || '').toString().trim() || '—');
       const placaHtml = typeof buildMatriculaPlateHtml === 'function' ? buildMatriculaPlateHtml(matricula) : escapeHtml(matricula);
       const card = document.createElement('div');
-      card.className = 'ficha-cliente-card';
-      card.innerHTML = '<div class="ficha-cliente-card-placa">' + placaHtml + '</div><div class="ficha-cliente-card-meta">' + escapeHtml(telefono) + ' · ' + escapeHtml(modeloCategoria) + '</div><div class="ficha-cliente-card-vehiculos">' + rows.length + ' vehículo(s)</div>';
+      var badgeF = typeof htmlLscmMemberBadgeCorner === 'function' ? htmlLscmMemberBadgeCorner(id) : '';
+      card.className = 'ficha-cliente-card' + (badgeF ? ' ficha-cliente-card-socio' : '');
+      card.innerHTML =
+        badgeF +
+        '<div class="ficha-cliente-card-inner"><div class="ficha-cliente-card-placa">' +
+        placaHtml +
+        '</div><div class="ficha-cliente-card-meta">' +
+        escapeHtml(telefono) +
+        ' · ' +
+        escapeHtml(modeloCategoria) +
+        '</div><div class="ficha-cliente-card-vehiculos">' +
+        rows.length +
+        ' vehículo(s)</div></div>';
       card.addEventListener('click', function () {
         if (typeof abrirModalFichaCliente === 'function') abrirModalFichaCliente(id);
       });
@@ -5654,14 +6198,29 @@ function vincularRegistroClientes() {
     if (!estadoFicha) estadoFicha = '—';
     var prepagoChecked = !!(first.prepago);
     var modeloCategoria = ((first.nombreVehiculo || first.codigoVehiculo || '').toString().trim() || '—') + ' - ' + ((first.categoria || '').toString().trim() || '—');
-    headerEl.innerHTML = '<div class="ficha-header-row"><strong>Modelo - Categoría:</strong> ' + escapeHtml(modeloCategoria) + '</div>' +
+    var badgeHeader = typeof htmlLscmMemberBadgeCorner === 'function' ? htmlLscmMemberBadgeCorner(idCliente) : '';
+    var headerMain =
+      '<div class="ficha-header-row"><strong>Modelo - Categoría:</strong> ' + escapeHtml(modeloCategoria) + '</div>' +
       '<div class="ficha-header-row ficha-header-nombre-wrap"><strong>Nombre propietario:</strong> <span id="fichaNombrePropietario">' + escapeHtml(first.nombrePropietario || '—') + '</span>' +
       (puedeEditarNombre ? ' <button type="button" class="btn btn-outline btn-sm btn-editar-nombre-ficha" id="btnEditarNombreFicha">Editar</button>' : '') + '</div>' +
       '<div class="ficha-header-row"><strong>Teléfono:</strong> <span id="fichaTelefonoCliente">' + escapeHtml(first.telefonoCliente || '—') + '</span></div>' +
-      '<div class="ficha-header-row"><strong>Nº socio LSCM:</strong> ' + escapeHtml(first.numeroSocioLSCM || '—') + '</div>' +
+      '<div class="ficha-header-row"><strong>Nº socio LSCM:</strong> ' +
+      (function () {
+        var ns = (first.numeroSocioLSCM || '').toString().trim();
+        var cn = typeof getLscmCatalogoNombrePorNumero === 'function' ? getLscmCatalogoNombrePorNumero(ns) : '';
+        return escapeHtml(ns || '—') + (cn ? ' <span class="lscm-catalogo-nombre">· ' + escapeHtml(cn) + '</span>' : '');
+      })() +
+      '</div>' +
       '<div class="ficha-header-row"><strong>Convenio:</strong> ' + escapeHtml(first.convenio || '—') + '</div>' +
       '<div class="ficha-header-row ficha-header-estado"><strong>Estado:</strong> ' + estadoFicha + '</div>' +
       '<div class="ficha-header-row ficha-header-prepago"><label class="ficha-prepago-label"><input type="checkbox" id="fichaClientePrepago" ' + (prepagoChecked ? ' checked' : '') + '> Solicitar prepago</label></div>';
+    headerEl.innerHTML =
+      '<div class="ficha-cliente-header-stack">' +
+      '<div class="ficha-cliente-header-main">' +
+      headerMain +
+      '</div>' +
+      badgeHeader +
+      '</div>';
     if (extraEl) {
       var obs = (first.observaciones || '').trim();
       extraEl.innerHTML = obs ? '<div class="ficha-cliente-observaciones"><strong>Observaciones</strong><p class="ficha-observaciones-texto">' + escapeHtml(obs) + '</p></div>' : '';
@@ -6884,7 +7443,8 @@ var PERMISO_ICONS = {
   gestionarRegistroClientes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
   verConveniosPrivados: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
   gestionarCompras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
-  exentoTestNormativas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
+  exentoTestNormativas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>',
+  gestionarClubLscm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M18 11h2v6h-2zM17 14h4"/></svg>'
 };
 
 function abrirFormUsuario(userId) {
@@ -9957,6 +10517,7 @@ function init() {
   cargarMatriculasGuardadas();
   vincularPasos();
   vincularEventos();
+  vincularClubLscm();
   vincularRegistroClientes();
   vincularSubirVideo();
   vincularModalVerVideoSolicitud();

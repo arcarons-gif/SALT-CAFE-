@@ -58,6 +58,7 @@ const PERMISOS = {
   verConveniosPrivados: 'Ver convenios privados (máximos responsables)',
   gestionarCompras: 'Compras y existencias (compras, inventario; solo admin por defecto, se puede otorgar a empleados)',
   exentoTestNormativas: 'Exento del test de normativas (no obligatorio hacer el test de comprensión)',
+  gestionarClubLscm: 'Gestionar club de socios LSCM (altas, vehículos vinculados a BBDD clientes)',
 };
 
 var ADMIN_PERMISOS_FULL = {
@@ -75,6 +76,7 @@ var ADMIN_PERMISOS_FULL = {
   verConveniosPrivados: true,
   gestionarCompras: true,
   exentoTestNormativas: false,
+  gestionarClubLscm: false,
 };
 
 function createDefaultAdmin(passwordHash, salt) {

@@ -7,6 +7,7 @@
   const AUTH_STORAGE = 'benny_users';
   const FICHAJES_STORAGE = 'benny_fichajes';
   const SERVICIOS_STORAGE = 'benny_servicios';
+  const SERVICIOS_ARCHIVO_STORAGE = 'benny_servicios_archivo_mensual';
   const API_URL_STORAGE = 'saltlab_api_url';
   const POLL_INTERVAL_MS = 3000;
   const DEFAULT_API_URL = 'http://localhost:3001';
@@ -150,6 +151,31 @@
     }
   }
 
+  async function fetchAndApplyServiciosArchivo() {
+    try {
+      const meses = await fetchJson(getBaseUrl() + '/api/servicios-archivo-mensual');
+      var list = Array.isArray(meses) ? meses : [];
+      var prev = localStorage.getItem(SERVICIOS_ARCHIVO_STORAGE);
+      var merged = typeof window.mergeServiciosArchivoFromServer === 'function' ? window.mergeServiciosArchivoFromServer(list) : list;
+      var next = JSON.stringify(merged);
+      if (list.length === 0) {
+        var localOnly = [];
+        try {
+          localOnly = JSON.parse(prev || '[]');
+        } catch (_) {}
+        if (localOnly.length > 0) await syncServiciosArchivoToServer(localOnly);
+      }
+      if (prev === next) return false;
+      try {
+        localStorage.setItem(SERVICIOS_ARCHIVO_STORAGE, next);
+        if (typeof window.invalidateServiciosArchivoCache === 'function') window.invalidateServiciosArchivoCache();
+      } catch (_) {}
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function syncUsersToServer(users) {
     if (!Array.isArray(users)) return;
     try {
@@ -199,6 +225,19 @@
       });
     } catch (e) {
       console.warn('SALTLAB API: no se pudo sincronizar reparaciones/servicios', e);
+    }
+  }
+
+  async function syncServiciosArchivoToServer(meses) {
+    if (!Array.isArray(meses)) return;
+    try {
+      await fetch(getBaseUrl() + '/api/servicios-archivo-mensual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meses }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo sincronizar archivo mensual de servicios', e);
     }
   }
 
@@ -314,8 +353,9 @@
         await fetchAndApplyUsers();
         await fetchAndApplyFichajes();
         await fetchAndApplyServicios();
+        await fetchAndApplyServiciosArchivo();
         window.dispatchEvent(new CustomEvent('benny-backend-sync', {
-          detail: { users: true, fichajes: true, servicios: true }
+          detail: { users: true, fichajes: true, servicios: true, serviciosArchivo: true }
         }));
       }
     }, POLL_INTERVAL_MS);
@@ -360,6 +400,7 @@
       await fetchAndApplyUsers();
       await fetchAndApplyFichajes();
       await fetchAndApplyServicios();
+      await fetchAndApplyServiciosArchivo();
     }
     startPolling();
     return true;
@@ -385,10 +426,12 @@
     fetchAndApplyUsers,
     fetchAndApplyFichajes,
     fetchAndApplyServicios,
+    fetchAndApplyServiciosArchivo,
     fetchDatosCompletos,
     syncUsersToServer,
     syncFichajesToServer,
     syncServiciosToServer,
+    syncServiciosArchivoToServer,
     saveRepoExport,
     mergeAlmacen,
     mergeInventario,

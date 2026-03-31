@@ -15,6 +15,7 @@ const dataDir = path.join(__dirname, 'data');
 const usersPath = path.join(dataDir, 'users.json');
 const fichajesPath = path.join(dataDir, 'fichajes.json');
 const serviciosPath = path.join(dataDir, 'servicios.json');
+const serviciosArchivoMensualPath = path.join(dataDir, 'servicios-archivo-mensual.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -72,6 +73,61 @@ function readServicios() {
 function writeServicios(servicios) {
   ensureDataDir();
   fs.writeFileSync(serviciosPath, JSON.stringify(servicios), 'utf8');
+}
+
+function readServiciosArchivoMensual() {
+  ensureDataDir();
+  try {
+    const raw = fs.readFileSync(serviciosArchivoMensualPath, 'utf8');
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeServiciosArchivoMensual(rows) {
+  ensureDataDir();
+  fs.writeFileSync(serviciosArchivoMensualPath, JSON.stringify(rows), 'utf8');
+}
+
+/** Evita duplicar el mismo mes al sincronizar: gana la fila con más servicios (rep+tuneo), o mayor importe si empatan. */
+function pickRicherArchivoMensualRow(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const sa = (parseInt(a.reparaciones, 10) || 0) + (parseInt(a.tuneos, 10) || 0);
+  const sb = (parseInt(b.reparaciones, 10) || 0) + (parseInt(b.tuneos, 10) || 0);
+  if (sb > sa) return { ...b };
+  if (sa > sb) return { ...a };
+  const ia = parseFloat(a.importeTotal) || 0;
+  const ib = parseFloat(b.importeTotal) || 0;
+  return ib >= ia ? { ...b } : { ...a };
+}
+
+/** Una fila por mes (YYYY-MM); al unir listas se elige una fila por mes (no se suman, para no duplicar archivos repetidos). */
+function mergeArchivoMensual(existing, incoming) {
+  const byMes = {};
+  function addRow(row) {
+    if (!row || !row.mes) return;
+    const k = String(row.mes).slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(k)) return;
+    const norm = {
+      mes: k,
+      reparaciones: parseInt(row.reparaciones, 10) || 0,
+      tuneos: parseInt(row.tuneos, 10) || 0,
+      importeTotal: parseFloat(row.importeTotal) || 0,
+      piezasChasis: parseInt(row.piezasChasis, 10) || 0,
+      piezasEsenciales: parseInt(row.piezasEsenciales, 10) || 0,
+      partesServicio: parseInt(row.partesServicio, 10) || 0,
+      archivadoEn: row.archivadoEn || '',
+    };
+    byMes[k] = pickRicherArchivoMensualRow(byMes[k], norm);
+  }
+  (Array.isArray(existing) ? existing : []).forEach(addRow);
+  (Array.isArray(incoming) ? incoming : []).forEach(addRow);
+  return Object.keys(byMes)
+    .sort()
+    .map((k) => byMes[k]);
 }
 
 /** Fusiona servicios entrantes con los existentes (por id). No sobrescribe la lista del servidor, acumula/actualiza. */
@@ -162,6 +218,7 @@ app.get('/', (req, res) => {
         <li>/api/users – GET (lista) / POST (reemplaza la lista con la enviada por el cliente; borrados sí se persisten)</li>
         <li>/api/fichajes – GET (lista) / POST (fusionar)</li>
         <li>/api/servicios – GET (lista) / POST (fusionar reparaciones/tuneos)</li>
+        <li>/api/servicios-archivo-mensual – GET / POST (totales por mes archivados)</li>
         <li>/api/datos-completos – GET (todos los datos sincronizados)</li>
         <li>/api/repo-export – POST (guardar saltlab-datos-completos.json; almacén e inventario no se sobrescriben)</li>
         <li>/api/merge-almacen – POST (sumar movimiento al almacén; body: { movimiento: { acero?: number, ... } })</li>
@@ -274,6 +331,33 @@ app.post('/api/servicios', (req, res) => {
   }
 });
 
+// ----- Archivo mensual (totales por mes; libera detalle en clientes) -----
+app.get('/api/servicios-archivo-mensual', (req, res) => {
+  try {
+    res.json(readServiciosArchivoMensual());
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+app.post('/api/servicios-archivo-mensual', (req, res) => {
+  try {
+    const meses = req.body.meses;
+    if (!Array.isArray(meses)) {
+      return res.status(400).json({ error: 'Se espera { meses: [...] }' });
+    }
+    const existing = readServiciosArchivoMensual();
+    const merged = mergeArchivoMensual(existing, meses);
+    writeServiciosArchivoMensual(merged);
+    writeDatosCompletosMerge({ serviciosArchivoMensual: merged });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
 const datosCompletosPath = path.join(dataDir, 'saltlab-datos-completos.json');
 
 function readDatosCompletos() {
@@ -295,6 +379,7 @@ function writeDatosCompletosMerge(merge) {
     if (merge.users !== undefined) data.users = merge.users;
     if (merge.fichajes !== undefined) data.fichajes = merge.fichajes;
     if (merge.servicios !== undefined) data.servicios = merge.servicios;
+    if (merge.serviciosArchivoMensual !== undefined) data.serviciosArchivoMensual = merge.serviciosArchivoMensual;
     data._exportadoAt = new Date().toISOString();
     ensureDataDir();
     fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
@@ -315,6 +400,7 @@ app.get('/api/datos-completos', (req, res) => {
     data.users = readUsers();
     data.fichajes = readFichajes();
     data.servicios = readServicios();
+    data.serviciosArchivoMensual = readServiciosArchivoMensual();
     data._exportadoAt = new Date().toISOString();
     res.json(data || {});
   } catch (e) {
