@@ -5393,7 +5393,10 @@ function mostrarDetalleLscmSocio(lscmId) {
   var tbodyV = document.getElementById('tablaLscmVehiculos');
   if (tbodyV) {
     tbodyV.innerHTML = '';
-    var vehs = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(idCliente) : [];
+    var vehsRaw = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(idCliente) : [];
+    var vehs = vehsRaw.filter(function (v) {
+      return !/^LSCM-/i.test((v.matricula || '').trim());
+    });
     vehs.forEach(function (v) {
       var tr = document.createElement('tr');
       tr.innerHTML =
@@ -5509,8 +5512,8 @@ function vincularClubLscm() {
       var mat = (matRaw || '').trim();
       var tel = (document.getElementById('lscmNuevoTelefono') && document.getElementById('lscmNuevoTelefono').value) || '';
       if (!mat) {
-        var numNorm = typeof normalizeNumSocioLscmKey === 'function' ? normalizeNumSocioLscmKey(num) : String(num).trim();
-        mat = 'LSCM-' + (numNorm || String(num).trim());
+        alert('Indica la matrícula del primer vehículo (no se usa el número de socio como matrícula).');
+        return;
       }
       if (typeof generateIdCliente !== 'function' || typeof addOrUpdateClienteBBDD !== 'function') {
         alert('BBDD de clientes no disponible.');
@@ -5597,10 +5600,86 @@ function vincularRegistroClientes() {
   const btnHome = document.getElementById('btnRegistroClientesHome');
   if (!pantallaRegistro || !btnRegistro) return;
 
+  /**
+   * idCliente usado en BBDD para «Mi ficha» y altas propias: prioridad idClienteBBDD en usuario,
+   * luego mismo idCliente que socio LSCM si el nombre coincide, luego filas BBDD con único id
+   * donde nombreRegistrador = login, y por último EMP-{username}.
+   */
+  function resolveIdClienteEmpleado(session) {
+    if (!session || !session.username) return null;
+    var uname = (session.username || '').trim();
+    var unameLower = uname.toLowerCase();
+    var emp = 'EMP-' + uname;
+    var users = typeof getUsers === 'function' ? getUsers() : [];
+    var full = users.find(function (u) {
+      return (session.id && u.id === session.id) || ((u.username || '').toLowerCase() === unameLower);
+    });
+    if (full && (full.idClienteBBDD || '').toString().trim()) {
+      return (full.idClienteBBDD || '').toString().trim();
+    }
+    var nombreSession = ((session.nombre || (full && full.nombre) || uname) || '').trim();
+    if (nombreSession && typeof getLscmSociosRegistry === 'function') {
+      var socios = getLscmSociosRegistry();
+      for (var si = 0; si < socios.length; si++) {
+        var idcSoc = (socios[si].idCliente || '').toString().trim();
+        if (!idcSoc) continue;
+        var rowsSoc = typeof getClientesByClienteId === 'function' ? getClientesByClienteId(idcSoc) : [];
+        if (!rowsSoc.length) continue;
+        var nomP = (rowsSoc[0].nombrePropietario || '').trim();
+        if (nomP && nomP.toLowerCase() === nombreSession.toLowerCase()) return idcSoc;
+      }
+    }
+    if (typeof getClientesBBDD === 'function') {
+      var all = getClientesBBDD();
+      var counts = {};
+      all.forEach(function (r) {
+        var reg = (r.nombreRegistrador || '').toString().trim().toLowerCase();
+        if (reg !== unameLower) return;
+        var idc = (r.idCliente || '').toString().trim();
+        if (idc) counts[idc] = (counts[idc] || 0) + 1;
+      });
+      var keys = Object.keys(counts);
+      if (keys.length === 1) return keys[0];
+    }
+    return emp;
+  }
+
   function getIdClienteEmpleado(session) {
-    return session && session.username ? 'EMP-' + session.username : null;
+    return resolveIdClienteEmpleado(session);
+  }
+
+  function _normMatMiFicha(m) {
+    return (m || '').trim().toUpperCase();
+  }
+
+  /** Vehículos para «Mi ficha»: unión del id resuelto y EMP-{user}, sin duplicar matrícula. */
+  function getVehiculosParaMiFicha(session) {
+    if (!session || !session.username) return [];
+    var canon = resolveIdClienteEmpleado(session);
+    var emp = 'EMP-' + (session.username || '').trim();
+    var byMat = {};
+    var order = [];
+    function addRows(rows) {
+      (rows || []).forEach(function (r) {
+        var matRaw = (r.matricula || '').trim();
+        if (/^LSCM-/i.test(matRaw)) return;
+        var k = _normMatMiFicha(r.matricula);
+        if (!k) return;
+        if (!byMat[k]) {
+          byMat[k] = r;
+          order.push(r);
+        }
+      });
+    }
+    if (typeof getClientesByClienteId === 'function') {
+      addRows(getClientesByClienteId(canon));
+      if (canon !== emp) addRows(getClientesByClienteId(emp));
+    }
+    return order;
   }
   window.getIdClienteEmpleado = getIdClienteEmpleado;
+  window.resolveIdClienteEmpleado = resolveIdClienteEmpleado;
+  window.getVehiculosParaMiFicha = getVehiculosParaMiFicha;
 
   function updateBadgePendientesRegistro() {
     var badge = document.getElementById('badgePendientesRegistro');
@@ -5679,14 +5758,14 @@ function vincularRegistroClientes() {
 
   function renderMiFicha() {
     var cont = document.getElementById('listaMiFichaVehiculos');
-    if (!cont || typeof getClientesByClienteId !== 'function') return;
+    if (!cont) return;
     var session = typeof getSession === 'function' ? getSession() : null;
-    var idCliente = getIdClienteEmpleado(session);
+    var idCliente = typeof resolveIdClienteEmpleado === 'function' ? resolveIdClienteEmpleado(session) : (session && session.username ? 'EMP-' + session.username : null);
     if (!idCliente) {
       cont.innerHTML = '<p class="mi-ficha-empty">Inicia sesión para gestionar tus vehículos.</p>';
       return;
     }
-    var rows = getClientesByClienteId(idCliente);
+    var rows = typeof getVehiculosParaMiFicha === 'function' ? getVehiculosParaMiFicha(session) : [];
     cont.innerHTML = '';
     rows.forEach(function (r) {
       var card = document.createElement('div');
@@ -6643,11 +6722,16 @@ function vincularRegistroClientes() {
     data.responsable = document.getElementById('usuarioResponsable').value.trim() || null;
     data.puesto = document.getElementById('usuarioPuesto').value.trim() || '';
     data.salario = document.getElementById('usuarioSalario').value !== '' ? parseFloat(document.getElementById('usuarioSalario').value) : null;
+    const session = getSession();
     const equipoEl = document.getElementById('usuarioEquipo');
     if (equipoEl && equipoEl.offsetParent !== null) {
       data.equipo = (equipoEl.value || '').split(',').map(s => s.trim()).filter(Boolean);
     }
-    const session = getSession();
+    var idCliBBDDEl = document.getElementById('usuarioIdClienteBBDD');
+    var fieldIdCliBBDD = document.getElementById('fieldIdClienteBBDD');
+    if (idCliBBDDEl && fieldIdCliBBDD && fieldIdCliBBDD.offsetParent !== null && session && hasPermission(session, 'gestionarUsuarios')) {
+      data.idClienteBBDD = (idCliBBDDEl.value || '').trim();
+    }
     if (id && hasPermission(session, 'gestionarEquipo') && !hasPermission(session, 'gestionarUsuarios')) {
       const target = getUsers().find(u => u.id === id);
       if (target && !hasPermission(target, 'noRequiereAprobacionAdmin')) {
@@ -6668,6 +6752,10 @@ function vincularRegistroClientes() {
     if (res.error) {
       alert(res.error);
       return;
+    }
+    if (id && session && session.id === id && typeof getUsers === 'function' && typeof setSession === 'function') {
+      var refreshed = getUsers().find(function (x) { return x.id === id; });
+      if (refreshed) setSession(refreshed);
     }
     cerrarFichaEmpleadoSiAbierta();
     renderListaUsuarios();
@@ -7514,6 +7602,12 @@ function abrirFormUsuario(userId) {
       fieldEquipo.style.display = hasPermission(getSession(), 'gestionarUsuarios') ? '' : 'none';
       usuarioEquipo.value = (u.equipo && u.equipo.length) ? u.equipo.join(', ') : '';
     }
+    var fieldIdCli = document.getElementById('fieldIdClienteBBDD');
+    var inputIdCli = document.getElementById('usuarioIdClienteBBDD');
+    if (fieldIdCli && inputIdCli) {
+      fieldIdCli.style.display = hasPermission(getSession(), 'gestionarUsuarios') ? '' : 'none';
+      inputIdCli.value = (u.idClienteBBDD || '').toString();
+    }
     var labelEdit = fieldPassword.querySelector('label');
     if (labelEdit) labelEdit.textContent = 'Nueva contraseña (opcional)';
     var session = getSession();
@@ -7575,6 +7669,12 @@ function abrirFormUsuario(userId) {
     if (fieldEquipoNew) fieldEquipoNew.style.display = hasPermission(getSession(), 'gestionarUsuarios') ? '' : 'none';
     const usuarioEquipoNew = document.getElementById('usuarioEquipo');
     if (usuarioEquipoNew) usuarioEquipoNew.value = '';
+    var fieldIdCliNew = document.getElementById('fieldIdClienteBBDD');
+    var inputIdCliNew = document.getElementById('usuarioIdClienteBBDD');
+    if (fieldIdCliNew && inputIdCliNew) {
+      fieldIdCliNew.style.display = hasPermission(getSession(), 'gestionarUsuarios') ? '' : 'none';
+      inputIdCliNew.value = '';
+    }
   }
 
   permisosDiv.innerHTML = '';

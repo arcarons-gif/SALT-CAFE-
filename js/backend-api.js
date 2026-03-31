@@ -184,9 +184,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ users }),
       });
-      if (res.ok && typeof window.clearUsersRemovedIds === 'function') {
-        window.clearUsersRemovedIds();
-      } else if (!res.ok) {
+      // No llamar clearUsersRemovedIds aquí: si el GET del polling aún devuelve la lista antigua,
+      // se pierde el tombstone y el usuario borrado reaparece. La poda de ids ocurre en mergeUsersFromServer
+      // cuando el servidor ya no incluye ese usuario.
+      if (!res.ok) {
         var base = getBaseUrl();
         var hint = res.status === 0 ? ' (red/CORS/bloqueo; revisa URL y que el servidor responda)' : '';
         console.warn(

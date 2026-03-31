@@ -1603,8 +1603,8 @@
             <input type="text" id="lscmNuevoNombrePropietario" class="input-buscar-registro" autocomplete="name">
           </div>
           <div class="field">
-            <label for="lscmNuevoMatricula">Matrícula (primer vehículo, opcional)</label>
-            <input type="text" id="lscmNuevoMatricula" class="input-buscar-registro" autocomplete="off" placeholder="Vacío = LSCM- + nº de socio">
+            <label for="lscmNuevoMatricula">Matrícula del primer vehículo</label>
+            <input type="text" id="lscmNuevoMatricula" class="input-buscar-registro" autocomplete="off" placeholder="Matrícula real (obligatoria si es cliente nuevo)">
           </div>
           <div class="field">
             <label for="lscmNuevoTelefono">Teléfono (opcional)</label>
@@ -2390,6 +2390,11 @@
               <div class="field" id="fieldEquipo" style="display:none">
                 <label>Equipo (IDs a su cargo, separados por coma)</label>
                 <input type="text" id="usuarioEquipo" placeholder="u-123..., u-456...">
+              </div>
+              <div class="field" id="fieldIdClienteBBDD" style="display:none">
+                <label for="usuarioIdClienteBBDD">ID cliente BBDD (Mi ficha / clientes)</label>
+                <span class="field-hint">Opcional. Copia el «ID cliente» de la tabla de clientes si «Mi ficha» no muestra los vehículos (p. ej. socio LSCM con otro id).</span>
+                <input type="text" id="usuarioIdClienteBBDD" placeholder="Ej: CLI-1739… o EMP-Savannah" autocomplete="off">
               </div>
             </div>
           </section>

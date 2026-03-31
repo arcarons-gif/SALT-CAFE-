@@ -234,13 +234,33 @@ function mergeUsersFromServer(serverList) {
     }
     byId[u.id] = ts(u) >= ts(ex) ? u : ex;
   });
-  return Object.keys(byId)
+  var merged = Object.keys(byId)
     .map(function (k) {
       return byId[k];
     })
     .filter(function (u) {
       return u && !removedSet[u.id];
     });
+
+  /**
+   * Quitar tombstones solo cuando el servidor ya no devuelve ese id.
+   * Antes se limpiaba toda la lista tras POST; si el GET siguiente aún traía datos viejos,
+   * el usuario borrado volvía a aparecer al fusionar.
+   */
+  try {
+    var serverIds = {};
+    serverList.forEach(function (u) {
+      if (u && u.id) serverIds[u.id] = true;
+    });
+    var nextRemoved = removed.filter(function (rid) {
+      return rid && serverIds[rid];
+    });
+    if (nextRemoved.length !== removed.length) {
+      localStorage.setItem(USERS_REMOVED_IDS_KEY, JSON.stringify(nextRemoved));
+    }
+  } catch (_) {}
+
+  return merged;
 }
 
 if (typeof window !== 'undefined') {
@@ -422,6 +442,7 @@ async function createUser(userData, createdBy) {
     equipo: Array.isArray(userData.equipo) ? userData.equipo : (userData.equipo ? [] : []),
     fotosFicha: Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [],
     fondoFichaIndex: userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null,
+    idClienteBBDD: (userData.idClienteBBDD && String(userData.idClienteBBDD).trim()) ? String(userData.idClienteBBDD).trim() : null,
   };
   if (!newUser.equipo) newUser.equipo = [];
   if (!newUser.fotosFicha) newUser.fotosFicha = [];
@@ -462,6 +483,10 @@ async function updateUser(userId, userData, updatedBy) {
   if (userData.fotosFicha !== undefined) users[idx].fotosFicha = Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [];
   if (userData.fondoFichaIndex !== undefined) users[idx].fondoFichaIndex = userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null;
   if (userData.vehiculos !== undefined) users[idx].vehiculos = Array.isArray(userData.vehiculos) ? userData.vehiculos : [];
+  if (userData.idClienteBBDD !== undefined) {
+    var idcB = (userData.idClienteBBDD || '').toString().trim();
+    users[idx].idClienteBBDD = idcB || null;
+  }
   if (userData.password && userData.password.length >= 4 && !isUsuarioContrasenaProtegida(users[idx].username)) {
     const salt = crypto.randomUUID() + Date.now();
     users[idx].passwordHash = await hashPassword(userData.password, salt);

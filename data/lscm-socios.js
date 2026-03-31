@@ -1,6 +1,7 @@
 /**
  * Registro del club LSCM: socios vinculados a idCliente de la BBDD (misma ficha que clientes).
  * El nº de socio se replica en numeroSocioLSCM de todas las filas del cliente en clientes-bbdd.
+ * No se genera matrícula ficticia con el nº de socio; el alta como cliente nuevo exige matrícula real.
  */
 const LSCM_SOCIOS_STORAGE = 'benny_lscm_socios';
 
