@@ -1,7 +1,7 @@
 /**
  * Piezas de tuneo y sus costes de compra (según input/CONTENT/ALMACEN/precios piezas tuning.txt).
  * Categorías: kits, performance, cosmetics, custom.
- * Precio de venta al cliente: kits = coste×2 o override en localStorage; performance/custom/cosmetics = % valor vehículo (data/precios-piezas.js); pintura camaleónica = 5000 $ fijos.
+ * Precio de venta al cliente: kits = coste×2 o override en localStorage; performance/custom/cosmetics = % valor vehículo (data/precios-piezas.js); pintura camaleónica = 5000 $ fijos. El kit de limpieza (opcional) va en precios-piezas.js, no en este catálogo.
  */
 (function (global) {
   var CATEGORIAS_TUNEO = [

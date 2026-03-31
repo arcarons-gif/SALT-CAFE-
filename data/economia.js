@@ -43,6 +43,7 @@
     { id: 'maquinaria_tablet_tuneo', grupo: 'MAQUINARIA', nombre: 'Tablet tuneo' },
     { id: 'maquinaria_maquina_diagnosis', grupo: 'MAQUINARIA', nombre: 'Máquina diagnosis' },
     { id: 'maquinaria_grua_motor', grupo: 'MAQUINARIA', nombre: 'Grúa motor' },
+    { id: 'varios_kit_limpieza', grupo: 'VARIOS', nombre: 'Kit de limpieza' },
     { id: 'varios_otro', grupo: 'VARIOS', nombre: 'Otro (comida/bebida)' },
     { id: 'carroceria_otro', grupo: 'CARROCERÍA', nombre: 'Otro (carrocería)' },
     { id: 'esenciales_otro', grupo: 'COMPONENTES ESENCIALES', nombre: 'Otro (componente)' },

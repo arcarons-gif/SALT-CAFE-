@@ -7,6 +7,7 @@
  * - Piezas custom: % valor vehículo por pieza (6%).
  * - Piezas cosmetic: % valor vehículo por pieza (5%). Pintura camaleónica: fija 5000 $ (piezas-tuning.js).
  * - Full tuning: % valor vehículo (40%).
+ * - Kit de limpieza (opcional reparación/tuneo): coste y precio fijos por unidad (p. ej. 50$ / 200$).
  */
 (function (global) {
   var STORAGE = 'benny_precios_piezas';
@@ -18,7 +19,8 @@
     performance: { coste: 0, precioVentaPorcentaje: 16 },
     cosmetic: { coste: 0, precioVentaPorcentaje: 5 },
     custom: { coste: 0, precioVentaPorcentaje: 6 },
-    fullTuning: { coste: 0, precioVentaPorcentaje: 40 }
+    fullTuning: { coste: 0, precioVentaPorcentaje: 40 },
+    kitLimpieza: { coste: 50, precioVenta: 200 }
   };
 
   function cloneDefaults() {
@@ -29,7 +31,8 @@
       performance: { ...DEFAULTS.performance },
       cosmetic: { ...DEFAULTS.cosmetic },
       custom: { ...DEFAULTS.custom },
-      fullTuning: { ...DEFAULTS.fullTuning }
+      fullTuning: { ...DEFAULTS.fullTuning },
+      kitLimpieza: { ...DEFAULTS.kitLimpieza }
     };
   }
 
@@ -66,6 +69,10 @@
         fullTuning: {
           coste: typeof obj.fullTuning?.coste === 'number' ? obj.fullTuning.coste : DEFAULTS.fullTuning.coste,
           precioVentaPorcentaje: typeof obj.fullTuning?.precioVentaPorcentaje === 'number' ? obj.fullTuning.precioVentaPorcentaje : DEFAULTS.fullTuning.precioVentaPorcentaje
+        },
+        kitLimpieza: {
+          coste: typeof obj.kitLimpieza?.coste === 'number' ? obj.kitLimpieza.coste : DEFAULTS.kitLimpieza.coste,
+          precioVenta: typeof obj.kitLimpieza?.precioVenta === 'number' ? obj.kitLimpieza.precioVenta : DEFAULTS.kitLimpieza.precioVenta
         }
       };
     } catch (e) { return cloneDefaults(); }
@@ -154,6 +161,16 @@
     return Math.floor(valorVehiculo * (pct / 100));
   }
 
+  function getCosteKitLimpieza() {
+    var p = getPreciosPiezas();
+    return p.kitLimpieza && typeof p.kitLimpieza.coste === 'number' ? p.kitLimpieza.coste : DEFAULTS.kitLimpieza.coste;
+  }
+
+  function getPrecioVentaKitLimpieza() {
+    var p = getPreciosPiezas();
+    return p.kitLimpieza && typeof p.kitLimpieza.precioVenta === 'number' ? p.kitLimpieza.precioVenta : DEFAULTS.kitLimpieza.precioVenta;
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       getPreciosPiezas: getPreciosPiezas,
@@ -169,7 +186,9 @@
       getPrecioVentaCustomPorcentaje: getPrecioVentaCustomPorcentaje,
       getPrecioVentaCustom: getPrecioVentaCustom,
       getPrecioVentaFullTuningPorcentaje: getPrecioVentaFullTuningPorcentaje,
-      getPrecioVentaFullTuning: getPrecioVentaFullTuning
+      getPrecioVentaFullTuning: getPrecioVentaFullTuning,
+      getCosteKitLimpieza: getCosteKitLimpieza,
+      getPrecioVentaKitLimpieza: getPrecioVentaKitLimpieza
     };
   } else {
     global.getPreciosPiezas = getPreciosPiezas;
@@ -186,5 +205,7 @@
     global.getPrecioVentaCustom = getPrecioVentaCustom;
     global.getPrecioVentaFullTuningPorcentaje = getPrecioVentaFullTuningPorcentaje;
     global.getPrecioVentaFullTuning = getPrecioVentaFullTuning;
+    global.getCosteKitLimpieza = getCosteKitLimpieza;
+    global.getPrecioVentaKitLimpieza = getPrecioVentaKitLimpieza;
   }
 })(typeof window !== 'undefined' ? window : this);

@@ -915,6 +915,7 @@ function mostrarResumenReparacion(s) {
     if (dr > 0) descResumen = dr;
   }
   if (descResumen > 0) rows.push({ label: 'Descuento', value: descResumen + '%' });
+  if (s.kitLimpieza) rows.push({ label: 'Kit de limpieza', value: 'Sí' });
   if (s.partesChasis != null || s.partesEsenciales != null || s.kitReparacion) {
     if (s.kitReparacion) rows.push({ label: 'Kit reparación', value: 'Sí' });
     if (s.partesChasis != null) {
@@ -3457,6 +3458,7 @@ function renderPreciosPiezas() {
   var filas = [
     { id: 'chasis', nombre: 'Partes del chasis (carrocería)', tipo: 'euro', data: precios.chasis, ventaDefault: 30 },
     { id: 'esenciales', nombre: 'Partes esenciales', tipo: 'euro', data: precios.esenciales, ventaDefault: 65 },
+    { id: 'kitLimpieza', nombre: 'Kit de limpieza (opcional reparación/tuneo)', tipo: 'euro', data: precios.kitLimpieza || { coste: 50, precioVenta: 200 }, ventaDefault: 200 },
     { id: 'swapMotor', nombre: 'Cambio / swap motor', tipo: 'porcentaje', data: precios.swapMotor, ventaDefault: 16 },
     { id: 'performance', nombre: 'Piezas performance', tipo: 'porcentaje', data: precios.performance, ventaDefault: 16 },
     { id: 'custom', nombre: 'Piezas custom', tipo: 'porcentaje', data: precios.custom, ventaDefault: 6 },
@@ -3523,6 +3525,10 @@ function renderPreciosPiezas() {
         var ventaInp = row.querySelector('.input-pieza-venta');
         var venta = parseFloat(ventaInp && ventaInp.value) || 65;
         preciosActual.esenciales = { coste: coste, precioVenta: venta };
+      } else if (id === 'kitLimpieza') {
+        var ventaKit = row.querySelector('.input-pieza-venta');
+        var ventaK = parseFloat(ventaKit && ventaKit.value) || 200;
+        preciosActual.kitLimpieza = { coste: coste, precioVenta: ventaK };
       } else if (id === 'swapMotor') {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
         var pct = parseFloat(pctInp && pctInp.value) || 16;
@@ -11539,13 +11545,21 @@ function calcularPrecios() {
   let kitReparacion = 0;
   if (kitActivo) kitReparacion = CONFIG.kitReparacionPrecio || 650;
 
-  const subtotal = motor + kits + performance + custom + cosmetic + reparacion + kitReparacion;
+  var cbKitLim = document.getElementById('usarKitLimpieza');
+  var kitLimpiezaActivo = !!(cbKitLim && cbKitLim.checked && (tipoServicio === 'reparacion' || tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
+  var pvKitLim = typeof getPrecioVentaKitLimpieza === 'function' ? getPrecioVentaKitLimpieza() : 200;
+  var costeKitLim = typeof getCosteKitLimpieza === 'function' ? getCosteKitLimpieza() : 50;
+  var kitLimpieza = kitLimpiezaActivo ? pvKitLim : 0;
+  var kitLimpiezaCoste = kitLimpiezaActivo ? costeKitLim : 0;
+
+  const subtotal = motor + kits + performance + custom + cosmetic + reparacion + kitReparacion + kitLimpieza;
   const descuentoEfectivo = kitActivo ? 0 : desc;
   const total = Math.floor(subtotal * (1 - descuentoEfectivo / 100));
 
   return {
     motor, kits, performance, custom, cosmetic, reparacion,
-    kitReparacion, subtotal, total, descuento: descuentoEfectivo,
+    kitReparacion, kitLimpieza, kitLimpiezaCoste, kitLimpiezaActivo: !!kitLimpiezaActivo,
+    subtotal, total, descuento: descuentoEfectivo,
     kitActivo: !!kitActivo,
   };
 }
@@ -11653,6 +11667,15 @@ function actualizarVista() {
   if (wrapPresupuestoKit) wrapPresupuestoKit.style.display = kitAmount > 0 ? '' : 'none';
   if (presupuestoKit) presupuestoKit.textContent = kitAmount > 0 ? '$' + kitAmount.toLocaleString('es-ES') : '$0';
 
+  var wrapPresupuestoKitLim = document.getElementById('wrapPresupuestoKitLimpieza');
+  var presupuestoKitLim = document.getElementById('presupuestoKitLimpieza');
+  var kitLimAmount = (p.kitLimpieza != null && p.kitLimpieza > 0) ? p.kitLimpieza : 0;
+  if (wrapPresupuestoKitLim) wrapPresupuestoKitLim.style.display = kitLimAmount > 0 ? '' : 'none';
+  if (presupuestoKitLim) presupuestoKitLim.textContent = kitLimAmount > 0 ? '$' + kitLimAmount.toLocaleString('es-ES') : '$0';
+
+  var wrapKitLimpiezaField = document.getElementById('wrapKitLimpieza');
+  if (wrapKitLimpiezaField) wrapKitLimpiezaField.style.display = (tipoServicio === 'reparacion' || tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion') ? '' : 'none';
+
   var esPolicia = false;
   if ((rep || tuneoRep) && matricula !== '-') {
     if (typeof getClienteByMatricula === 'function') {
@@ -11674,7 +11697,7 @@ function actualizarVista() {
   actualizarVisibilidadRegistroServicios();
   renderStatsVehiculo(matricula !== '-' ? matricula : '');
 
-  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   const modTuneo = el.reparacion.checked && tieneTuneo ? '+ Reparación' : (tieneTuneo ? 'Tuning' : '-');
 
   if (v.tplMatricula) v.tplMatricula.textContent = matricula;
@@ -11685,7 +11708,7 @@ function actualizarVista() {
   if (v.tplConvenio) v.tplConvenio.textContent = convenio;
   if (v.tplMatriculaRep) v.tplMatriculaRep.textContent = matricula;
   if (v.tplModeloRep) v.tplModeloRep.textContent = modelo;
-  if (v.tplImporteRep) v.tplImporteRep.textContent = p.reparacion > 0 ? p.total + '$' : '-';
+  if (v.tplImporteRep) v.tplImporteRep.textContent = (p.reparacion > 0 || (p.kitReparacion || 0) > 0 || (p.kitLimpieza || 0) > 0) ? p.total + '$' : '-';
   if (v.tplEmpleadoRep) v.tplEmpleadoRep.textContent = mecanico;
   if (v.tplConvenioRep) v.tplConvenioRep.textContent = convenio;
 }
@@ -11694,6 +11717,7 @@ var actualizarVistaDebounced = debounce(actualizarVista, 80);
 /** Devuelve el texto del registro actual de la calculadora para copiar al portapapeles */
 function getTextoRegistroCalculadora() {
   const lineas = [];
+  const pTxt = typeof calcularPrecios === 'function' ? calcularPrecios() : {};
   const tuneo = tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion';
   const reparacion = tipoServicio === 'reparacion' || tipoServicio === 'tuneoReparacion';
   if (tuneo) {
@@ -11704,6 +11728,7 @@ function getTextoRegistroCalculadora() {
     lineas.push('Importe: ' + (document.getElementById('tplImporteTuneo')?.textContent || '-'));
     lineas.push('Empleado que realizo el servicio: ' + (document.getElementById('tplEmpleado')?.textContent || '-'));
     lineas.push('Convenio y descuento: ' + (document.getElementById('tplConvenio')?.textContent || '-'));
+    if (pTxt.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion')) lineas.push('Kit de limpieza: Sí (' + (pTxt.kitLimpieza || 0) + '$)');
   }
   if (reparacion) {
     if (lineas.length) lineas.push('');
@@ -11714,6 +11739,7 @@ function getTextoRegistroCalculadora() {
     lineas.push('Importe: ' + (document.getElementById('tplImporteRep')?.textContent || '-'));
     lineas.push('Empleado que realizo el servicio: ' + (document.getElementById('tplEmpleadoRep')?.textContent || '-'));
     lineas.push('Convenio y descuento: ' + (document.getElementById('tplConvenioRep')?.textContent || '-'));
+    if (pTxt.kitLimpiezaActivo && tipoServicio === 'reparacion') lineas.push('Kit de limpieza: Sí (' + (pTxt.kitLimpieza || 0) + '$)');
   }
   if (lineas.length === 0) lineas.push('Sin datos de registro.');
   return lineas.join('\n');
@@ -11801,6 +11827,8 @@ function limpiarUnidadesCalculadora() {
   if (el.partesEsenciales) el.partesEsenciales.value = '0';
   var ckKit = document.getElementById('usarKitReparacion');
   if (ckKit) ckKit.checked = false;
+  var ckKitLim = document.getElementById('usarKitLimpieza');
+  if (ckKitLim) ckKitLim.checked = false;
   actualizarVista();
 }
 
@@ -12017,6 +12045,7 @@ function enviarRegistroServicioADiscord(servicio) {
   lineas.push('Importe final (con descuento): ' + importeStr);
   lineas.push('Convenio: ' + convLabel + ' (' + descPct + '%)');
   lineas.push('Empleado que realizo el servicio: ' + (servicio.empleado || '-'));
+  if (servicio.kitLimpieza) lineas.push('Kit de limpieza: Sí');
   var content = lineas.join('\n');
   var body = JSON.stringify({ content: content });
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
@@ -12025,7 +12054,7 @@ function enviarRegistroServicioADiscord(servicio) {
 /** Abre el modal de fotos antes/después para registrar un tuneo. Pide convenio la primera vez que se registra la matrícula. */
 function abrirModalFotosTuneo() {
   const p = calcularPrecios();
-  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   if (!tieneTuneo) {
     alert('No hay ningún tuneo seleccionado.');
     return;
@@ -12161,7 +12190,7 @@ function vincularModalFotosTuneo() {
  */
 function registrarTuneo(fotoAntes, fotoDespues) {
   const p = calcularPrecios();
-  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked;
+  const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   if (!tieneTuneo) {
     alert('No hay ningún tuneo seleccionado.');
     return;
@@ -12179,6 +12208,15 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   const modLabel = el.fullTuning?.checked ? 'Full Tuning' : (el.reparacion?.checked ? 'Reparación + Tuneo' : 'Tuneo');
   var piezasSel = typeof getSelectedPiezasTuneo === 'function' ? getSelectedPiezasTuneo() : {};
   var piezasTuneo = piezasSel.piezas || [];
+  if (p.kitLimpiezaActivo && (p.kitLimpieza || 0) > 0) {
+    piezasTuneo = piezasTuneo.concat([{
+      categoria: 'extra',
+      piezaId: 'kit_limpieza',
+      nombre: 'Kit de limpieza',
+      coste: typeof p.kitLimpiezaCoste === 'number' ? p.kitLimpiezaCoste : 50,
+      precioVenta: p.kitLimpieza
+    }]);
+  }
   const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const finTuneo = getImporteYDescuentoRegistroServicio(p, mat);
   const servicio = {
@@ -12195,6 +12233,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
     descuento: finTuneo.descuento,
     userId: session ? session.username : null,
     piezasTuneo: piezasTuneo,
+    kitLimpieza: !!(p.kitLimpiezaActivo),
   };
   registroServicios.unshift(servicio);
   saveRegistroServicios(registroServicios);
@@ -12227,7 +12266,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
 
 function registrarReparacion() {
   const p = calcularPrecios();
-  if (!el.reparacion.checked || p.reparacion === 0) {
+  if (!el.reparacion.checked || (p.reparacion === 0 && !p.kitActivo && !(p.kitLimpieza > 0))) {
     alert('No hay reparación seleccionada o no hay partes a reparar.');
     return;
   }
@@ -12273,6 +12312,7 @@ function registrarReparacion() {
     partesEsenciales: partesEsencialesReg,
     partesServicio: 0,
     kitReparacion: pReg.kitActivo || false,
+    kitLimpieza: !!(pReg.kitLimpiezaActivo),
     piezasChasisDesglose: piezasChasisDesglose,
     piezasEsencialesDesglose: piezasEsencialesDesglose,
   };
@@ -12359,6 +12399,7 @@ function renderListaResultadosCalculadora() {
         <p><strong>Matrícula:</strong> ${escapeHtml(s.matricula)}</p>
         <p><strong>Modelo:</strong> ${escapeHtml(s.modelo)}</p>
         <p><strong>Modificación:</strong> ${escapeHtml(s.modificacion || s.tipo)}</p>
+        ${s.kitLimpieza ? '<p><strong>Kit de limpieza:</strong> Sí</p>' : ''}
         <p><strong>Importe:</strong> ${(s.importe || 0).toLocaleString('es-ES')}$</p>
         <p><strong>Descuento aplicado:</strong> ${descuentoPct}%</p>
         <p><strong>Convenio:</strong> ${escapeHtml(s.convenio || '—')}</p>
@@ -12384,6 +12425,7 @@ function renderListaResultadosCalculadora() {
         'Matrícula: ' + (s.matricula || '—'),
         'Modelo: ' + (s.modelo || '—'),
         'Modificación: ' + (s.modificacion || s.tipo || '—'),
+        s.kitLimpieza ? 'Kit de limpieza: Sí' : '',
         'Importe: ' + (s.importe != null ? s.importe.toLocaleString('es-ES') + '$' : '—'),
         'Descuento aplicado: ' + descuentoPct + '%',
         'Convenio: ' + (s.convenio || '—'),
@@ -12686,6 +12728,8 @@ function vincularEventos() {
   });
   var usarKitRep = document.getElementById('usarKitReparacion');
   if (usarKitRep) usarKitRep.addEventListener('change', actualizarVista);
+  var usarKitLim = document.getElementById('usarKitLimpieza');
+  if (usarKitLim) usarKitLim.addEventListener('change', actualizarVista);
   [el.partesChasis, el.partesEsenciales, el.descuentoPorcentaje].forEach(inp => {
     if (!inp) return;
     inp.addEventListener('input', actualizarVistaDebounced);
