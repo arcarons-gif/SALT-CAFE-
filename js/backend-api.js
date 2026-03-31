@@ -99,21 +99,25 @@
   async function fetchAndApplyFichajes() {
     try {
       const fichajes = await fetchJson(getBaseUrl() + '/api/fichajes');
-      if (fichajes.length > 0) {
-        const prev = localStorage.getItem(FICHAJES_STORAGE);
-        const next = JSON.stringify(fichajes);
+      var list = Array.isArray(fichajes) ? fichajes : [];
+      var prev = localStorage.getItem(FICHAJES_STORAGE);
+      var merged = typeof window.mergeFichajesFromServer === 'function' ? window.mergeFichajesFromServer(list) : list;
+      var next = JSON.stringify(merged);
+      if (list.length === 0) {
+        var localOnly = [];
+        try {
+          localOnly = JSON.parse(prev || '[]');
+        } catch (_) {}
+        if (localOnly.length > 0) await syncFichajesToServer(localOnly);
+      }
+      if (prev === next) return false;
+      if (typeof window.saveFichajes === 'function') {
+        window.saveFichajes(merged);
+      } else {
         localStorage.setItem(FICHAJES_STORAGE, next);
         if (typeof window.invalidateFichajesCache === 'function') window.invalidateFichajesCache();
-        return prev !== next;
       }
-      var local = [];
-      try {
-        local = JSON.parse(localStorage.getItem(FICHAJES_STORAGE) || '[]');
-      } catch (_) {}
-      if (local.length > 0) {
-        await syncFichajesToServer(local);
-      }
-      return false;
+      return true;
     } catch {
       return false;
     }
@@ -124,17 +128,23 @@
       const servicios = await fetchJson(getBaseUrl() + '/api/servicios');
       var list = Array.isArray(servicios) ? servicios : [];
       var prev = localStorage.getItem(SERVICIOS_STORAGE);
-      var next = JSON.stringify(list);
-      localStorage.setItem(SERVICIOS_STORAGE, next);
-      if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
+      var merged = typeof window.mergeServiciosFromServer === 'function' ? window.mergeServiciosFromServer(list) : list;
+      var next = JSON.stringify(merged);
       if (list.length === 0) {
-        var local = [];
+        var localOnly = [];
         try {
-          local = JSON.parse(prev || '[]');
+          localOnly = JSON.parse(prev || '[]');
         } catch (_) {}
-        if (local.length > 0) await syncServiciosToServer(local);
+        if (localOnly.length > 0) await syncServiciosToServer(localOnly);
       }
-      return prev !== next;
+      if (prev === next) return false;
+      if (typeof window.saveRegistroServicios === 'function') {
+        window.saveRegistroServicios(merged);
+      } else {
+        localStorage.setItem(SERVICIOS_STORAGE, next);
+        if (typeof window.invalidateServiciosCache === 'function') window.invalidateServiciosCache();
+      }
+      return true;
     } catch {
       return false;
     }

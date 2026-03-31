@@ -24,6 +24,48 @@ function invalidateFichajesCache() {
 }
 if (typeof window !== 'undefined') window.invalidateFichajesCache = invalidateFichajesCache;
 
+/**
+ * Une fichajes del servidor con los locales (mismo id: prioriza el que tiene salida cerrada o el más reciente).
+ */
+function mergeFichajesFromServer(serverList) {
+  if (!Array.isArray(serverList)) serverList = [];
+  var local = [];
+  try {
+    local = JSON.parse(localStorage.getItem(FICHAJES_STORAGE) || '[]');
+  } catch (_) {
+    local = [];
+  }
+  if (!Array.isArray(local)) local = [];
+  var byId = {};
+  function prefer(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    var aOpen = !a.salida;
+    var bOpen = !b.salida;
+    if (aOpen && !bOpen) return b;
+    if (bOpen && !aOpen) return a;
+    var ta = new Date(a.entrada || 0).getTime();
+    var tb = new Date(b.entrada || 0).getTime();
+    return tb >= ta ? b : a;
+  }
+  serverList.forEach(function (f) {
+    if (!f || !f.id) return;
+    byId[f.id] = Object.assign({}, f);
+  });
+  local.forEach(function (f) {
+    if (!f || !f.id) return;
+    if (!byId[f.id]) {
+      byId[f.id] = Object.assign({}, f);
+      return;
+    }
+    byId[f.id] = prefer(byId[f.id], f);
+  });
+  return Object.keys(byId).map(function (k) {
+    return byId[k];
+  });
+}
+if (typeof window !== 'undefined') window.mergeFichajesFromServer = mergeFichajesFromServer;
+
 /** Elimina del almacenamiento las entradas abiertas (sin salida) con más de 5h */
 function limpiarEntradasAbiertasAntiguas() {
   const list = getFichajes();

@@ -49,6 +49,54 @@ function invalidateServiciosCache() {
   _cachedServicios = null;
 }
 if (typeof window !== 'undefined') window.invalidateServiciosCache = invalidateServiciosCache;
+
+/** Huella para alinear filas sin id entre local y servidor (evita duplicados al sincronizar). */
+function fingerprintServicioRegistro(s) {
+  if (!s) return '';
+  var imp = s.importe !== undefined && s.importe !== null ? Number(s.importe) : '';
+  return (s.fecha || '').toString().slice(0, 19) + '|' + (s.matricula || '').toString().toUpperCase() + '|' + (s.tipo || '') + '|' + imp + '|' + (s.empleado || '').toString().slice(0, 40);
+}
+
+/**
+ * Une la lista del servidor con la local: no pierde servicios recién guardados si el GET llega antes que el POST.
+ * Por id: si está en ambos, una copia; si solo en local, se mantiene; si solo en servidor, entra.
+ */
+function mergeServiciosFromServer(serverList) {
+  if (!Array.isArray(serverList)) serverList = [];
+  var localList = [];
+  try {
+    localList = JSON.parse(localStorage.getItem('benny_servicios') || '[]');
+  } catch (_) {
+    localList = [];
+  }
+  if (!Array.isArray(localList)) localList = [];
+  var serverIds = {};
+  var serverFp = {};
+  serverList.forEach(function (s) {
+    if (!s) return;
+    if (s.id) serverIds[s.id] = true;
+    serverFp[fingerprintServicioRegistro(s)] = true;
+  });
+  var out = serverList.map(function (s) {
+    return s ? Object.assign({}, s) : s;
+  }).filter(Boolean);
+  localList.forEach(function (l) {
+    if (!l) return;
+    if (l.id) {
+      if (!serverIds[l.id]) out.push(Object.assign({}, l));
+      return;
+    }
+    if (!serverFp[fingerprintServicioRegistro(l)]) out.push(Object.assign({}, l));
+  });
+  out.sort(function (a, b) {
+    return new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime();
+  });
+  if (out.length > SERVICIOS_MAX) {
+    out = out.slice(0, SERVICIOS_MAX);
+  }
+  return out;
+}
+if (typeof window !== 'undefined') window.mergeServiciosFromServer = mergeServiciosFromServer;
 function saveRegistroServicios(arr) {
   try {
     let list = Array.isArray(arr) ? arr : [];
@@ -2059,6 +2107,9 @@ function aplicarDatosCompletosFromServer(payload) {
     val = payload[key];
     if (key === 'users' && Array.isArray(val) && typeof mergeUsersFromServer === 'function') {
       val = mergeUsersFromServer(val);
+    }
+    if (key === 'servicios' && Array.isArray(val) && typeof mergeServiciosFromServer === 'function') {
+      val = mergeServiciosFromServer(val);
     }
     if (keysProtegerSiVacios[key] && Array.isArray(val) && val.length === 0) continue;
     // No sobrescribir inventario ni almacén con objeto vacío del servidor si local tiene datos
@@ -11569,6 +11620,7 @@ function registrarTuneo(fotoAntes, fotoDespues) {
   const modeloDisplay = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const finTuneo = getImporteYDescuentoRegistroServicio(p, mat);
   const servicio = {
+    id: 'srv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10),
     tipo: 'TUNEO',
     fecha: new Date().toISOString(),
     matricula: mat,
@@ -11643,6 +11695,7 @@ function registrarReparacion() {
   const modeloDisplayRep = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(mat) : (vehiculoActual?.nombreIC || '-');
   const finRep = getImporteYDescuentoRegistroServicio(pReg, mat);
   const servicio = {
+    id: 'srv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10),
     tipo: 'REPARACIÓN',
     fecha: new Date().toISOString(),
     matricula: mat,
