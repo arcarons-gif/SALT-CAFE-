@@ -1,49 +1,61 @@
-# Script para subir todos los cambios del proyecto al repositorio (GitHub).
-# Ejecutar desde la raíz del proyecto: .\subir-cambios.ps1
-# O desde PowerShell: & "g:\cursor\fivem\SALTLAB-calculator\subir-cambios.ps1"
+# Subir cambios a GitHub (actualiza la web en GitHub Pages tras 1-2 min).
+# Ejecutar en la raíz del proyecto: .\subir-cambios.ps1
+# Política de ejecución si falla: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-Write-Host "=== Subir cambios SALTLAB Calculator ===" -ForegroundColor Cyan
-Write-Host ""
-
-# Ver estado
-Write-Host "Estado del repositorio:" -ForegroundColor Yellow
-git status
-Write-Host ""
-
-# Añadir todos los archivos modificados y nuevos (no incluye .gitignore)
-git add -A
-
-$status = git status --short
-if (-not $status) {
-    Write-Host "No hay cambios que subir. El repositorio está al día." -ForegroundColor Green
-    exit 0
+$git = "git"
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    $candidates = @(
+        "C:\Program Files\Git\cmd\git.exe",
+        "C:\Program Files\Git\bin\git.exe"
+    )
+    foreach ($p in $candidates) {
+        if (Test-Path $p) { $git = $p; break }
+    }
 }
 
-Write-Host "Archivos que se subirán:" -ForegroundColor Yellow
-git status --short
+Write-Host ""
+Write-Host "=== Subir cambios al repositorio (SALTLAB) ===" -ForegroundColor Cyan
+Write-Host "Web: https://arcarons-gif.github.io/SALT-CAFE-/" -ForegroundColor Gray
+Write-Host "Los JSON de server/data no se incluyen en el commit (datos locales/servidor)." -ForegroundColor Gray
 Write-Host ""
 
-# Commit con mensaje por defecto (puedes editarlo abajo)
-$mensaje = "Actualizar proyecto: instrucciones, config, backend y datos"
-git commit -m $mensaje
+Write-Host "Actualizando desde remoto (pull)..." -ForegroundColor Yellow
+& $git pull --rebase origin 2>$null
+if ($LASTEXITCODE -ne 0) { & $git pull origin 2>$null }
 
+Write-Host ""
+Write-Host "Estado:" -ForegroundColor Yellow
+& $git status
+Write-Host ""
+
+$msg = Read-Host "Mensaje del commit [Enter = Actualizar proyecto]"
+if ([string]::IsNullOrWhiteSpace($msg)) { $msg = "Actualizar proyecto" }
+
+Write-Host ""
+Write-Host "Añadiendo cambios (excluyendo server/data del staging)..." -ForegroundColor Yellow
+& $git add -A
+& $git reset HEAD -- "server/data/*.json" 2>$null
+& $git reset HEAD -- "server/data/" 2>$null
+
+& $git commit -m $msg
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "No se hizo commit (puede que no hubiera cambios tras add)." -ForegroundColor Yellow
+    Write-Host "No hay cambios que commitear o el commit falló." -ForegroundColor Yellow
     exit 0
 }
 
 Write-Host ""
-Write-Host "Enviando a GitHub (git push)..." -ForegroundColor Yellow
-git push
+Write-Host "Subiendo a GitHub..." -ForegroundColor Yellow
+& $git push origin
+if ($LASTEXITCODE -ne 0) { & $git push }
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
-    Write-Host "Listo. Cambios subidos correctamente." -ForegroundColor Green
+    Write-Host "Listo. GitHub Pages suele actualizar en 1-2 minutos." -ForegroundColor Green
 } else {
     Write-Host ""
-    Write-Host "Error al hacer push. Comprueba tu conexión y que tengas permisos en el repo." -ForegroundColor Red
+    Write-Host "Error en push. Revisa: git remote -v, SSH/HTTPS y rama (main)." -ForegroundColor Red
     exit 1
 }

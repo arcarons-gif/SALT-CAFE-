@@ -12768,11 +12768,6 @@ function registrarReparacion() {
   abrirPantallaResultadosCalculadora();
   if (typeof showToast === 'function') showToast('Reparación registrada correctamente.', 'success');
   else alert('Reparación registrada correctamente.');
-  if (typeof renderFormRegistrarMaterialesRecuperados === 'function' && confirm('¿Registrar materiales recuperados en el almacén?')) {
-    renderFormRegistrarMaterialesRecuperados();
-    var modal = document.getElementById('modalRegistrarMaterialesRecuperados');
-    if (modal) modal.classList.add('active');
-  }
   });
 }
 
