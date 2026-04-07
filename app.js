@@ -9014,7 +9014,11 @@ function renderDocConvenioHistorial() {
   var vacioEl = document.getElementById('docConvenioHistorialVacio');
   if (!grid) return;
   var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
-  var conveniosFirmados = convenios.filter(function (c) { return c && c.id && tieneDocumentoConvenioGuardado(c); });
+  var conveniosFirmados = convenios.filter(function (c) {
+    if (!c || !c.id) return false;
+    if (typeof convenioTieneAcuerdoAlmacenado === 'function') return convenioTieneAcuerdoAlmacenado(c);
+    return tieneDocumentoConvenioGuardado(c);
+  });
   grid.innerHTML = '';
   if (vacioEl) vacioEl.style.display = 'none';
   var cardSubir = document.createElement('div');
@@ -11004,7 +11008,7 @@ function cargarConvenios() {
   convenios = convenios.filter(function (c) {
     var nombre = (c.nombre || '').trim();
     if (nombre.toUpperCase() === 'N/A') return true;
-    return typeof tieneDocumentoConvenioGuardado === 'function' && tieneDocumentoConvenioGuardado(c);
+    return typeof convenioTieneAcuerdoAlmacenado === 'function' && convenioTieneAcuerdoAlmacenado(c);
   });
   convenios = convenios.slice().sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
 
@@ -11456,7 +11460,7 @@ function vincularPasos() {
           convenios = convenios.filter(function (c) {
             var nombre = (c.nombre || '').trim();
             if (nombre.toUpperCase() === 'N/A') return true;
-            return typeof tieneDocumentoConvenioGuardado === 'function' && tieneDocumentoConvenioGuardado(c);
+            return typeof convenioTieneAcuerdoAlmacenado === 'function' && convenioTieneAcuerdoAlmacenado(c);
           });
           convenios = convenios.slice().sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
           function anadirOpcionesConvenio(lista) {
@@ -12364,9 +12368,18 @@ function enviarRegistroServicioADiscord(servicio) {
   if (isNaN(importeVal)) importeVal = 0;
   var subVal = servicio.subtotal != null ? Number(servicio.subtotal) : NaN;
   if (isNaN(subVal)) subVal = null;
-  var descPct = Number(servicio.descuento);
+  var descPct = servicio.descuento != null && servicio.descuento !== '' ? Number(servicio.descuento) : NaN;
   if (isNaN(descPct)) descPct = 0;
-  var convRaw = (servicio.convenio || '').toString().trim();
+  var convRaw = servicio.convenio != null ? String(servicio.convenio).trim() : '';
+  try {
+    if (!convRaw && typeof el !== 'undefined' && el && el.negocios && el.negocios.value) {
+      convRaw = String(el.negocios.value).trim();
+    }
+    if ((servicio.descuento == null || servicio.descuento === '' || isNaN(Number(servicio.descuento))) && typeof el !== 'undefined' && el && el.descuentoPorcentaje && el.descuentoPorcentaje.value !== '') {
+      var dUi = parseFloat(el.descuentoPorcentaje.value);
+      if (!isNaN(dUi)) descPct = dUi;
+    }
+  } catch (e) { /* ignore */ }
   var convLabel = convRaw ? convRaw : 'N/A';
   var importeStr = importeVal > 0 ? importeVal.toLocaleString('es-ES') + '$' : '-';
   var subStr = subVal != null && subVal > 0 ? subVal.toLocaleString('es-ES') + '$' : null;
@@ -13109,9 +13122,30 @@ function vincularEventos() {
   if (typeof renderTuningPiezasPorCategoria === 'function') renderTuningPiezasPorCategoria();
 }
 
+/** Una vez: elimina convenios sin PDF/imagen/archivo de acuerdo guardado (solo deja N/A + los que tienen documento adjunto). */
+function ejecutarMigracionConveniosSoloConAcuerdoGuardado() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem('benny_convenios_migrated_adjunto_v1') === '1') return;
+    if (typeof getConvenios !== 'function' || typeof saveConvenios !== 'function') return;
+    var tiene = typeof convenioTieneAcuerdoAlmacenado === 'function' ? convenioTieneAcuerdoAlmacenado : function () { return false; };
+    var list = getConvenios();
+    var filtrada = list.filter(function (c) {
+      if (!c) return false;
+      if ((c.id || '') === 'conv-na') return true;
+      return tiene(c);
+    });
+    saveConvenios(filtrada);
+    localStorage.setItem('benny_convenios_migrated_adjunto_v1', '1');
+  } catch (e) {
+    console.warn('ejecutarMigracionConveniosSoloConAcuerdoGuardado', e);
+  }
+}
+
 // Arranque: comprobar sesión y mostrar login o app
 function onReady() {
   if (typeof window.clearConveniosBBDDSiMigrations === 'function') window.clearConveniosBBDDSiMigrations();
+  ejecutarMigracionConveniosSoloConAcuerdoGuardado();
   vincularPasswordToggle();
   arranqueAuth();
 }

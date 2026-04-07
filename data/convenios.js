@@ -5,30 +5,17 @@
  */
 const CONVENIOS_STORAGE = 'benny_convenios';
 
+/** Solo N/A por defecto: el resto de convenios se dan de alta con documento firmado adjunto. */
 const CONVENIOS_DEFAULT = [
   { id: 'conv-na', nombre: 'N/A', descuento: 0, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-1', nombre: "BENNY's Original Motor Works", descuento: 20, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-2', nombre: 'SAPD', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-3', nombre: 'SAED', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-4', nombre: 'Badulaque central', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-5', nombre: 'Black Woods Saloon', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-6', nombre: 'Bohem Beach', descuento: 5, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-7', nombre: 'BurgerShot', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-8', nombre: 'Café rojo de madera', descuento: 5, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-9', nombre: 'Departamento de Justicia', descuento: 5, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-10', nombre: "Helmut´s", descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-11', nombre: 'Import Garaje', descuento: 10, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-12', nombre: 'L.S. Airlines', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-13', nombre: 'Megamall', descuento: 5, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-14', nombre: 'Pizzería Venecia', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-15', nombre: 'Ruta 68', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-16', nombre: 'Skyline Vibes', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-17', nombre: 'Sushi Bar', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-18', nombre: 'Taller Paleto', descuento: 5, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-19', nombre: 'Vanilla Unicorn', descuento: 10, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-20', nombre: 'Weazel News', descuento: 10, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
-  { id: 'conv-21', nombre: 'Weedland', descuento: 10, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
 ];
+
+/** Convenio con PDF/imagen en datos o archivo en carpeta acuerdos (documento firmado guardado). */
+function convenioTieneAcuerdoAlmacenado(c) {
+  if (!c) return false;
+  if (c.acuerdoArchivoDataUrl && String(c.acuerdoArchivoDataUrl).indexOf('data:') === 0) return true;
+  return !!(c.acuerdoArchivo && String(c.acuerdoArchivo).trim());
+}
 
 /** Empleado | Empresa: para aplicar el convenio por persona independientemente del vehículo */
 const CONVENIOS_EMPLEADOS_DEFAULT = [
@@ -95,9 +82,9 @@ function getConvenios() {
     const raw = localStorage.getItem(CONVENIOS_STORAGE);
     let list = !raw ? JSON.parse(JSON.stringify(CONVENIOS_DEFAULT)) : JSON.parse(raw);
     if (!Array.isArray(list) || list.length === 0) {
-      var defaults = JSON.parse(JSON.stringify(CONVENIOS_DEFAULT));
-      try { localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(defaults)); } catch (e) {}
-      return defaults;
+      var soloNa = JSON.parse(JSON.stringify(CONVENIOS_DEFAULT));
+      try { localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(soloNa)); } catch (e) {}
+      return soloNa;
     }
     list = list.map(c => ({ ...c, privado: c.privado === true }));
     return list;
@@ -110,6 +97,21 @@ function getConvenios() {
 function saveConvenios(convenios) {
   try {
     localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(convenios));
+    if (typeof window !== 'undefined') {
+      setTimeout(function () {
+        try {
+          var api = window.backendApi;
+          var getDatos = window.getDatosCompletosParaExportar;
+          var getSess = window.getSession;
+          var hasPerm = window.hasPermission;
+          if (!api || typeof api.saveRepoExport !== 'function' || typeof getDatos !== 'function') return;
+          var s = typeof getSess === 'function' ? getSess() : null;
+          if (!s || typeof hasPerm !== 'function' || !hasPerm(s, 'gestionarUsuarios')) return;
+          var payload = getDatos();
+          if (payload && typeof payload === 'object') api.saveRepoExport(payload);
+        } catch (e2) { /* ignore */ }
+      }, 0);
+    }
     return true;
   } catch (e) {
     var quota = e && (e.name === 'QuotaExceededError' || e.code === 22);
@@ -184,6 +186,7 @@ if (typeof window !== 'undefined') {
   window.CONVENIOS_ACUERDOS_BASE = CONVENIOS_ACUERDOS_BASE;
   window.CONVENIOS_ACUERDOS_FIRMADOS_BASE = CONVENIOS_ACUERDOS_FIRMADOS_BASE;
   window.CONVENIOS_FIRMAS_BASE = CONVENIOS_FIRMAS_BASE;
+  window.convenioTieneAcuerdoAlmacenado = convenioTieneAcuerdoAlmacenado;
 }
 let _conveniosLogosMap = {};
 let _conveniosLogosFontMap = {};
