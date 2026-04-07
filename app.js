@@ -1588,6 +1588,9 @@ function vincularAdmin() {
     if (typeof abrirFormUsuario === 'function') abrirFormUsuario();
   });
   document.getElementById('btnNuevoConvenio')?.addEventListener('click', () => abrirFormConvenio());
+  document.getElementById('filtroConveniosGestion')?.addEventListener('input', function () {
+    if (typeof buildConveniosFichas === 'function') buildConveniosFichas();
+  });
   (function vincularConveniosTabs() {
     var tabEmpresas = document.getElementById('conveniosTabEmpresas');
     var tabEmpleadosPlacas = document.getElementById('conveniosTabEmpleadosPlacas');
@@ -1745,6 +1748,7 @@ function vincularAdmin() {
       if (docConvenioSubirInput) docConvenioSubirInput.addEventListener('change', function () {
         var file = this.files && this.files[0];
         if (!file) return;
+        _docConvenioSubirNombreArchivo = file.name || null;
         var reader = new FileReader();
         reader.onload = function () {
           if (typeof abrirModalDocConvenioSubirAsociar === 'function') abrirModalDocConvenioSubirAsociar(reader.result);
@@ -1799,6 +1803,26 @@ function vincularAdmin() {
 
   document.getElementById('modalConvenioClose')?.addEventListener('click', () => document.getElementById('modalConvenio').classList.remove('active'));
   document.getElementById('modalConvenio')?.addEventListener('click', e => { if (e.target === document.getElementById('modalConvenio')) document.getElementById('modalConvenio').classList.remove('active'); });
+  document.getElementById('modalResumenConvenioClose')?.addEventListener('click', function () { if (typeof cerrarModalResumenConvenio === 'function') cerrarModalResumenConvenio(); });
+  document.getElementById('modalResumenConvenio')?.addEventListener('click', function (e) { if (e.target === document.getElementById('modalResumenConvenio')) cerrarModalResumenConvenio(); });
+  document.getElementById('modalResumenConvenioEditar')?.addEventListener('click', function () {
+    var id = _resumenConvenioId;
+    cerrarModalResumenConvenio();
+    if (id && typeof abrirFormConvenio === 'function') abrirFormConvenio(id);
+  });
+  document.getElementById('modalResumenConvenioVerDoc')?.addEventListener('click', function () {
+    var url = _resumenConvenioDocDataUrl;
+    var repo = _resumenConvenioDocRepoFile;
+    var tituloEl = document.getElementById('modalResumenConvenioTitulo');
+    var titulo = tituloEl ? tituloEl.textContent : 'Documento';
+    if (url && String(url).indexOf('data:') === 0) {
+      if (typeof cerrarModalResumenConvenio === 'function') cerrarModalResumenConvenio();
+      if (typeof abrirModalVerDocConvenioDataUrl === 'function') abrirModalVerDocConvenioDataUrl(url, titulo);
+    } else if (repo) {
+      var base = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/';
+      window.open(base + encodeURIComponent(repo), '_blank', 'noopener');
+    }
+  });
   document.getElementById('formConvenio')?.addEventListener('submit', guardarConvenio);
   document.querySelectorAll('.convenio-descuento-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -8350,8 +8374,22 @@ function cerrarModalCambiarPassword() {
 function buildConveniosFichas() {
   const grid = document.getElementById('conveniosFichasGrid');
   if (!grid) return;
-  const convenios = getConvenios();
+  const vacioEl = document.getElementById('conveniosFichasGridVacio');
+  const filtroEl = document.getElementById('filtroConveniosGestion');
+  const q = (filtroEl && filtroEl.value) ? filtroEl.value.trim().toLowerCase() : '';
+  let convenios = getConvenios().slice();
+  convenios.sort(function (a, b) { return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }); });
+  if (q) {
+    convenios = convenios.filter(function (c) { return (c.nombre || '').toLowerCase().indexOf(q) !== -1; });
+  }
   grid.innerHTML = '';
+  if (convenios.length === 0) {
+    if (vacioEl) vacioEl.style.display = 'block';
+    grid.style.display = 'none';
+    return;
+  }
+  if (vacioEl) vacioEl.style.display = 'none';
+  grid.style.display = '';
   convenios.forEach(function (c) {
     const logoUrl = typeof getLogoUrlForConvenio === 'function' ? getLogoUrlForConvenio(c.nombre) : null;
     const fontName = typeof getFontForConvenio === 'function' ? getFontForConvenio(c.nombre) : null;
@@ -8360,11 +8398,13 @@ function buildConveniosFichas() {
       : '';
     const fechaStr = c.fechaAcuerdo ? new Date(c.fechaAcuerdo).toLocaleDateString('es-ES') : '—';
     const inicial = escapeHtml((c.nombre || 'N/A').charAt(0));
+    const noEliminar = esConvenioSistemaNoEliminable(c);
     const card = document.createElement('div');
     card.className = 'convenio-ficha';
     card.setAttribute('data-convenio-id', c.id);
+    card.setAttribute('role', 'group');
     card.innerHTML =
-      '<div class="convenio-ficha-inner">' +
+      '<div class="convenio-ficha-inner" role="button" tabindex="0" title="Clic para editar convenio">' +
       '<div class="convenio-ficha-logo-wrap">' +
       (logoUrl
         ? '<img class="convenio-ficha-logo" src="' + escapeHtmlAttr(logoUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\';var s=this.nextElementSibling;if(s)s.style.display=\'flex\'">' +
@@ -8379,16 +8419,33 @@ function buildConveniosFichas() {
       (c.acordadoPorTaller ? '<p class="convenio-ficha-acordado">Taller: ' + escapeHtml(c.acordadoPorTaller) + '</p>' : '') +
       (c.acordadoPorEmpresa ? '<p class="convenio-ficha-acordado">Empresa: ' + escapeHtml(c.acordadoPorEmpresa) + '</p>' : '') +
       (function () { var url = ''; var label = 'Ver acuerdo'; var base = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/'; if (c.acuerdoArchivoDataUrl) { url = c.acuerdoArchivoDataUrl; label = c.acuerdoArchivoNombre ? 'Ver acuerdo (' + c.acuerdoArchivoNombre + ')' : 'Ver acuerdo'; } else if (c.acuerdoArchivo) { url = base + encodeURIComponent(c.acuerdoArchivo); } if (url) return '<p class="convenio-ficha-acuerdo">Acuerdo: <a href="' + escapeHtmlAttr(url) + '" target="_blank" rel="noopener" class="convenio-ficha-acuerdo-link" onclick="event.stopPropagation();event.preventDefault();window.open(this.href)">' + escapeHtml(label) + '</a></p>'; return '<p class="convenio-ficha-acuerdo">Acuerdo: —</p>'; })() +
-      '</div></div>';
+      '</div></div>' +
+      '<div class="convenio-ficha-acciones">' +
+      '<button type="button" class="btn btn-outline convenio-ficha-btn-ver">Ver</button>' +
+      '<button type="button" class="btn btn-outline convenio-ficha-btn-editar">Editar</button>' +
+      (noEliminar
+        ? '<button type="button" class="btn btn-outline" disabled title="Este convenio no se puede eliminar">Eliminar</button>'
+        : '<button type="button" class="btn btn-outline convenio-ficha-btn-eliminar">Eliminar</button>') +
+      '</div>';
+    const inner = card.querySelector('.convenio-ficha-inner');
     if (fontFamily) {
       var overlay = card.querySelector('.convenio-ficha-overlay');
       if (overlay) overlay.style.fontFamily = fontFamily;
     }
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('title', 'Clic para editar convenio');
-    card.addEventListener('click', function () { abrirFormConvenio(c.id); });
-    card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirFormConvenio(c.id); } });
+    function abrirEditar(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      abrirFormConvenio(c.id);
+    }
+    if (inner) {
+      inner.addEventListener('click', abrirEditar);
+      inner.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { abrirEditar(e); } });
+    }
+    var btnVer = card.querySelector('.convenio-ficha-btn-ver');
+    var btnEditar = card.querySelector('.convenio-ficha-btn-editar');
+    var btnElim = card.querySelector('.convenio-ficha-btn-eliminar');
+    if (btnVer) btnVer.addEventListener('click', function (e) { e.stopPropagation(); abrirModalResumenConvenio(c.id); });
+    if (btnEditar) btnEditar.addEventListener('click', abrirEditar);
+    if (btnElim) btnElim.addEventListener('click', function (e) { e.stopPropagation(); eliminarConvenioPorId(c.id); });
     grid.appendChild(card);
   });
 }
@@ -8446,6 +8503,82 @@ function escapeHtml(s) {
 var _convenioPendingAcuerdoDataUrl = null;
 var _convenioPendingAcuerdoNombre = null;
 var _convenioAcuerdoQuitado = false;
+var _resumenConvenioId = null;
+var _resumenConvenioDocDataUrl = null;
+var _resumenConvenioDocRepoFile = null;
+
+function esConvenioSistemaNoEliminable(c) {
+  return !c || (c.id || '') === 'conv-na';
+}
+
+function cerrarModalResumenConvenio() {
+  var modal = document.getElementById('modalResumenConvenio');
+  if (modal) { modal.classList.remove('active'); modal.setAttribute('aria-hidden', 'true'); }
+  _resumenConvenioId = null;
+  _resumenConvenioDocDataUrl = null;
+  _resumenConvenioDocRepoFile = null;
+}
+
+function abrirModalResumenConvenio(convenioId) {
+  var id = (convenioId || '').toString().trim();
+  if (!id) return;
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  var c = convenios.find(function (x) { return (x.id || '') === id; });
+  if (!c) return;
+  _resumenConvenioId = c.id;
+  _resumenConvenioDocDataUrl = (c.acuerdoArchivoDataUrl && String(c.acuerdoArchivoDataUrl).indexOf('data:') === 0) ? c.acuerdoArchivoDataUrl : null;
+  _resumenConvenioDocRepoFile = c.acuerdoArchivo ? c.acuerdoArchivo : null;
+  var modal = document.getElementById('modalResumenConvenio');
+  var titulo = document.getElementById('modalResumenConvenioTitulo');
+  var body = document.getElementById('modalResumenConvenioBody');
+  var btnDoc = document.getElementById('modalResumenConvenioVerDoc');
+  if (titulo) titulo.textContent = c.nombre || 'Convenio';
+  var fechaStr = c.fechaAcuerdo ? new Date(c.fechaAcuerdo).toLocaleDateString('es-ES') : '—';
+  var docLine = '';
+  if (_resumenConvenioDocDataUrl) docLine = '<p><strong>Documento firmado:</strong> Sí (archivo guardado en datos)</p>';
+  else if (c.acuerdoArchivo) docLine = '<p><strong>Documento firmado:</strong> Archivo en carpeta: <code>' + escapeHtml(c.acuerdoArchivo) + '</code></p>';
+  else docLine = '<p><strong>Documento firmado:</strong> No</p>';
+  if (body) {
+    body.innerHTML =
+      '<p><strong>Empresa:</strong> ' + escapeHtml(c.nombre || '—') + '</p>' +
+      '<p><strong>Descuento:</strong> ' + (c.descuento != null ? escapeHtml(String(c.descuento)) : '—') + '%</p>' +
+      '<p><strong>Privado:</strong> ' + (c.privado ? 'Sí' : 'No') + '</p>' +
+      '<p><strong>Fecha del acuerdo:</strong> ' + escapeHtml(fechaStr) + '</p>' +
+      (c.acordadoPorTaller ? '<p><strong>Acordado (taller):</strong> ' + escapeHtml(c.acordadoPorTaller) + '</p>' : '') +
+      (c.acordadoPorEmpresa ? '<p><strong>Acordado (empresa):</strong> ' + escapeHtml(c.acordadoPorEmpresa) + '</p>' : '') +
+      docLine;
+  }
+  if (btnDoc) {
+    var tieneDoc = !!(_resumenConvenioDocDataUrl || c.acuerdoArchivo);
+    btnDoc.style.display = tieneDoc ? '' : 'none';
+    btnDoc.textContent = _resumenConvenioDocDataUrl ? 'Ver documento' : (c.acuerdoArchivo ? 'Abrir documento (archivo)' : 'Ver documento');
+  }
+  if (modal) { modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false'); }
+}
+
+function eliminarConvenioPorId(id) {
+  var convenioId = (id || '').toString().trim();
+  if (!convenioId) return;
+  var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
+  var c = convenios.find(function (x) { return (x.id || '') === convenioId; });
+  if (!c) return;
+  if (esConvenioSistemaNoEliminable(c)) {
+    alert('El convenio «N/A» no se puede eliminar: lo usa el sistema cuando no aplica convenio.');
+    return;
+  }
+  if (!confirm('¿Eliminar el convenio «' + (c.nombre || '') + '»? Esta acción no se puede deshacer.')) return;
+  var idx = convenios.findIndex(function (x) { return (x.id || '') === convenioId; });
+  if (idx === -1) return;
+  convenios.splice(idx, 1);
+  if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
+  var resModal = document.getElementById('modalResumenConvenio');
+  if (resModal && resModal.classList.contains('active')) cerrarModalResumenConvenio();
+  if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+  if (typeof renderListaConvenios === 'function') renderListaConvenios();
+  if (typeof cargarConvenios === 'function') cargarConvenios();
+  if (typeof showToast === 'function') showToast('Convenio eliminado.', 'success');
+  else alert('Convenio eliminado.');
+}
 
 function syncConvenioDescuentoButtons() {
   var input = document.getElementById('convenioDescuento');
@@ -9007,6 +9140,7 @@ function cerrarModalVerDocFirmadoRepo() {
 }
 
 var _docConvenioSubirDataUrl = null;
+var _docConvenioSubirNombreArchivo = null;
 
 function abrirModalVerDocConvenioDataUrl(dataUrl, titulo) {
   if (!dataUrl || dataUrl.indexOf('data:') !== 0) return;
@@ -9246,7 +9380,7 @@ function vincularModalEditarConvenioDesdeGrid() {
     var idx = convenios.findIndex(function (x) { return (x.id || '') === (conv.id || ''); });
     if (idx === -1) return;
     convenios[idx].descuento = desc;
-    if (typeof saveConvenios === 'function') saveConvenios(convenios);
+    if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
     cerrarModalEditarConvenioDesdeGrid();
     if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
     if (typeof renderListaConvenios === 'function') renderListaConvenios();
@@ -9279,12 +9413,16 @@ function vincularModalEditarConvenioDesdeGrid() {
     if (!id || id.indexOf('repo:') === 0) return;
     var conv = getConvenioActual();
     if (!conv) return;
+    if (typeof esConvenioSistemaNoEliminable === 'function' && esConvenioSistemaNoEliminable(conv)) {
+      alert('El convenio «N/A» no se puede eliminar: lo usa el sistema cuando no aplica convenio.');
+      return;
+    }
     if (!confirm('¿Eliminar el convenio «' + (conv.nombre || '') + '»? Esta acción no se puede deshacer.')) return;
     var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
     var idx = convenios.findIndex(function (x) { return (x.id || '') === id; });
     if (idx === -1) return;
     convenios.splice(idx, 1);
-    if (typeof saveConvenios === 'function') saveConvenios(convenios);
+    if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
     cerrarModalEditarConvenioDesdeGrid();
     if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
     if (typeof renderListaConvenios === 'function') renderListaConvenios();
@@ -9316,6 +9454,7 @@ function abrirModalDocConvenioSubirAsociar(dataUrl) {
 
 function cerrarModalDocConvenioSubirAsociar() {
   _docConvenioSubirDataUrl = null;
+  _docConvenioSubirNombreArchivo = null;
   var modal = document.getElementById('modalDocConvenioSubirAsociar');
   if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
   var input = document.getElementById('docConvenioSubirArchivo');
@@ -9329,23 +9468,39 @@ function guardarDocConvenioSubido() {
   var convenios = typeof getConvenios === 'function' ? getConvenios() : [];
   var idExistente = sel && sel.value ? sel.value.trim() : '';
   var nombre = (nombreNuevo && nombreNuevo.value) ? nombreNuevo.value.trim() : '';
+  var nombreArchivoSubida = (_docConvenioSubirNombreArchivo || '').trim() || 'documento_subido';
+
+  function aplicarArchivoSubidoAIndice(idx) {
+    if (idx < 0 || idx >= convenios.length) return;
+    convenios[idx].acuerdoArchivoDataUrl = _docConvenioSubirDataUrl;
+    convenios[idx].acuerdoArchivoNombre = nombreArchivoSubida;
+    if (!convenios[idx].documentoAcuerdo || typeof convenios[idx].documentoAcuerdo !== 'object') convenios[idx].documentoAcuerdo = {};
+    convenios[idx].documentoAcuerdo.titulo = 'Documento subido';
+  }
+
   if (idExistente) {
-    var idx = convenios.findIndex(function (c) { return (c.id || '') === idExistente; });
-    if (idx !== -1) {
-      convenios[idx].acuerdoArchivoDataUrl = _docConvenioSubirDataUrl;
-      convenios[idx].acuerdoArchivoNombre = 'documento_subido';
-      if (!convenios[idx].documentoAcuerdo || typeof convenios[idx].documentoAcuerdo !== 'object') convenios[idx].documentoAcuerdo = {};
-      convenios[idx].documentoAcuerdo.titulo = 'Documento subido';
-      saveConvenios(convenios);
+    var idxSel = convenios.findIndex(function (c) { return (c.id || '') === idExistente; });
+    if (idxSel !== -1) {
+      aplicarArchivoSubidoAIndice(idxSel);
+      if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
       cerrarModalDocConvenioSubirAsociar();
       if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
       if (typeof renderListaConvenios === 'function') renderListaConvenios();
+      if (typeof showToast === 'function') showToast('Documento actualizado en el convenio.', 'success');
       return;
     }
   }
   if (nombre) {
-    if (convenios.some(function (c) { return (c.nombre || '').toLowerCase() === nombre.toLowerCase(); })) {
-      alert('Ya existe un convenio con ese nombre.');
+    var nl = nombre.toLowerCase();
+    var idxNombre = convenios.findIndex(function (c) { return (c.nombre || '').trim().toLowerCase() === nl; });
+    if (idxNombre !== -1) {
+      aplicarArchivoSubidoAIndice(idxNombre);
+      if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
+      cerrarModalDocConvenioSubirAsociar();
+      if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
+      if (typeof renderListaConvenios === 'function') renderListaConvenios();
+      if (typeof cargarConvenios === 'function') cargarConvenios();
+      if (typeof showToast === 'function') showToast('Convenio existente actualizado con el nuevo documento.', 'success');
       return;
     }
     var nuevo = {
@@ -9353,7 +9508,7 @@ function guardarDocConvenioSubido() {
       nombre: nombre,
       descuento: 10,
       acuerdoArchivoDataUrl: _docConvenioSubirDataUrl,
-      acuerdoArchivoNombre: 'documento_subido',
+      acuerdoArchivoNombre: nombreArchivoSubida,
       documentoAcuerdo: { titulo: 'Documento subido' },
       fechaAcuerdo: null,
       acordadoPorTaller: '',
@@ -9361,7 +9516,7 @@ function guardarDocConvenioSubido() {
       privado: false
     };
     convenios.push(nuevo);
-    saveConvenios(convenios);
+    if (typeof saveConvenios === 'function' && !saveConvenios(convenios)) return;
     cerrarModalDocConvenioSubirAsociar();
     if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
     if (typeof renderListaConvenios === 'function') renderListaConvenios();
@@ -9679,24 +9834,24 @@ function guardarDocDesdePantallaComoNuevo() {
     return;
   }
   var convenios = getConvenios();
-  if (convenios.some(function (c) { return (c.nombre || '').toLowerCase() === nombre.toLowerCase(); })) { alert('Ya existe un convenio con esa empresa.'); return; }
+  var nl = nombre.toLowerCase();
+  var idxDup = convenios.findIndex(function (c) { return (c.nombre || '').trim().toLowerCase() === nl; });
   var doc = typeof getDocumentoAcuerdoFromEditorPantalla === 'function' ? getDocumentoAcuerdoFromEditorPantalla() : {};
-  var nuevoId = typeof generateConvenioId === 'function' ? generateConvenioId() : 'conv-' + Date.now();
-  var nuevo = { id: nuevoId, nombre: nombre, descuento: 10, documentoAcuerdo: doc };
-  convenios.push(nuevo);
-  try {
-    saveConvenios(convenios);
-  } catch (e) {
-    console.error('guardarDocDesdePantallaComoNuevo', e);
-    alert('Error al guardar. Revisa la consola.');
-    return;
+  if (idxDup !== -1) {
+    convenios[idxDup].documentoAcuerdo = doc;
+    if (!saveConvenios(convenios)) return;
+  } else {
+    var nuevoId = typeof generateConvenioId === 'function' ? generateConvenioId() : 'conv-' + Date.now();
+    var nuevo = { id: nuevoId, nombre: nombre, descuento: 10, documentoAcuerdo: doc };
+    convenios.push(nuevo);
+    if (!saveConvenios(convenios)) return;
   }
   if (typeof cerrarPantallaEditorDocConvenio === 'function') cerrarPantallaEditorDocConvenio();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
   if (typeof cargarConvenios === 'function') cargarConvenios();
-  if (typeof showToast === 'function') showToast('Convenio «' + nombre + '» creado correctamente.', 'success');
-  else alert('Convenio «' + nombre + '» creado correctamente.');
+  if (typeof showToast === 'function') showToast(idxDup !== -1 ? 'Convenio «' + nombre + '» actualizado con el nuevo documento.' : 'Convenio «' + nombre + '» creado correctamente.', 'success');
+  else alert(idxDup !== -1 ? 'Convenio «' + nombre + '» actualizado con el nuevo documento.' : 'Convenio «' + nombre + '» creado correctamente.');
 }
 function guardarDocDesdePantallaEnExistente() {
   var convenios = getConvenios();
@@ -9713,7 +9868,7 @@ function guardarDocDesdePantallaEnExistente() {
     var desc = parseInt(descEl.value, 10);
     if (!isNaN(desc) && desc >= 0 && desc <= 100) convenios[idx].descuento = [0, 5, 10, 15, 20].indexOf(desc) !== -1 ? desc : normalizarDescuentoConvenio(descEl.value);
   }
-  saveConvenios(convenios);
+  if (!saveConvenios(convenios)) return;
   cerrarPantallaEditorDocConvenio();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof renderDocConvenioHistorial === 'function') renderDocConvenioHistorial();
@@ -9724,15 +9879,19 @@ function guardarDocEditarComoNuevoConvenio() {
   var nombre = (document.getElementById('docEditarNuevoConvenioNombre') && document.getElementById('docEditarNuevoConvenioNombre').value) ? document.getElementById('docEditarNuevoConvenioNombre').value.trim() : '';
   if (!nombre) { alert('Indica el nombre de la empresa para el nuevo convenio.'); return; }
   var convenios = getConvenios();
-  if (convenios.some(function (c) { return (c.nombre || '').toLowerCase() === nombre.toLowerCase(); })) {
-    alert('Ya existe un convenio con esa empresa.');
-    return;
-  }
+  var nl = nombre.toLowerCase();
+  var idxDup = convenios.findIndex(function (c) { return (c.nombre || '').trim().toLowerCase() === nl; });
   var descuento = parseInt((document.getElementById('docEditarNuevoConvenioDescuento') && document.getElementById('docEditarNuevoConvenioDescuento').value) || '10', 10) || 10;
   var doc = getDocumentoAcuerdoFromDocEditorForm();
-  var nuevo = { id: generateConvenioId(), nombre: nombre, descuento: descuento, documentoAcuerdo: doc };
-  convenios.push(nuevo);
-  saveConvenios(convenios);
+  if (idxDup !== -1) {
+    convenios[idxDup].documentoAcuerdo = doc;
+    convenios[idxDup].descuento = descuento;
+    if (!saveConvenios(convenios)) return;
+  } else {
+    var nuevo = { id: generateConvenioId(), nombre: nombre, descuento: descuento, documentoAcuerdo: doc };
+    convenios.push(nuevo);
+    if (!saveConvenios(convenios)) return;
+  }
   cerrarEditorDocConvenioComercial();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof cargarConvenios === 'function') cargarConvenios();
@@ -9765,7 +9924,7 @@ function guardarDocEditarEnConvenioExistente() {
     var desc = parseInt(descEl.value, 10);
     if (!isNaN(desc) && desc >= 0 && desc <= 100) convenios[idx].descuento = [0, 5, 10, 15, 20].indexOf(desc) !== -1 ? desc : normalizarDescuentoConvenio(descEl.value);
   }
-  saveConvenios(convenios);
+  if (!saveConvenios(convenios)) return;
   cerrarEditorDocConvenioComercial();
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof cargarConvenios === 'function') cargarConvenios();
@@ -9791,7 +9950,7 @@ function guardarSoloDescuentoConvenio() {
   if (idx === -1) return false;
   var descuento = normalizarDescuentoConvenio(descEl.value);
   convenios[idx].descuento = descuento;
-  saveConvenios(convenios);
+  if (!saveConvenios(convenios)) return false;
   if (typeof renderListaConvenios === 'function') renderListaConvenios();
   if (typeof cargarConvenios === 'function') cargarConvenios();
   return true;
@@ -9849,8 +10008,8 @@ function guardarConvenio(e) {
       convenios[idx].acuerdoArchivoNombre = undefined;
     }
   } else {
-    if (convenios.some(c => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      alert('Ya existe un convenio con esa empresa.');
+    if (convenios.some(function (c) { return (c.nombre || '').trim().toLowerCase() === nombre.toLowerCase(); })) {
+      alert('Ya existe un convenio con esa empresa. Para sustituir el documento, usa «Subir documento» en convenios firmados o edita el convenio desde su ficha.');
       return;
     }
     var nuevo = {
@@ -9870,7 +10029,7 @@ function guardarConvenio(e) {
   _convenioPendingAcuerdoDataUrl = null;
   _convenioPendingAcuerdoNombre = null;
   _convenioAcuerdoQuitado = false;
-  saveConvenios(convenios);
+  if (!saveConvenios(convenios)) return;
   document.getElementById('modalConvenio').classList.remove('active');
   renderListaConvenios();
   cargarConvenios();

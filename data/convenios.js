@@ -106,8 +106,19 @@ function getConvenios() {
   }
 }
 
+/** @returns {boolean} false si falla (p. ej. cuota excedida) */
 function saveConvenios(convenios) {
-  localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(convenios));
+  try {
+    localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(convenios));
+    return true;
+  } catch (e) {
+    var quota = e && (e.name === 'QuotaExceededError' || e.code === 22);
+    var msg = quota
+      ? 'No se pudieron guardar los convenios: el almacenamiento del navegador está lleno. Los PDF/imágenes guardados en el convenio ocupan mucho espacio; elimina o sustituye documentos antiguos en convenios que ya no necesites, o exporta datos y limpia desde el panel de administración.'
+      : 'No se pudieron guardar los convenios: ' + (e && e.message ? e.message : 'error desconocido');
+    if (typeof alert === 'function') alert(msg);
+    return false;
+  }
 }
 
 function generateConvenioId() {

@@ -912,6 +912,17 @@
             <button type="button" class="convenios-tab" data-convenios-tab="empleados-placas" id="conveniosTabEmpleadosPlacas">Empleados y placas</button>
           </div>
           <div id="conveniosPanelConvenios" class="convenios-panel-tab">
+            <section class="convenios-gestion-todos" aria-labelledby="conveniosGestionTodosTitulo">
+              <h4 id="conveniosGestionTodosTitulo" class="doc-convenio-historial-titulo">Todos los convenios</h4>
+              <p class="convenios-documento-comercial-desc convenios-gestion-todos-desc">Aquí aparecen <strong>todos</strong> los convenios dados de alta (con o sin documento firmado). Puedes ver un resumen, editar la ficha completa, añadir uno nuevo o eliminarlo. El convenio «N/A» no se puede eliminar: lo usa el sistema cuando no aplica convenio.</p>
+              <div class="convenios-gestion-toolbar">
+                <input type="search" id="filtroConveniosGestion" class="input-buscar-registro" placeholder="Buscar por nombre de empresa…" autocomplete="off">
+                <button type="button" class="btn btn-register" id="btnNuevoConvenio">+ Añadir convenio</button>
+              </div>
+              <p id="conveniosFichasGridVacio" class="doc-convenio-historial-vacio" style="display:none">No hay convenios que coincidan con la búsqueda.</p>
+              <div id="conveniosFichasGrid" class="convenios-fichas-grid" role="list"></div>
+            </section>
+
             <p class="convenios-documento-comercial-desc">Edita el documento tipo <strong>CONVENIO COMERCIAL DE COLABORACIÓN</strong> (SALTLAB y empresa colaboradora). Todos los datos son editables. Puedes guardar el documento como <strong>nuevo convenio</strong> o asociarlo a un <strong>convenio existente</strong> como acuerdo de dicho convenio.</p>
             <h4 class="doc-convenio-historial-titulo">Convenios firmados (documentos guardados)</h4>
             <p class="doc-convenio-historial-desc">Solo se muestran los convenios que tienen documento generado, rellenado, firmado y guardado. El descuento indicado es el que se aplica en reparaciones y tuneos. <strong>Haz clic en la tarjeta</strong> para editar (descuento, ver PDF/imagen o abrir el editor de plantilla). Los de «Desde repositorio» son solo consulta.</p>
@@ -925,7 +936,7 @@
               <div class="modal-doc-convenio-subir-backdrop" id="modalDocConvenioSubirBackdrop"></div>
               <div class="modal-doc-convenio-subir-content">
                 <h4>Asociar documento subido</h4>
-                <p class="modal-doc-convenio-subir-desc">Elige un convenio existente o crea uno nuevo para guardar este documento.</p>
+                <p class="modal-doc-convenio-subir-desc">Elige un convenio existente o escribe el nombre de la empresa. Si ese nombre ya existe en la lista de convenios, <strong>se actualizará</strong> con este documento (no se duplica). Si no existe, se crea uno nuevo.</p>
                 <div class="field">
                   <label>Convenio existente</label>
                   <select id="docConvenioSubirSelectExistente">
@@ -934,7 +945,7 @@
                 </div>
                 <p class="modal-doc-convenio-subir-o">— o —</p>
                 <div class="field">
-                  <label>Crear nuevo convenio (nombre de la empresa)</label>
+                  <label>Nombre de la empresa (nuevo convenio o actualizar si ya existe)</label>
                   <input type="text" id="docConvenioSubirNuevoNombre" placeholder="Ej. Mi Empresa S.L.">
                 </div>
                 <div class="modal-doc-convenio-subir-actions">
@@ -2002,6 +2013,23 @@
 
           <button type="submit" class="btn btn-register">Guardar</button>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal resumen convenio (desde listado todos los convenios) -->
+    <div id="modalResumenConvenio" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalResumenConvenioTitulo">Resumen del convenio</h3>
+          <button type="button" class="modal-close" id="modalResumenConvenioClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="modalResumenConvenioBody" class="modal-resumen-convenio-body"></div>
+          <div class="modal-resumen-convenio-actions">
+            <button type="button" class="btn btn-outline" id="modalResumenConvenioVerDoc" style="display:none">Ver documento</button>
+            <button type="button" class="btn btn-register" id="modalResumenConvenioEditar">Editar convenio</button>
+          </div>
+        </div>
       </div>
     </div>
 
