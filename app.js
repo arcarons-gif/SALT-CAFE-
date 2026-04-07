@@ -3460,9 +3460,9 @@ function renderPreciosPiezas() {
     { id: 'esenciales', nombre: 'Partes esenciales', tipo: 'euro', data: precios.esenciales, ventaDefault: 65 },
     { id: 'kitLimpieza', nombre: 'Kit de limpieza (opcional reparación/tuneo)', tipo: 'euro', data: precios.kitLimpieza || { coste: 50, precioVenta: 200 }, ventaDefault: 200 },
     { id: 'swapMotor', nombre: 'Cambio / swap motor', tipo: 'porcentaje', data: precios.swapMotor, ventaDefault: 16 },
-    { id: 'performance', nombre: 'Piezas performance', tipo: 'porcentaje', data: precios.performance, ventaDefault: 16 },
-    { id: 'custom', nombre: 'Piezas custom', tipo: 'porcentaje', data: precios.custom, ventaDefault: 6 },
-    { id: 'cosmetic', nombre: 'Piezas cosmetic', tipo: 'porcentaje', data: precios.cosmetic, ventaDefault: 5 },
+    { id: 'performance', nombre: 'Piezas performance (1ª ud. % valor; 2ª+ 200 $/ud.)', tipo: 'porcentaje', data: precios.performance, ventaDefault: 15 },
+    { id: 'custom', nombre: 'Piezas custom (1ª ud. % valor; 2ª+ 100 $/ud.)', tipo: 'porcentaje', data: precios.custom, ventaDefault: 5.15 },
+    { id: 'cosmetic', nombre: 'Piezas cosmetic (1ª ud. % valor; 2ª+ 50 $/ud.)', tipo: 'porcentaje', data: precios.cosmetic, ventaDefault: 5.08 },
     { id: 'fullTuning', nombre: 'Full tuning', tipo: 'porcentaje', data: precios.fullTuning, ventaDefault: 40 }
   ];
   tbody.innerHTML = '';
@@ -3472,10 +3472,35 @@ function renderPreciosPiezas() {
     tr.setAttribute('data-pieza', f.id);
     if (f.tipo === 'porcentaje') {
       var pct = (f.data.precioVentaPorcentaje != null ? f.data.precioVentaPorcentaje : f.ventaDefault);
+      var tieredExtraDefault = { performance: 200, custom: 100, cosmetic: 50 };
+      var ventaCell;
+      if (tieredExtraDefault.hasOwnProperty(f.id)) {
+        var extraP = f.data.precioUnidadAdicional != null ? f.data.precioUnidadAdicional : tieredExtraDefault[f.id];
+        ventaCell =
+          '<td class="economia-piezas-venta-cell economia-piezas-performance-venta">' +
+          '<span class="economia-piezas-venta-sufijo">1ª ud.</span> ' +
+          '<input type="number" class="input-pieza-venta-pct" min="0" max="100" step="0.5" value="' +
+          pct +
+          '" data-pieza="' +
+          escapeHtmlAttr(f.id) +
+          '"> % valor · ' +
+          '<span class="economia-piezas-venta-sufijo">2ª+ ud.</span> ' +
+          '<input type="number" class="input-pieza-precio-extra-ud" min="0" step="1" value="' +
+          extraP +
+          '" title="Precio por unidad desde la segunda"> $' +
+          '</td>';
+      } else {
+        ventaCell =
+          '<td class="economia-piezas-venta-cell"><input type="number" class="input-pieza-venta-pct" min="0" max="100" step="0.5" value="' +
+          pct +
+          '" data-pieza="' +
+          escapeHtmlAttr(f.id) +
+          '"> <span class="economia-piezas-venta-sufijo">% valor veh.</span></td>';
+      }
       tr.innerHTML =
         '<td>' + escapeHtml(f.nombre) + '</td>' +
         '<td><input type="number" class="input-pieza-coste" min="0" step="0.01" value="' + coste + '" data-pieza="' + escapeHtmlAttr(f.id) + '"></td>' +
-        '<td class="economia-piezas-venta-cell"><input type="number" class="input-pieza-venta-pct" min="0" max="100" step="0.5" value="' + pct + '" data-pieza="' + escapeHtmlAttr(f.id) + '"> <span class="economia-piezas-venta-sufijo">% valor veh.</span></td>' +
+        ventaCell +
         '<td class="economia-piezas-margen-eur">Variable</td>' +
         '<td class="economia-piezas-margen-pct">—</td>' +
         '<td><button type="button" class="btn btn-outline btn-sm btn-guardar-pieza" data-pieza="' + escapeHtmlAttr(f.id) + '">Guardar</button></td>';
@@ -3533,18 +3558,22 @@ function renderPreciosPiezas() {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
         var pct = parseFloat(pctInp && pctInp.value) || 16;
         preciosActual.swapMotor = { coste: coste, precioVentaPorcentaje: pct };
-      } else if (id === 'performance') {
-        var pctInp = row.querySelector('.input-pieza-venta-pct');
-        var pct = parseFloat(pctInp && pctInp.value) || 16;
-        preciosActual.performance = { coste: coste, precioVentaPorcentaje: pct };
-      } else if (id === 'custom') {
-        var pctInpC = row.querySelector('.input-pieza-venta-pct');
-        var pctC = parseFloat(pctInpC && pctInpC.value) || 6;
-        preciosActual.custom = { coste: coste, precioVentaPorcentaje: pctC };
-      } else if (id === 'cosmetic') {
-        var pctInp = row.querySelector('.input-pieza-venta-pct');
-        var pct = parseFloat(pctInp && pctInp.value) || 5;
-        preciosActual.cosmetic = { coste: coste, precioVentaPorcentaje: pct };
+      } else if (id === 'performance' || id === 'custom' || id === 'cosmetic') {
+        var tierSave = {
+          performance: { pct: 15, extra: 200 },
+          custom: { pct: 5.15, extra: 100 },
+          cosmetic: { pct: 5.08, extra: 50 }
+        };
+        var ts = tierSave[id];
+        var pctInpT = row.querySelector('.input-pieza-venta-pct');
+        var pctT = parseFloat(pctInpT && pctInpT.value);
+        if (isNaN(pctT)) pctT = ts.pct;
+        var extraInpT = row.querySelector('.input-pieza-precio-extra-ud');
+        var extraUdT = extraInpT ? parseFloat(extraInpT.value) : NaN;
+        if (isNaN(extraUdT) || extraUdT < 0) extraUdT = ts.extra;
+        if (id === 'performance') preciosActual.performance = { coste: coste, precioVentaPorcentaje: pctT, precioUnidadAdicional: extraUdT };
+        else if (id === 'custom') preciosActual.custom = { coste: coste, precioVentaPorcentaje: pctT, precioUnidadAdicional: extraUdT };
+        else preciosActual.cosmetic = { coste: coste, precioVentaPorcentaje: pctT, precioUnidadAdicional: extraUdT };
       } else if (id === 'fullTuning') {
         var pctInp = row.querySelector('.input-pieza-venta-pct');
         var pct = parseFloat(pctInp && pctInp.value) || 40;
@@ -11484,8 +11513,17 @@ function getSelectedPiezasTuneo() {
 
   function addLineaCantidad(catId, cantidad) {
     if (cantidad <= 0) return;
-    var unitPv = getPrecioVentaUnitarioCategoriaTuneo(catId, baseVehiculo);
-    var lineTotal = unitPv * cantidad;
+    var lineTotal;
+    if (catId === 'performance' && typeof getPrecioVentaPerformance === 'function') {
+      lineTotal = getPrecioVentaPerformance(baseVehiculo, cantidad);
+    } else if (catId === 'custom' && typeof getPrecioVentaCustom === 'function') {
+      lineTotal = getPrecioVentaCustom(baseVehiculo, cantidad);
+    } else if (catId === 'cosmetics' && typeof getPrecioVentaCosmetic === 'function') {
+      lineTotal = getPrecioVentaCosmetic(baseVehiculo, cantidad);
+    } else {
+      var unitPv = getPrecioVentaUnitarioCategoriaTuneo(catId, baseVehiculo);
+      lineTotal = unitPv * cantidad;
+    }
     result[catId] = (result[catId] || 0) + lineTotal;
     var avgCoste = getCostePromedioCategoriaTuneo(catId);
     result.totalCoste += avgCoste * cantidad;

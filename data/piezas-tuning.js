@@ -1,7 +1,7 @@
 /**
  * Piezas de tuneo y sus costes de compra (según input/CONTENT/ALMACEN/precios piezas tuning.txt).
  * Categorías: kits, performance, cosmetics, custom.
- * Precio de venta al cliente: kits = coste×2 o override en localStorage; performance/custom/cosmetics = % valor vehículo (data/precios-piezas.js); pintura camaleónica = 5000 $ fijos. El kit de limpieza (opcional) va en precios-piezas.js, no en este catálogo.
+ * Precio de venta al cliente: kits = coste×2 o override en localStorage; performance/custom/cosmetics = 1ª ud. % valor + 2ª+ ud. fijo (precios-piezas.js; cantidades en calculadora); pieza suelta = solo el % de la 1ª ud.; pintura camaleónica = 5000 $ fijos. El kit de limpieza (opcional) va en precios-piezas.js, no en este catálogo.
  */
 (function (global) {
   var CATEGORIAS_TUNEO = [
@@ -84,7 +84,7 @@
   var PRECIO_FIJO_PINTURA_CAMALEONICA = 5000;
 
   /**
-   * Precio de venta al cliente. performance / custom / cosmetics: % del valor del vehículo por pieza (config en Precios piezas).
+   * Precio de venta al cliente. performance / custom / cosmetics: por pieza suelta = % valor 1ª ud. (config Precios piezas; cantidades agregadas usan getPrecioVenta* con 2ª+ fijo).
    * kits: override localStorage o coste×2. pintura_camaleonica: 5000 $ siempre.
    * @param {string} categoriaId
    * @param {string} piezaId
