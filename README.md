@@ -35,12 +35,9 @@ Edita `data/vehiculos.js` para añadir o modificar vehículos:
 
 ## Convenios y descuentos
 
-Edita `data/convenios.js` con el registro de negocios y sus descuentos. Al elegir un negocio, se aplica el % automáticamente:
+En la app (**Gestión → Convenios**) das de alta empresas y **porcentaje de descuento**; en el desplegable de la calculadora se aplica el % al elegir el convenio. Los valores por defecto iniciales están en `data/convenios.js` (`CONVENIOS_DEFAULT` y listas de empleados/placas); puedes editar ese archivo para el arranque en frío.
 
-```javascript
-{ nombre: "Helmut's", descuento: 15 },
-{ nombre: 'Otro Negocio', descuento: 10 },
-```
+**Documentos firmados:** si subes un PDF o imagen del acuerdo, la app **no almacena el binario** en `localStorage` ni en `saltlab-datos-completos.json` (solo metadatos: empresa, descuento, nombre de archivo de referencia y registro de “documento firmado”). Para tener un enlace **Ver acuerdo** que abra un fichero, coloca el PDF en la carpeta de acuerdos del repositorio y referencia el nombre en el convenio, o usa los convenios predefinidos en repo.
 
 ## Factores de precio
 

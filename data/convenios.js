@@ -10,9 +10,31 @@ const CONVENIOS_DEFAULT = [
   { id: 'conv-na', nombre: 'N/A', descuento: 0, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
 ];
 
-/** Convenio con PDF/imagen en datos o archivo en carpeta acuerdos (documento firmado guardado). */
+/** Quita adjuntos en base64 del convenio y deja solo registro ligero (empresa, %, nombre de fichero opcional). */
+function normalizarConvenioSinAdjuntoDataUrl(c) {
+  if (!c || typeof c !== 'object') return c;
+  const o = { ...c };
+  const hadData = o.acuerdoArchivoDataUrl && String(o.acuerdoArchivoDataUrl).indexOf('data:') === 0;
+  if (hadData) {
+    o.registroDocumentoFirmado = true;
+    if (!o.documentoAcuerdo || typeof o.documentoAcuerdo !== 'object') o.documentoAcuerdo = {};
+    if (!String(o.documentoAcuerdo.titulo || '').trim()) {
+      o.documentoAcuerdo = { ...o.documentoAcuerdo, titulo: 'Documento subido' };
+    }
+  }
+  delete o.acuerdoArchivoDataUrl;
+  return o;
+}
+
+function normalizarListaConveniosSinAdjuntosDataUrl(list) {
+  if (!Array.isArray(list)) return list;
+  return list.map(normalizarConvenioSinAdjuntoDataUrl);
+}
+
+/** Convenio con registro de documento firmado, PDF en datos (legado), o archivo en carpeta acuerdos. */
 function convenioTieneAcuerdoAlmacenado(c) {
   if (!c) return false;
+  if (c.registroDocumentoFirmado === true) return true;
   if (c.acuerdoArchivoDataUrl && String(c.acuerdoArchivoDataUrl).indexOf('data:') === 0) return true;
   return !!(c.acuerdoArchivo && String(c.acuerdoArchivo).trim());
 }
@@ -87,6 +109,12 @@ function getConvenios() {
       return soloNa;
     }
     list = list.map(c => ({ ...c, privado: c.privado === true }));
+    if (raw && raw.indexOf('"acuerdoArchivoDataUrl"') !== -1) {
+      list = normalizarListaConveniosSinAdjuntosDataUrl(list);
+      try {
+        localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(list));
+      } catch (e) { /* ignore */ }
+    }
     return list;
   } catch {
     return JSON.parse(JSON.stringify(CONVENIOS_DEFAULT));
@@ -96,7 +124,8 @@ function getConvenios() {
 /** @returns {boolean} false si falla (p. ej. cuota excedida) */
 function saveConvenios(convenios) {
   try {
-    localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(convenios));
+    const toSave = normalizarListaConveniosSinAdjuntosDataUrl(convenios);
+    localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(toSave));
     if (typeof window !== 'undefined') {
       window._conveniosTrustLocalMembershipUntil = Date.now() + 20000;
       setTimeout(function () {
@@ -188,6 +217,7 @@ if (typeof window !== 'undefined') {
   window.CONVENIOS_ACUERDOS_FIRMADOS_BASE = CONVENIOS_ACUERDOS_FIRMADOS_BASE;
   window.CONVENIOS_FIRMAS_BASE = CONVENIOS_FIRMAS_BASE;
   window.convenioTieneAcuerdoAlmacenado = convenioTieneAcuerdoAlmacenado;
+  window.normalizarListaConveniosSinAdjuntosDataUrl = normalizarListaConveniosSinAdjuntosDataUrl;
 }
 let _conveniosLogosMap = {};
 let _conveniosLogosFontMap = {};

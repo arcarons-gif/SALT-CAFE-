@@ -84,21 +84,21 @@ Flujo: **matrícula → calculadora → registrar**.
 
 ## 6. La calculadora (presupuesto)
 
-- Arriba: **tipo de servicio** y **matrícula**.
-- **Vehículo y tuneo** (si aplica): modelo, full tuning, piezas Performance/Custom/Cosmetic.
-- **Reparación** (si aplica): chasis, partes esenciales, total.
-- **Descuento** y **mecánico** (rellenado con tu usuario).
+- Arriba: **tipo de servicio** y **matrícula** (en **modo presupuesto** sin matrícula los totales son orientativos; para un servicio real vuelve con **HOME** y el flujo normal con matrícula).
+- **Vehículo y tuneo** (si aplica): modelo, categoría, nombre IC, **full tuning**, **swap de motor**, cantidades por categoría (con full tuning cuentan swap y, en cosmetics, pintura camaleónica opcional).
+- **Reparación** (si aplica): chasis, partes esenciales, total; casilla para incluir o no reparación en el presupuesto.
+- **Descuento** / convenio y **mecánico** (usuario que registra).
 
-Los precios se actualizan al cambiar opciones. **Botones:** **HOME** (volver al inicio), **📋 Copiar registro**, **✔ REGISTRAR TUNEO** o **✔ REGISTRAR REPARACION**, **O RESET** (limpiar campos).
+Los precios se actualizan al cambiar opciones. **Policía / EMS:** la opción **«Usar kit reparación (650€)»** fija el total en 650€ sin sumar piezas ni descuento. **Botones:** **HOME**, **📋 Copiar registro**, **✔ REGISTRAR TUNEO** o **✔ REGISTRAR REPARACION**, **O RESET** (limpiar campos).
 
 ---
 
 ## 7. Registrar el servicio
 
-- **Solo tuneo:** **«✔ REGISTRAR TUNEO»**.
+- **Solo tuneo:** **«✔ REGISTRAR TUNEO»** — puedes subir fotos antes/después o **«Registrar sin fotos»**.
 - **Reparación** o **Tuneo + Reparación:** **«✔ REGISTRAR REPARACION»**.
 
-El servicio queda registrado (y puede enviarse a Discord si está configurado). Luego puedes volver a HOME.
+El servicio queda registrado y, con servidor configurado, se sincroniza para todos los usuarios (aparece en **Últimas reparaciones** e indicadores). Puede enviarse también a Discord si está configurado. Luego puedes volver a **HOME**.
 
 ---
 
@@ -142,7 +142,7 @@ Pantalla completa (no ventana emergente) con:
 Acceso desde **Menú → Gestión**. Incluye:
 
 - **Usuarios:** crear y editar usuarios, roles y permisos. Al hacer clic en un usuario se abre su **ficha en pantalla completa** (organigrama desde aquí también).
-- **Convenios:** crear y editar convenios con descuentos.
+- **Convenios:** crear y editar convenios (empresa, % descuento, datos del acuerdo). Puedes **subir un PDF o imagen firmada** o asociar un archivo por nombre en la carpeta del repositorio. **Importante:** los archivos firmados subidos desde la app **no se guardan dentro de los datos** (ni en `saltlab-datos-completos.json`): solo queda el registro (empresa, descuento, nombre de archivo de referencia) para aligerar el servidor; el enlace «Ver acuerdo» solo aparece si hay copia en carpeta o datos antiguos con adjunto. Pestaña **Empleados y placas** para listados SAPD/servicio.
 - **Organigrama:** vista jerárquica del equipo con **líneas de conexión** y **fichas** por nivel. Puedes seleccionar un nodo para ver una **previsualización de la ficha** del empleado; desde ahí abrir la ficha completa.
 - **Economía:**  
   - Compras, inventario, gastos, **entregas a trabajadores**, historial de pedidos, previsiones.  
@@ -154,7 +154,7 @@ Acceso desde **Menú → Gestión**. Incluye:
 
 **Sincronización y guardado en el repositorio:**  
 - **Sin servidor:** Los datos se guardan en el **navegador** (localStorage). Varias pestañas del mismo navegador comparten datos.  
-- **Con servidor:** (1) Servidor en ejecución (en la carpeta `server/`, p. ej. `node server.js` o `run-server.cmd`). (2) En la app, **Personalización** → **«URL del servidor API»** con la misma URL (ej. `http://localhost:3001`). Entonces usuarios, fichajes y reparaciones se sincronizan entre todos; y si eres **administrador**, al guardar cualquier dato los archivos se guardan **automáticamente en `server/data/`** (users.json, fichajes.json, servicios.json, saltlab-datos-completos.json) sin abrir diálogos de descarga. Luego solo hace falta hacer commit y push. Ver **[server/README.md](server/README.md)** y **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.
+- **Con servidor:** (1) Servidor en ejecución (en la carpeta `server/`, p. ej. `node server.js` o `run-server.cmd`). (2) En la app, **Personalización** → **«URL del servidor API»** con la misma URL (ej. `http://localhost:3001`). Entonces usuarios, fichajes y reparaciones se sincronizan entre todos; y si eres **administrador**, al guardar cualquier dato los archivos se guardan **automáticamente en `server/data/`** (users.json, fichajes.json, servicios.json, saltlab-datos-completos.json; el JSON de convenios **no incluye PDF en base64**) sin abrir diálogos de descarga. Luego solo hace falta hacer commit y push. Ver **[server/README.md](server/README.md)** y **[DEPLIEGUE_BACKEND.md](DEPLIEGUE_BACKEND.md)**.
 
 ---
 

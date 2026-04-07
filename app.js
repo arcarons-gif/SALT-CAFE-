@@ -2102,7 +2102,13 @@ function getDatosCompletosParaExportar() {
     ['matriculas', 'benny_matriculas', []], ['vehiculosRegistro', 'benny_vehiculos_registro', []], ['entregasMaterial', 'benny_entregas_material', []],
     ['preciosPiezasTuneo', 'benny_precios_piezas_tuneo', {}]
   ];
-  for (var i = 0; i < keys.length; i++) out[keys[i][0]] = get(keys[i][1], keys[i][2]);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i][0] === 'convenios' && typeof getConvenios === 'function') {
+      out.convenios = getConvenios();
+      continue;
+    }
+    out[keys[i][0]] = get(keys[i][1], keys[i][2]);
+  }
   out._exportadoAt = new Date().toISOString();
   return out;
 }
@@ -2196,7 +2202,7 @@ function aplicarDatosCompletosFromServer(payload) {
               if (lc.descuento !== undefined) m.descuento = lc.descuento;
               if (lc.nombre !== undefined) m.nombre = lc.nombre;
               if (lc.documentoAcuerdo !== undefined) m.documentoAcuerdo = lc.documentoAcuerdo;
-              if (lc.acuerdoArchivoDataUrl !== undefined) m.acuerdoArchivoDataUrl = lc.acuerdoArchivoDataUrl;
+              if (lc.registroDocumentoFirmado !== undefined) m.registroDocumentoFirmado = lc.registroDocumentoFirmado;
               if (lc.acuerdoArchivoNombre !== undefined) m.acuerdoArchivoNombre = lc.acuerdoArchivoNombre;
               if (lc.acuerdoArchivo !== undefined) m.acuerdoArchivo = lc.acuerdoArchivo;
               if (lc.privado !== undefined) m.privado = lc.privado;
@@ -2215,6 +2221,9 @@ function aplicarDatosCompletosFromServer(payload) {
           val = mergedConv;
         }
       } catch (e) { /* ignore */ }
+      if (Array.isArray(val) && typeof window.normalizarListaConveniosSinAdjuntosDataUrl === 'function') {
+        val = window.normalizarListaConveniosSinAdjuntosDataUrl(val);
+      }
     }
     if (key === 'clientesBBDD' && Array.isArray(val) && typeof mergeListasClientesBBDD === 'function') {
       try {
@@ -8442,7 +8451,7 @@ function buildConveniosFichas() {
       '<p class="convenio-ficha-fecha">Fecha acordado: ' + escapeHtml(fechaStr) + '</p>' +
       (c.acordadoPorTaller ? '<p class="convenio-ficha-acordado">Taller: ' + escapeHtml(c.acordadoPorTaller) + '</p>' : '') +
       (c.acordadoPorEmpresa ? '<p class="convenio-ficha-acordado">Empresa: ' + escapeHtml(c.acordadoPorEmpresa) + '</p>' : '') +
-      (function () { var url = ''; var label = 'Ver acuerdo'; var base = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/'; if (c.acuerdoArchivoDataUrl) { url = c.acuerdoArchivoDataUrl; label = c.acuerdoArchivoNombre ? 'Ver acuerdo (' + c.acuerdoArchivoNombre + ')' : 'Ver acuerdo'; } else if (c.acuerdoArchivo) { url = base + encodeURIComponent(c.acuerdoArchivo); } if (url) return '<p class="convenio-ficha-acuerdo">Acuerdo: <a href="' + escapeHtmlAttr(url) + '" target="_blank" rel="noopener" class="convenio-ficha-acuerdo-link" onclick="event.stopPropagation();event.preventDefault();window.open(this.href)">' + escapeHtml(label) + '</a></p>'; return '<p class="convenio-ficha-acuerdo">Acuerdo: —</p>'; })() +
+      (function () { var url = ''; var label = 'Ver acuerdo'; var base = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/'; if (c.acuerdoArchivoDataUrl && String(c.acuerdoArchivoDataUrl).indexOf('data:') === 0) { url = c.acuerdoArchivoDataUrl; label = c.acuerdoArchivoNombre ? 'Ver acuerdo (' + c.acuerdoArchivoNombre + ')' : 'Ver acuerdo'; } else if (c.acuerdoArchivo) { url = base + encodeURIComponent(c.acuerdoArchivo); } if (url) return '<p class="convenio-ficha-acuerdo">Acuerdo: <a href="' + escapeHtmlAttr(url) + '" target="_blank" rel="noopener" class="convenio-ficha-acuerdo-link" onclick="event.stopPropagation();event.preventDefault();window.open(this.href)">' + escapeHtml(label) + '</a></p>'; if (c.registroDocumentoFirmado) return '<p class="convenio-ficha-acuerdo">Acuerdo: registrado (sin copia en datos)</p>'; return '<p class="convenio-ficha-acuerdo">Acuerdo: —</p>'; })() +
       '</div></div>' +
       '<div class="convenio-ficha-acciones">' +
       '<button type="button" class="btn btn-outline convenio-ficha-btn-ver">Ver</button>' +
@@ -8561,6 +8570,7 @@ function abrirModalResumenConvenio(convenioId) {
   var docLine = '';
   if (_resumenConvenioDocDataUrl) docLine = '<p><strong>Documento firmado:</strong> Sí (archivo guardado en datos)</p>';
   else if (c.acuerdoArchivo) docLine = '<p><strong>Documento firmado:</strong> Archivo en carpeta: <code>' + escapeHtml(c.acuerdoArchivo) + '</code></p>';
+  else if (c.registroDocumentoFirmado) docLine = '<p><strong>Documento firmado:</strong> Registrado (solo metadatos; el PDF no se guarda en datos para ahorrar espacio)' + (c.acuerdoArchivoNombre ? ': <code>' + escapeHtml(c.acuerdoArchivoNombre) + '</code>' : '') + '</p>';
   else docLine = '<p><strong>Documento firmado:</strong> No</p>';
   if (body) {
     body.innerHTML =
@@ -8655,7 +8665,14 @@ function abrirFormConvenio(convenioId) {
     document.getElementById('convenioAcordadoEmpresa').value = c.acordadoPorEmpresa || '';
     const privEl = document.getElementById('convenioPrivado');
     if (privEl) privEl.checked = !!c.privado;
-    if (c.acuerdoArchivoDataUrl) {
+    if (c.registroDocumentoFirmado && !c.acuerdoArchivoDataUrl) {
+      if (actualEl) {
+        actualEl.textContent = 'Registro de documento firmado' + (c.acuerdoArchivoNombre ? ': ' + c.acuerdoArchivoNombre : '') + ' (el archivo no se guarda en datos).';
+        actualEl.style.display = 'block';
+      }
+      if (quitarBtn) quitarBtn.style.display = 'inline-block';
+      if (nombreInput) nombreInput.placeholder = 'Dejar vacío para mantener el registro';
+    } else if (c.acuerdoArchivoDataUrl && String(c.acuerdoArchivoDataUrl).indexOf('data:') === 0) {
       if (actualEl) { actualEl.textContent = 'Documento actual: ' + (c.acuerdoArchivoNombre || 'acuerdo'); actualEl.style.display = 'block'; }
       if (quitarBtn) quitarBtn.style.display = 'inline-block';
       if (nombreInput) nombreInput.placeholder = 'Dejar vacío para mantener el actual';
@@ -9020,6 +9037,7 @@ function abrirEditorDocConvenioComercial(convenioId) {
   modal.setAttribute('aria-hidden', 'false');
 }
 function tieneDocumentoConvenioGuardado(c) {
+  if (c.registroDocumentoFirmado === true) return true;
   if (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) return true;
   var doc = c.documentoAcuerdo;
   if (!doc || typeof doc !== 'object') return false;
@@ -9069,12 +9087,17 @@ function renderDocConvenioHistorial() {
       doc.logoSalttabDataUrl ||
       doc.firmaSalttabDataUrl
     );
-    var soloSubido = c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0 && !tieneContenidoDoc;
+    var soloSubido = !tieneContenidoDoc && (
+      c.registroDocumentoFirmado === true ||
+      (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0)
+    );
     var titulo = (doc.titulo || '').trim() || (soloSubido ? 'Documento subido' : 'CONVENIO COMERCIAL DE COLABORACIÓN');
     var subtitulo = (doc.subtitulo || '').trim() || ('SALTLAB · ' + (c.nombre || 'Empresa'));
     var previewHtml = '<div class="doc-convenio-historial-card-preview">';
-    if (soloSubido && c.acuerdoArchivoDataUrl.indexOf('data:image') === 0) {
+    if (soloSubido && c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:image') === 0) {
       previewHtml += '<img src="' + c.acuerdoArchivoDataUrl.replace(/"/g, '&quot;') + '" alt="" class="doc-convenio-historial-logo doc-convenio-historial-repo-thumb">';
+    } else if (soloSubido && c.registroDocumentoFirmado) {
+      previewHtml += '<div class="doc-convenio-historial-subir-icon doc-convenio-historial-doc-icon" aria-hidden="true">📄</div>';
     } else if (doc.logoSalttabDataUrl && doc.logoSalttabDataUrl.indexOf('data:') === 0) {
       previewHtml += '<img src="' + doc.logoSalttabDataUrl.replace(/"/g, '&quot;') + '" alt="" class="doc-convenio-historial-logo">';
     }
@@ -9309,7 +9332,10 @@ function abrirModalEditarConvenioDesdeGrid(convenioId) {
     var n = parseInt(btn.getAttribute('data-descuento'), 10);
     btn.classList.toggle('active', n === desc);
   });
-  if (docActions) docActions.style.display = (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) ? '' : 'none';
+  if (docActions) {
+    var puedeVerAdjunto = (c.acuerdoArchivoDataUrl && c.acuerdoArchivoDataUrl.indexOf('data:') === 0) || !!(c.acuerdoArchivo && String(c.acuerdoArchivo).trim());
+    docActions.style.display = puedeVerAdjunto ? '' : 'none';
+  }
   if (btnEditor) btnEditor.style.display = '';
   var btnEliminar = document.getElementById('modalEditarConvenioDesdeGridEliminar');
   if (btnEliminar) btnEliminar.style.display = '';
@@ -9423,7 +9449,14 @@ function vincularModalEditarConvenioDesdeGrid() {
       return;
     }
     var conv = getConvenioActual();
-    if (!conv || !conv.acuerdoArchivoDataUrl || conv.acuerdoArchivoDataUrl.indexOf('data:') !== 0) return;
+    if (!conv) return;
+    if (conv.acuerdoArchivo && String(conv.acuerdoArchivo).trim()) {
+      var baseAdj = (typeof window !== 'undefined' && window.CONVENIOS_ACUERDOS_BASE) || 'input/CONTENT/Logos/convenios/acuerdos/';
+      cerrarModalEditarConvenioDesdeGrid();
+      window.open(baseAdj + encodeURIComponent(conv.acuerdoArchivo), '_blank', 'noopener');
+      return;
+    }
+    if (!conv.acuerdoArchivoDataUrl || conv.acuerdoArchivoDataUrl.indexOf('data:') !== 0) return;
     cerrarModalEditarConvenioDesdeGrid();
     if (typeof abrirModalVerDocConvenioDataUrl === 'function') abrirModalVerDocConvenioDataUrl(conv.acuerdoArchivoDataUrl, conv.nombre || 'Documento');
   });
@@ -9500,8 +9533,10 @@ function guardarDocConvenioSubido() {
 
   function aplicarArchivoSubidoAIndice(idx) {
     if (idx < 0 || idx >= convenios.length) return;
-    convenios[idx].acuerdoArchivoDataUrl = _docConvenioSubirDataUrl;
+    delete convenios[idx].acuerdoArchivoDataUrl;
+    convenios[idx].registroDocumentoFirmado = true;
     convenios[idx].acuerdoArchivoNombre = nombreArchivoSubida;
+    convenios[idx].acuerdoArchivo = undefined;
     if (!convenios[idx].documentoAcuerdo || typeof convenios[idx].documentoAcuerdo !== 'object') convenios[idx].documentoAcuerdo = {};
     convenios[idx].documentoAcuerdo.titulo = 'Documento subido';
   }
@@ -9535,7 +9570,7 @@ function guardarDocConvenioSubido() {
       id: typeof generateConvenioId === 'function' ? generateConvenioId() : 'conv-' + Date.now(),
       nombre: nombre,
       descuento: 10,
-      acuerdoArchivoDataUrl: _docConvenioSubirDataUrl,
+      registroDocumentoFirmado: true,
       acuerdoArchivoNombre: nombreArchivoSubida,
       documentoAcuerdo: { titulo: 'Documento subido' },
       fechaAcuerdo: null,
@@ -10026,14 +10061,17 @@ function guardarConvenio(e) {
       convenios[idx].acuerdoArchivoDataUrl = undefined;
       convenios[idx].acuerdoArchivoNombre = undefined;
       convenios[idx].acuerdoArchivo = undefined;
+      convenios[idx].registroDocumentoFirmado = false;
     } else if (acuerdoDataUrl) {
-      convenios[idx].acuerdoArchivoDataUrl = acuerdoDataUrl;
+      convenios[idx].registroDocumentoFirmado = true;
       convenios[idx].acuerdoArchivoNombre = acuerdoNombre || null;
+      convenios[idx].acuerdoArchivoDataUrl = undefined;
       convenios[idx].acuerdoArchivo = undefined;
     } else if (acuerdoNombreRepo) {
       convenios[idx].acuerdoArchivo = acuerdoNombreRepo;
       convenios[idx].acuerdoArchivoDataUrl = undefined;
       convenios[idx].acuerdoArchivoNombre = undefined;
+      convenios[idx].registroDocumentoFirmado = false;
     }
   } else {
     if (convenios.some(function (c) { return (c.nombre || '').trim().toLowerCase() === nombre.toLowerCase(); })) {
@@ -10050,8 +10088,13 @@ function guardarConvenio(e) {
       privado,
       documentoAcuerdo: documentoAcuerdo,
     };
-    if (acuerdoDataUrl) { nuevo.acuerdoArchivoDataUrl = acuerdoDataUrl; nuevo.acuerdoArchivoNombre = acuerdoNombre || null; }
-    else if (acuerdoNombreRepo) nuevo.acuerdoArchivo = acuerdoNombreRepo;
+    if (acuerdoDataUrl) {
+      nuevo.registroDocumentoFirmado = true;
+      nuevo.acuerdoArchivoNombre = acuerdoNombre || null;
+    } else if (acuerdoNombreRepo) {
+      nuevo.acuerdoArchivo = acuerdoNombreRepo;
+      nuevo.registroDocumentoFirmado = false;
+    }
     convenios.push(nuevo);
   }
   _convenioPendingAcuerdoDataUrl = null;
