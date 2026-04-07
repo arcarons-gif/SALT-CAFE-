@@ -530,6 +530,8 @@ function removePendingUserUpdate(id) {
 }
 let tipoServicio = null;   // 'reparacion' | 'tuneo' | 'tuneoReparacion'
 let matriculaActual = '';
+/** Calculadora solo con modelo: sin matrícula ni registro de servicio. */
+let modoPresupuestoSinMatricula = false;
 var _plateStyleIndex = 0;
 
 // Elementos DOM (matricula = paso 1; matriculaCalc = paso 2 readonly)
@@ -640,6 +642,9 @@ function actualizarVisibilidadPlacaServicio() {
 
 function actualizarVisibilidadRegistroServicios() {
   actualizarVisibilidadPlacaServicio();
+  var ocultarRegistro = !!modoPresupuestoSinMatricula;
+  if (el.btnRegistrarTuneo) el.btnRegistrarTuneo.style.display = ocultarRegistro ? 'none' : '';
+  if (el.btnRegistrarReparacion) el.btnRegistrarReparacion.style.display = ocultarRegistro ? 'none' : '';
 }
 
 var calendarHeaderInterval = null;
@@ -11099,6 +11104,8 @@ function mostrarPaso(paso) {
     aplicarEstiloPlacaAleatorio();
     if (matriculaActual) renderStatsVehiculo(matriculaActual);
   }
+  var hintPresupuestoEl = document.getElementById('presupuestoSoloModeloHint');
+  if (hintPresupuestoEl) hintPresupuestoEl.style.display = (paso === 'calculadora' && modoPresupuestoSinMatricula) ? '' : 'none';
 }
 
 function aplicarVisibilidadPorTipo() {
@@ -11190,6 +11197,7 @@ function vincularPasos() {
         alert('Debes fichar entrada para usar la calculadora. Ve a Fichajes y pulsa «Fichar entrada».');
         return;
       }
+      modoPresupuestoSinMatricula = false;
       tipoServicio = tipos[i];
       document.getElementById('nuevoVehiculoWrap').style.display = 'none';
       if (!matriculaActual || !matriculaActual.trim()) {
@@ -11217,7 +11225,31 @@ function vincularPasos() {
     });
   });
 
-  if (btnVolverInicio) btnVolverInicio.addEventListener('click', () => { tipoServicio = null; matriculaActual = ''; mostrarPaso('inicio'); document.getElementById('nuevoVehiculoWrap').style.display = 'none'; });
+  if (btnVolverInicio) btnVolverInicio.addEventListener('click', () => { tipoServicio = null; matriculaActual = ''; modoPresupuestoSinMatricula = false; mostrarPaso('inicio'); document.getElementById('nuevoVehiculoWrap').style.display = 'none'; });
+
+  var btnPresupuestoSoloModelo = document.getElementById('btnPresupuestoSoloModelo');
+  if (btnPresupuestoSoloModelo) {
+    btnPresupuestoSoloModelo.addEventListener('click', function () {
+      var session = getSession();
+      var fichado = session && typeof hasEntradaAbierta === 'function' && hasEntradaAbierta(session.username);
+      if (!fichado) {
+        alert('Debes fichar entrada para usar la calculadora. Ve a Fichajes y pulsa «Fichar entrada».');
+        return;
+      }
+      modoPresupuestoSinMatricula = true;
+      tipoServicio = 'tuneoReparacion';
+      matriculaActual = '';
+      if (el.matriculaCalc) el.matriculaCalc.value = '';
+      var nv = document.getElementById('nuevoVehiculoWrap');
+      if (nv) nv.style.display = 'none';
+      var tituloEl = document.getElementById('pasoCalculadoraTitulo');
+      if (tituloEl) tituloEl.textContent = 'Presupuesto (solo modelo)';
+      aplicarVisibilidadPorTipo();
+      mostrarPaso('calculadora');
+      actualizarVisibilidadPlacaServicio();
+      actualizarVista();
+    });
+  }
 
   if (btnContinuar) {
     btnContinuar.addEventListener('click', () => {
@@ -11732,14 +11764,18 @@ function actualizarVista() {
   var rep = tipoServicio === 'reparacion';
   var tuneoRep = tipoServicio === 'tuneoReparacion';
   const p = calcularPrecios();
-  const matricula = (matriculaActual || (el.matriculaCalc && el.matriculaCalc.value) || (el.matricula && el.matricula.value) || '').trim() || '-';
-  const modelo = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(matricula !== '-' ? matricula : '') : (vehiculoActual?.nombreIC || '-');
+  const matriculaRaw = (matriculaActual || (el.matriculaCalc && el.matriculaCalc.value) || (el.matricula && el.matricula.value) || '').trim();
+  const matricula = matriculaRaw || '-';
+  const matriculaPlantilla = modoPresupuestoSinMatricula ? '— (presupuesto)' : matricula;
+  const modelo = typeof getModeloDisplayParaRegistro === 'function' ? getModeloDisplayParaRegistro(modoPresupuestoSinMatricula || matricula === '-' ? '' : matricula) : (vehiculoActual?.nombreIC || '-');
   var session = getSession();
   if (el.mecanico) el.mecanico.value = session ? (session.nombre || session.username || '') : 'BASE';
   const mecanico = el.mecanico.value || 'BASE';
-  if (el.matriculaCalc) el.matriculaCalc.value = matricula !== '-' ? matricula : '';
-  if (el.matriculaCalcDisplay) el.matriculaCalcDisplay.textContent = matricula !== '-' ? matricula : '—';
+  if (el.matriculaCalc) el.matriculaCalc.value = (!modoPresupuestoSinMatricula && matricula !== '-') ? matricula : '';
+  if (el.matriculaCalcDisplay) el.matriculaCalcDisplay.textContent = modoPresupuestoSinMatricula ? '—' : (matricula !== '-' ? matricula : '—');
   if (el.matriculaCalcModelo) el.matriculaCalcModelo.textContent = modelo !== '-' ? ' · ' + modelo : '';
+  var pasoCalcMatEl = document.getElementById('pasoCalcMatricula');
+  if (pasoCalcMatEl) pasoCalcMatEl.textContent = modoPresupuestoSinMatricula ? 'Sin matrícula' : (matricula !== '-' ? matricula : '—');
   const neg = (el.negocios && el.negocios.value) ? el.negocios.value : 'N/A';
   const desc = (p && p.descuento != null && !isNaN(Number(p.descuento))) ? Number(p.descuento) : 0;
   const convenio = neg === 'N/A' ? 'N/A (' + desc + '%)' : neg + ' (' + desc + '%)';
@@ -11833,18 +11869,18 @@ function actualizarVista() {
 
   actualizarDescuentoSuperior();
   actualizarVisibilidadRegistroServicios();
-  renderStatsVehiculo(matricula !== '-' ? matricula : '');
+  renderStatsVehiculo((modoPresupuestoSinMatricula || matricula === '-') ? '' : matricula);
 
   const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   const modTuneo = el.reparacion.checked && tieneTuneo ? '+ Reparación' : (tieneTuneo ? 'Tuning' : '-');
 
-  if (v.tplMatricula) v.tplMatricula.textContent = matricula;
+  if (v.tplMatricula) v.tplMatricula.textContent = matriculaPlantilla;
   if (v.tplModelo) v.tplModelo.textContent = modelo;
   if (v.tplModTuneo) v.tplModTuneo.textContent = modTuneo;
   if (v.tplImporteTuneo) v.tplImporteTuneo.textContent = p.total > 0 ? p.total + '$' : '-';
   if (v.tplEmpleado) v.tplEmpleado.textContent = mecanico;
   if (v.tplConvenio) v.tplConvenio.textContent = convenio;
-  if (v.tplMatriculaRep) v.tplMatriculaRep.textContent = matricula;
+  if (v.tplMatriculaRep) v.tplMatriculaRep.textContent = matriculaPlantilla;
   if (v.tplModeloRep) v.tplModeloRep.textContent = modelo;
   if (v.tplImporteRep) v.tplImporteRep.textContent = (p.reparacion > 0 || (p.kitReparacion || 0) > 0 || (p.kitLimpieza || 0) > 0) ? p.total + '$' : '-';
   if (v.tplEmpleadoRep) v.tplEmpleadoRep.textContent = mecanico;
@@ -11915,6 +11951,7 @@ function fallbackCopiar(texto) {
 function resetear() {
   tipoServicio = null;
   matriculaActual = '';
+  modoPresupuestoSinMatricula = false;
   mostrarPaso('matricula');
   el.modelo.selectedIndex = 0;
   cambiarModelo();
@@ -11936,6 +11973,7 @@ function irAPantallaPrincipal() {
   cerrarTodasPantallasSecundarias();
   tipoServicio = null;
   matriculaActual = '';
+  modoPresupuestoSinMatricula = false;
   const nv = document.getElementById('nuevoVehiculoWrap');
   if (nv) nv.style.display = 'none';
   if (el.matricula) el.matricula.value = '';
@@ -12191,6 +12229,10 @@ function enviarRegistroServicioADiscord(servicio) {
 
 /** Abre el modal de fotos antes/después para registrar un tuneo. Pide convenio la primera vez que se registra la matrícula. */
 function abrirModalFotosTuneo() {
+  if (modoPresupuestoSinMatricula) {
+    alert('En modo presupuesto (sin matrícula) no se pueden registrar servicios. Vuelve al inicio, elige Reparación o Tuneo e introduce la matrícula para registrar.');
+    return;
+  }
   const p = calcularPrecios();
   const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   if (!tieneTuneo) {
@@ -12327,6 +12369,10 @@ function vincularModalFotosTuneo() {
  * @param {string} [fotoDespues] - Base64 de la foto después del tuneo
  */
 function registrarTuneo(fotoAntes, fotoDespues) {
+  if (modoPresupuestoSinMatricula) {
+    alert('En modo presupuesto (sin matrícula) no se pueden registrar servicios. Vuelve al inicio, elige Reparación o Tuneo e introduce la matrícula para registrar.');
+    return;
+  }
   const p = calcularPrecios();
   const tieneTuneo = p.motor > 0 || (p.kits || 0) > 0 || p.performance > 0 || p.custom > 0 || p.cosmetic > 0 || el.fullTuning.checked || (p.kitLimpiezaActivo && (tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion'));
   if (!tieneTuneo) {
@@ -12403,6 +12449,10 @@ function registrarTuneo(fotoAntes, fotoDespues) {
 }
 
 function registrarReparacion() {
+  if (modoPresupuestoSinMatricula) {
+    alert('En modo presupuesto (sin matrícula) no se pueden registrar servicios. Vuelve al inicio, elige Reparación o Tuneo e introduce la matrícula para registrar.');
+    return;
+  }
   const p = calcularPrecios();
   if (!el.reparacion.checked || (p.reparacion === 0 && !p.kitActivo && !(p.kitLimpieza > 0))) {
     alert('No hay reparación seleccionada o no hay partes a reparar.');

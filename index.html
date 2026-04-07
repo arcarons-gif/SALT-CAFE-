@@ -239,6 +239,13 @@
             <span class="btn-paso-apple-label">Tuneo + Reparación</span>
           </button>
         </div>
+        <div class="paso-presupuesto-solo-modelo-wrap">
+          <button type="button" class="btn btn-paso-apple btn-presupuesto-solo-modelo" id="btnPresupuestoSoloModelo" title="Calcular precios solo con el modelo, sin matrícula ni registro">
+            <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h4m0-11v11m0-11h6m-6 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11h6"/><path d="M19 7V5a2 2 0 0 0-2-2H7"/></svg></span>
+            <span class="btn-paso-apple-label">Presupuesto sin matrícula</span>
+          </button>
+          <p class="paso-presupuesto-solo-modelo-desc">Solo elige el <strong>modelo</strong> en la siguiente pantalla para estimar reparación, tuneo o ambos. No se registra ningún servicio; para cliente real usa las opciones de arriba con matrícula.</p>
+        </div>
         <div class="paso-inicio-inferior">
           <div class="ultimas-reparaciones-wrap" id="ultimasReparacionesWrap">
             <h3 class="ultimas-reparaciones-titulo">Últimas reparaciones</h3>
@@ -327,6 +334,7 @@
             <button type="button" class="btn btn-home" id="btnVolverMatricula" aria-label="Ir a pantalla principal">HOME</button>
             <span id="pasoCalculadoraTitulo" class="paso-calc-titulo"></span>
             <span class="paso-calc-matricula-label">Matrícula: <strong id="pasoCalcMatricula"></strong></span>
+            <p id="presupuestoSoloModeloHint" class="presupuesto-solo-modelo-hint" style="display:none" role="status">Modo presupuesto: no hace falta matrícula. Elige el modelo y configura reparación y/o tuneo; los totales son orientativos. Pulsa <strong>HOME</strong> y el flujo con matrícula para registrar un servicio real.</p>
           </div>
           <div class="paso-calculadora-descuento-wrap" id="wrapDescuentoSuperior" data-permiso="verPresupuesto">
             <span class="descuento-superior-label">Descuento</span>

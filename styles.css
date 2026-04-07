@@ -4424,6 +4424,40 @@ button.login-recovery-link {
   flex: 1;
 }
 
+.paso-presupuesto-solo-modelo-wrap {
+  max-width: 520px;
+  margin: 1.25rem auto 0;
+  text-align: center;
+}
+.btn-presupuesto-solo-modelo {
+  border-style: dashed;
+  font-size: 1.25rem;
+}
+.btn-presupuesto-solo-modelo .btn-paso-apple-icon svg {
+  color: var(--text-muted);
+}
+.paso-presupuesto-solo-modelo-desc {
+  margin: 0.65rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.presupuesto-solo-modelo-hint {
+  flex-basis: 100%;
+  margin: 0.35rem 0 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--accent-soft);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+}
+
 /* Compatibilidad con IDs que siguen usando btn-paso-tipo */
 .btn-paso-tipo {
   min-width: 180px;
