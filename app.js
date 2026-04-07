@@ -2180,30 +2180,54 @@ function aplicarDatosCompletosFromServer(payload) {
     }
     if (key === 'convenios' && Array.isArray(val)) {
       try {
-        var rawLocal = localStorage.getItem(storageKey);
-        var localList = rawLocal ? JSON.parse(rawLocal) : [];
-        if (Array.isArray(localList)) {
-          var serverIds = {};
-          val.forEach(function (c) { if (c && c.id) serverIds[c.id] = true; });
-          localList.forEach(function (c) {
-            if (c && c.id && !serverIds[c.id]) { val = val.slice(); val.push(c); serverIds[c.id] = true; }
-          });
-          var localById = {};
-          localList.forEach(function (c) { if (c && c.id) localById[c.id] = c; });
-          val = val.slice();
-          val.forEach(function (c, i) {
-            if (!c || !c.id) return;
-            var local = localById[c.id];
-            if (local) {
-              val[i] = Object.assign({}, c);
-              if (local.descuento !== undefined) val[i].descuento = local.descuento;
-              if (local.nombre !== undefined) val[i].nombre = local.nombre;
-              if (local.documentoAcuerdo !== undefined) val[i].documentoAcuerdo = local.documentoAcuerdo;
-              if (local.acuerdoArchivoDataUrl !== undefined) val[i].acuerdoArchivoDataUrl = local.acuerdoArchivoDataUrl;
-              if (local.acuerdoArchivoNombre !== undefined) val[i].acuerdoArchivoNombre = local.acuerdoArchivoNombre;
+        var rawLocalConv = localStorage.getItem(storageKey);
+        var localListConv = rawLocalConv ? JSON.parse(rawLocalConv) : [];
+        if (Array.isArray(localListConv)) {
+          var byIdServer = {};
+          val.forEach(function (c) { if (c && c.id) byIdServer[c.id] = c; });
+          var localByIdConv = {};
+          localListConv.forEach(function (c) { if (c && c.id) localByIdConv[c.id] = c; });
+          var mergedConv = [];
+          localListConv.forEach(function (lc) {
+            if (!lc || !lc.id) return;
+            var sc = byIdServer[lc.id];
+            if (sc) {
+              var m = Object.assign({}, sc, lc);
+              if (lc.descuento !== undefined) m.descuento = lc.descuento;
+              if (lc.nombre !== undefined) m.nombre = lc.nombre;
+              if (lc.documentoAcuerdo !== undefined) m.documentoAcuerdo = lc.documentoAcuerdo;
+              if (lc.acuerdoArchivoDataUrl !== undefined) m.acuerdoArchivoDataUrl = lc.acuerdoArchivoDataUrl;
+              if (lc.acuerdoArchivoNombre !== undefined) m.acuerdoArchivoNombre = lc.acuerdoArchivoNombre;
+              if (lc.acuerdoArchivo !== undefined) m.acuerdoArchivo = lc.acuerdoArchivo;
+              if (lc.privado !== undefined) m.privado = lc.privado;
+              mergedConv.push(m);
+            } else {
+              mergedConv.push(lc);
             }
           });
+          var trustLocalMembership = typeof window._conveniosTrustLocalMembershipUntil === 'number' && Date.now() < window._conveniosTrustLocalMembershipUntil;
+          if (!trustLocalMembership) {
+            val.forEach(function (sc) {
+              if (!sc || !sc.id || localByIdConv[sc.id]) return;
+              mergedConv.push(sc);
+            });
+          }
+          val = mergedConv;
         }
+      } catch (e) { /* ignore */ }
+    }
+    if (key === 'clientesBBDD' && Array.isArray(val) && typeof mergeListasClientesBBDD === 'function') {
+      try {
+        var rawCli = localStorage.getItem(storageKey);
+        var localCli = rawCli ? JSON.parse(rawCli) : [];
+        if (Array.isArray(localCli)) val = mergeListasClientesBBDD(val, localCli);
+      } catch (e) { /* ignore */ }
+    }
+    if (key === 'vehiculosRegistro' && Array.isArray(val) && typeof mergeListasVehiculosRegistro === 'function') {
+      try {
+        var rawVeh = localStorage.getItem(storageKey);
+        var localVeh = rawVeh ? JSON.parse(rawVeh) : [];
+        if (Array.isArray(localVeh)) val = mergeListasVehiculosRegistro(val, localVeh);
       } catch (e) { /* ignore */ }
     }
     try {

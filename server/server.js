@@ -372,6 +372,52 @@ function readDatosCompletos() {
   }
 }
 
+function claveMatriculaDatosCompletos(m) {
+  return (m || '').toString().trim().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+}
+
+function claveClienteBBDDServer(c) {
+  if (!c || typeof c !== 'object') return '';
+  const mat = claveMatriculaDatosCompletos(c.matricula);
+  if (mat) return `mat:${mat}`;
+  const id = (c.idCliente || '').toString().trim();
+  if (id) return `id:${id}`;
+  return '';
+}
+
+/** Unifica clientes por matrícula (sin espacios/guiones) o idCliente; `encima` pisa campos de `base`. */
+function mergeClientesBBDDArrays(base, encima) {
+  const map = new Map();
+  (Array.isArray(base) ? base : []).forEach((c) => {
+    const k = claveClienteBBDDServer(c);
+    if (k) map.set(k, { ...c });
+  });
+  (Array.isArray(encima) ? encima : []).forEach((c) => {
+    const k = claveClienteBBDDServer(c);
+    if (!k) return;
+    const prev = map.get(k) || {};
+    const merged = { ...prev, ...c };
+    if (!(merged.idCliente && String(merged.idCliente).trim())) merged.idCliente = prev.idCliente || c.idCliente;
+    map.set(k, merged);
+  });
+  return Array.from(map.values());
+}
+
+function mergeVehiculosRegistroArrays(base, encima) {
+  const map = new Map();
+  (Array.isArray(base) ? base : []).forEach((r) => {
+    const k = claveMatriculaDatosCompletos(r && r.matricula);
+    if (k) map.set(k, { ...r });
+  });
+  (Array.isArray(encima) ? encima : []).forEach((r) => {
+    const k = claveMatriculaDatosCompletos(r && r.matricula);
+    if (!k) return;
+    const prev = map.get(k) || {};
+    map.set(k, { ...prev, ...r });
+  });
+  return Array.from(map.values());
+}
+
 function writeDatosCompletosMerge(merge) {
   if (!merge || typeof merge !== 'object') return;
   try {
@@ -429,11 +475,12 @@ app.post('/api/repo-export', (req, res) => {
     } else {
       data.economiaInventario = data.economiaInventario || {};
     }
-    if (Array.isArray(current.clientesBBDD) && current.clientesBBDD.length > 0) {
-      data.clientesBBDD = current.clientesBBDD;
-    } else {
-      data.clientesBBDD = Array.isArray(data.clientesBBDD) ? data.clientesBBDD : [];
-    }
+    const incCli = Array.isArray(incoming.clientesBBDD) ? incoming.clientesBBDD : [];
+    const curCli = Array.isArray(current.clientesBBDD) ? current.clientesBBDD : [];
+    data.clientesBBDD = mergeClientesBBDDArrays(curCli, incCli);
+    const incVeh = Array.isArray(incoming.vehiculosRegistro) ? incoming.vehiculosRegistro : [];
+    const curVeh = Array.isArray(current.vehiculosRegistro) ? current.vehiculosRegistro : [];
+    data.vehiculosRegistro = mergeVehiculosRegistroArrays(curVeh, incVeh);
     data._exportadoAt = new Date().toISOString();
     ensureDataDir();
     fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
@@ -503,24 +550,8 @@ app.post('/api/merge-clientes-bbdd', (req, res) => {
       return res.status(400).json({ error: 'Se espera { clientes: [...] }' });
     }
     const data = readDatosCompletos();
-    if (!data.clientesBBDD) data.clientesBBDD = [];
-    const list = data.clientesBBDD;
-    const byId = {};
-    list.forEach((c, i) => {
-      const id = (c.idCliente || c.matricula || '').toString().trim();
-      if (id) byId[id] = i;
-    });
-    clientes.forEach((c) => {
-      const id = (c.idCliente || c.matricula || '').toString().trim();
-      if (!id) return;
-      if (byId[id] !== undefined) {
-        list[byId[id]] = { ...list[byId[id]], ...c, idCliente: list[byId[id]].idCliente || id };
-      } else {
-        list.push({ ...c, idCliente: c.idCliente || id });
-        byId[id] = list.length - 1;
-      }
-    });
-    data.clientesBBDD = list;
+    const cur = Array.isArray(data.clientesBBDD) ? data.clientesBBDD : [];
+    data.clientesBBDD = mergeClientesBBDDArrays(cur, clientes);
     data._exportadoAt = new Date().toISOString();
     ensureDataDir();
     fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');

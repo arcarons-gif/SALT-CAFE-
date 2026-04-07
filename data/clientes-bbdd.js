@@ -31,15 +31,16 @@ function saveClientesFotos(obj) {
 
 /** Fotos de un vehículo por matrícula: array de URLs o data URLs */
 function getFotosByMatricula(matricula) {
-  const mat = normalizarMatricula(matricula);
-  if (!mat) return [];
   const fotos = getClientesFotos();
-  const arr = fotos[mat];
-  return Array.isArray(arr) ? arr : [];
+  const k = claveMatriculaBBDD(matricula);
+  if (k && Array.isArray(fotos[k])) return fotos[k];
+  const leg = normalizarMatricula(matricula);
+  if (leg && Array.isArray(fotos[leg])) return fotos[leg];
+  return [];
 }
 
 function addFotoMatricula(matricula, url) {
-  const mat = normalizarMatricula(matricula);
+  const mat = claveMatriculaBBDD(matricula);
   if (!mat) return [];
   const fotos = getClientesFotos();
   if (!fotos[mat]) fotos[mat] = [];
@@ -49,7 +50,7 @@ function addFotoMatricula(matricula, url) {
 }
 
 function removeFotoMatricula(matricula, index) {
-  const mat = normalizarMatricula(matricula);
+  const mat = claveMatriculaBBDD(matricula);
   if (!mat) return [];
   const fotos = getClientesFotos();
   if (!Array.isArray(fotos[mat])) return [];
@@ -61,7 +62,7 @@ function removeFotoMatricula(matricula, index) {
 
 /** Sustituye todas las fotos de un vehículo (p. ej. para reordenar y poner una como portada). */
 function setFotosMatricula(matricula, urls) {
-  const mat = normalizarMatricula(matricula);
+  const mat = claveMatriculaBBDD(matricula);
   if (!mat) return [];
   const fotos = getClientesFotos();
   fotos[mat] = Array.isArray(urls) ? urls : [];
@@ -131,15 +132,49 @@ function saveClientesBBDD(arr) {
 }
 
 function normalizarMatricula(mat) {
-  return (mat || '').trim().toUpperCase();
+  return (mat || '').toString().trim().toUpperCase();
+}
+
+/** Clave única para comparar matrículas (ignora espacios y guiones: "1234 ABC" = "1234-ABC"). */
+function claveMatriculaBBDD(mat) {
+  return normalizarMatricula(mat).replace(/\s+/g, '').replace(/-/g, '');
+}
+
+/**
+ * Fusiona listas de clientes BBDD: base desde servidor, encima datos locales (misma matrícula o idCliente = un solo registro).
+ * Evita que un sync borre vehículos dados de alta en este navegador antes de que el servidor los tenga.
+ */
+function mergeListasClientesBBDD(desdeServidor, locales) {
+  const map = new Map();
+  function kOf(c) {
+    if (!c) return null;
+    const m = claveMatriculaBBDD(c.matricula);
+    if (m) return 'mat:' + m;
+    const id = (c.idCliente || '').toString().trim();
+    if (id) return 'id:' + id;
+    return null;
+  }
+  (Array.isArray(desdeServidor) ? desdeServidor : []).forEach(function (c) {
+    const k = kOf(c);
+    if (k) map.set(k, Object.assign({}, c));
+  });
+  (Array.isArray(locales) ? locales : []).forEach(function (c) {
+    const k = kOf(c);
+    if (!k) return;
+    const prev = map.get(k) || {};
+    const merged = Object.assign({}, prev, c);
+    if (!(merged.idCliente && String(merged.idCliente).trim())) merged.idCliente = prev.idCliente || c.idCliente;
+    map.set(k, merged);
+  });
+  return Array.from(map.values());
 }
 
 /** Busca en la BBDD principal por matrícula */
 function getClienteByMatricula(matricula) {
-  const mat = normalizarMatricula(matricula);
+  const mat = claveMatriculaBBDD(matricula);
   if (!mat) return null;
   const list = getClientesBBDD();
-  return list.find(r => normalizarMatricula(r.matricula) === mat) || null;
+  return list.find(r => claveMatriculaBBDD(r.matricula) === mat) || null;
 }
 
 /** Todos los vehículos/registros de un mismo cliente (por idCliente) */
@@ -164,9 +199,9 @@ function clienteToRegistro(cliente) {
 /** Añade o actualiza cliente en la BBDD (solo admins o aprobación) */
 function addOrUpdateClienteBBDD(data) {
   const list = getClientesBBDD();
-  const mat = normalizarMatricula(data.matricula);
+  const mat = claveMatriculaBBDD(data.matricula);
   if (!mat) return null;
-  const idx = list.findIndex(r => normalizarMatricula(r.matricula) === mat);
+  const idx = list.findIndex(r => claveMatriculaBBDD(r.matricula) === mat);
   const existing = idx >= 0 ? list[idx] : null;
   const idCliente = (data.idCliente || existing?.idCliente || '').toString().trim() || generateIdCliente();
   const moroso = data.moroso !== undefined ? !!data.moroso : (existing && existing.moroso !== undefined ? !!existing.moroso : false);
@@ -210,10 +245,10 @@ function addOrUpdateClienteBBDD(data) {
 
 /** Actualiza estadísticas del cliente al registrar un servicio. Opcional: nombreRegistrador (quien registró). */
 function actualizarClienteAlRegistrarServicio(matricula, importe, nombreRegistrador) {
-  const mat = normalizarMatricula(matricula);
+  const mat = claveMatriculaBBDD(matricula);
   if (!mat) return;
   const list = getClientesBBDD();
-  const idx = list.findIndex(r => normalizarMatricula(r.matricula) === mat);
+  const idx = list.findIndex(r => claveMatriculaBBDD(r.matricula) === mat);
   const now = new Date().toISOString();
   if (idx >= 0) {
     list[idx].interacciones = (list[idx].interacciones || 0) + 1;
@@ -337,6 +372,11 @@ function seedClientesBBDDIfEmpty() {
       saveClientesBBDD(arr);
     }
   } catch (e) { console.warn('seedClientesBBDDIfEmpty', e); }
+}
+
+if (typeof window !== 'undefined') {
+  window.mergeListasClientesBBDD = mergeListasClientesBBDD;
+  window.claveMatriculaBBDD = claveMatriculaBBDD;
 }
 
 if (typeof getClientesBBDD === 'function' && typeof saveClientesBBDD === 'function') {

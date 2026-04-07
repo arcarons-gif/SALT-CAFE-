@@ -98,6 +98,7 @@ function saveConvenios(convenios) {
   try {
     localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(convenios));
     if (typeof window !== 'undefined') {
+      window._conveniosTrustLocalMembershipUntil = Date.now() + 20000;
       setTimeout(function () {
         try {
           var api = window.backendApi;

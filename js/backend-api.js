@@ -247,11 +247,14 @@
     const base = getBaseUrl();
     if (!base) return;
     try {
-      await fetch(base + '/api/repo-export', {
+      const res = await fetch(base + '/api/repo-export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (res.ok && typeof window !== 'undefined') {
+        window._conveniosTrustLocalMembershipUntil = 0;
+      }
     } catch (e) {
       console.warn('SALTLAB API: no se pudo guardar exportación en server/data', e);
     }
