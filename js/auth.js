@@ -191,6 +191,10 @@ function clearUsersRemovedIds() {
 /**
  * Fusiona la lista del servidor con la local: por id gana la copia con fecha más reciente;
  * excluye ids borrados en este dispositivo hasta que un POST al servidor confirme el guardado.
+ *
+ * Si un id está en local pero el servidor ya no lo devuelve: solo se conserva como “alta pendiente”
+ * cuando su marca temporal es >= la actividad más reciente del servidor. Así un borrado hecho en
+ * otro PC no reaparece al fusionar con una copia local obsoleta.
  */
 function mergeUsersFromServer(serverList) {
   if (!Array.isArray(serverList)) return [];
@@ -218,18 +222,33 @@ function mergeUsersFromServer(serverList) {
   function ts(u) {
     if (!u) return 0;
     var t = u.fechaActualizacion || u.fechaCreacion || '';
-    return t ? new Date(t).getTime() : 0;
+    if (t) {
+      var ms = new Date(t).getTime();
+      if (!isNaN(ms)) return ms;
+    }
+    if (u.fechaAlta && String(u.fechaAlta).trim()) {
+      var d = new Date(String(u.fechaAlta).trim().slice(0, 10) + 'T12:00:00');
+      var n = d.getTime();
+      return isNaN(n) ? 0 : n;
+    }
+    return 0;
   }
   var byId = {};
+  var serverMaxTs = 0;
   serverList.forEach(function (u) {
     if (!u || !u.id) return;
     byId[u.id] = u;
+    serverMaxTs = Math.max(serverMaxTs, ts(u));
   });
   localList.forEach(function (u) {
     if (!u || !u.id) return;
     var ex = byId[u.id];
     if (!ex) {
-      byId[u.id] = u;
+      var tLocal = ts(u);
+      // Sin ninguna fecha en el servidor (datos muy antiguos): conservar altas locales como antes.
+      if (serverMaxTs === 0 || tLocal >= serverMaxTs) {
+        byId[u.id] = u;
+      }
       return;
     }
     byId[u.id] = ts(u) >= ts(ex) ? u : ex;
@@ -338,8 +357,16 @@ async function ensureSeedUsers() {
 }
 
 function saveUsers(users) {
-  _cachedUsers = Array.isArray(users) ? users : null;
-  localStorage.setItem(AUTH_STORAGE, JSON.stringify(users));
+  var list = Array.isArray(users) ? users : [];
+  _cachedUsers = list;
+  localStorage.setItem(AUTH_STORAGE, JSON.stringify(list));
+  try {
+    if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.syncUsersToServer === 'function') {
+      if (window.backendApi.getBaseUrl && window.backendApi.getBaseUrl()) {
+        window.backendApi.syncUsersToServer(list);
+      }
+    }
+  } catch (_) {}
 }
 
 function getSession() {
@@ -434,6 +461,7 @@ async function createUser(userData, createdBy) {
     cambiarPasswordObligatorio: esAutoregistro ? false : true,
     creadoPor: createdBy,
     fechaCreacion: new Date().toISOString(),
+    fechaActualizacion: new Date().toISOString(),
     fechaAlta: (userData.fechaAlta || new Date().toISOString().slice(0, 10)),
     responsable: (userData.responsable || '').trim() || null,
     puesto: (userData.puesto || '').trim() || '',
