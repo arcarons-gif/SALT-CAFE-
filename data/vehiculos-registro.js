@@ -14,7 +14,11 @@ function getRegistroVehiculos() {
 }
 
 function saveRegistroVehiculos(arr) {
-  localStorage.setItem(REGISTRO_VEHICULOS_STORAGE, JSON.stringify(arr));
+  const list = Array.isArray(arr) ? arr : [];
+  localStorage.setItem(REGISTRO_VEHICULOS_STORAGE, JSON.stringify(list));
+  if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.syncVehiculosRegistroToServer === 'function') {
+    window.backendApi.syncVehiculosRegistroToServer(list);
+  }
 }
 
 function claveMatriculaRegistro(mat) {

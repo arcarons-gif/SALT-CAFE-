@@ -2154,6 +2154,7 @@ var DATOS_COMPLETOS_STORAGE_MAP = [
 function aplicarDatosCompletosFromServer(payload) {
   if (!payload || typeof payload !== 'object') return;
   var i, key, storageKey, isString, val;
+  var usersToResync = null;
   var keysProtegerSiVacios = { convenios: 1, conveniosEmpleados: 1, conveniosPlacas: 1, servicios: 1, serviciosArchivoMensual: 1, lscmSocios: 1, economiaGastos: 1 };
   for (i = 0; i < DATOS_COMPLETOS_STORAGE_MAP.length; i++) {
     key = DATOS_COMPLETOS_STORAGE_MAP[i][0];
@@ -2162,7 +2163,10 @@ function aplicarDatosCompletosFromServer(payload) {
     if (!payload.hasOwnProperty(key)) continue;
     val = payload[key];
     if (key === 'users' && Array.isArray(val) && typeof mergeUsersFromServer === 'function') {
+      var rawServerUsers = JSON.stringify(val);
       val = mergeUsersFromServer(val);
+      var rawMergedUsers = JSON.stringify(val);
+      if (rawMergedUsers !== rawServerUsers) usersToResync = val;
     }
     if (key === 'servicios' && Array.isArray(val) && typeof mergeServiciosFromServer === 'function') {
       val = mergeServiciosFromServer(val);
@@ -2252,6 +2256,9 @@ function aplicarDatosCompletosFromServer(payload) {
   if (typeof window.invalidateClientesBBDDCache === 'function') window.invalidateClientesBBDDCache();
   if (typeof window.invalidateEconomiaCaches === 'function') window.invalidateEconomiaCaches();
   registroServicios = typeof getRegistroServicios === 'function' ? getRegistroServicios() : [];
+  if (usersToResync && window.backendApi && typeof window.backendApi.syncUsersToServer === 'function') {
+    window.backendApi.syncUsersToServer(usersToResync);
+  }
 }
 if (typeof window !== 'undefined') {
   window.aplicarDatosCompletosFromServer = aplicarDatosCompletosFromServer;

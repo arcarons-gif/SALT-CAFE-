@@ -8,6 +8,7 @@
   const FICHAJES_STORAGE = 'benny_fichajes';
   const SERVICIOS_STORAGE = 'benny_servicios';
   const SERVICIOS_ARCHIVO_STORAGE = 'benny_servicios_archivo_mensual';
+  const VEHICULOS_REGISTRO_STORAGE = 'benny_vehiculos_registro';
   const API_URL_STORAGE = 'saltlab_api_url';
   const POLL_INTERVAL_MS = 3000;
   const DEFAULT_API_URL = 'http://localhost:3001';
@@ -82,6 +83,10 @@
         const next = JSON.stringify(merged);
         localStorage.setItem(AUTH_STORAGE, next);
         if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
+        // Si el merge añade/corrige usuarios respecto al servidor, re-subir para que el backend converja.
+        if (JSON.stringify(users) !== next) {
+          await syncUsersToServer(merged);
+        }
         return prev !== next;
       }
       var local = [];
@@ -176,6 +181,32 @@
     }
   }
 
+  async function fetchAndApplyVehiculosRegistro() {
+    try {
+      const vehiculosRegistro = await fetchJson(getBaseUrl() + '/api/vehiculos-registro');
+      var list = Array.isArray(vehiculosRegistro) ? vehiculosRegistro : [];
+      var prev = localStorage.getItem(VEHICULOS_REGISTRO_STORAGE);
+      var merged = typeof window.mergeListasVehiculosRegistro === 'function'
+        ? window.mergeListasVehiculosRegistro(list, (function () {
+          try { return JSON.parse(prev || '[]'); } catch (_) { return []; }
+        })())
+        : list;
+      var next = JSON.stringify(merged);
+      if (list.length === 0) {
+        var localOnly = [];
+        try {
+          localOnly = JSON.parse(prev || '[]');
+        } catch (_) {}
+        if (localOnly.length > 0) await syncVehiculosRegistroToServer(localOnly);
+      }
+      if (prev === next) return false;
+      localStorage.setItem(VEHICULOS_REGISTRO_STORAGE, next);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function syncUsersToServer(users) {
     if (!Array.isArray(users)) return;
     try {
@@ -239,6 +270,19 @@
       });
     } catch (e) {
       console.warn('SALTLAB API: no se pudo sincronizar archivo mensual de servicios', e);
+    }
+  }
+
+  async function syncVehiculosRegistroToServer(vehiculosRegistro) {
+    if (!Array.isArray(vehiculosRegistro)) return;
+    try {
+      await fetch(getBaseUrl() + '/api/vehiculos-registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehiculosRegistro }),
+      });
+    } catch (e) {
+      console.warn('SALTLAB API: no se pudo sincronizar registro de vehículos', e);
     }
   }
 
@@ -358,8 +402,9 @@
         await fetchAndApplyFichajes();
         await fetchAndApplyServicios();
         await fetchAndApplyServiciosArchivo();
+        await fetchAndApplyVehiculosRegistro();
         window.dispatchEvent(new CustomEvent('benny-backend-sync', {
-          detail: { users: true, fichajes: true, servicios: true, serviciosArchivo: true }
+          detail: { users: true, fichajes: true, servicios: true, serviciosArchivo: true, vehiculosRegistro: true }
         }));
       }
     }, POLL_INTERVAL_MS);
@@ -405,6 +450,7 @@
       await fetchAndApplyFichajes();
       await fetchAndApplyServicios();
       await fetchAndApplyServiciosArchivo();
+      await fetchAndApplyVehiculosRegistro();
     }
     startPolling();
     return true;
@@ -431,11 +477,13 @@
     fetchAndApplyFichajes,
     fetchAndApplyServicios,
     fetchAndApplyServiciosArchivo,
+    fetchAndApplyVehiculosRegistro,
     fetchDatosCompletos,
     syncUsersToServer,
     syncFichajesToServer,
     syncServiciosToServer,
     syncServiciosArchivoToServer,
+    syncVehiculosRegistroToServer,
     saveRepoExport,
     mergeAlmacen,
     mergeInventario,

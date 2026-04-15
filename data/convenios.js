@@ -5,9 +5,11 @@
  */
 const CONVENIOS_STORAGE = 'benny_convenios';
 
-/** Solo N/A por defecto: el resto de convenios se dan de alta con documento firmado adjunto. */
+/** Convenios base disponibles desde inicio. */
 const CONVENIOS_DEFAULT = [
   { id: 'conv-na', nombre: 'N/A', descuento: 0, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false },
+  { id: 'conv-lscm', nombre: 'LSCM', descuento: 15, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false, registroDocumentoFirmado: true },
+  { id: 'conv-saltlab', nombre: 'SALTLAB', descuento: 20, fechaAcuerdo: null, acordadoPorTaller: '', acordadoPorEmpresa: '', privado: false, registroDocumentoFirmado: true },
 ];
 
 /** Quita adjuntos en base64 del convenio y deja solo registro ligero (empresa, %, nombre de fichero opcional). */
@@ -109,11 +111,27 @@ function getConvenios() {
       return soloNa;
     }
     list = list.map(c => ({ ...c, privado: c.privado === true }));
+    // Asegura convenios base aunque el almacenamiento venga de versiones antiguas.
+    var changed = false;
+    CONVENIOS_DEFAULT.forEach(function (base) {
+      var nombreBase = (base.nombre || '').toString().trim().toLowerCase();
+      if (!nombreBase) return;
+      var exists = list.some(function (c) {
+        return (c && (c.nombre || '').toString().trim().toLowerCase() === nombreBase);
+      });
+      if (!exists) {
+        list.push({ ...base });
+        changed = true;
+      }
+    });
     if (raw && raw.indexOf('"acuerdoArchivoDataUrl"') !== -1) {
       list = normalizarListaConveniosSinAdjuntosDataUrl(list);
       try {
         localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(list));
       } catch (e) { /* ignore */ }
+    }
+    if (changed) {
+      try { localStorage.setItem(CONVENIOS_STORAGE, JSON.stringify(list)); } catch (e) { /* ignore */ }
     }
     return list;
   } catch {

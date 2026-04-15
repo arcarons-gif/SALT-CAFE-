@@ -16,6 +16,7 @@ const usersPath = path.join(dataDir, 'users.json');
 const fichajesPath = path.join(dataDir, 'fichajes.json');
 const serviciosPath = path.join(dataDir, 'servicios.json');
 const serviciosArchivoMensualPath = path.join(dataDir, 'servicios-archivo-mensual.json');
+const vehiculosRegistroPath = path.join(dataDir, 'vehiculos-registro.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -89,6 +90,42 @@ function readServiciosArchivoMensual() {
 function writeServiciosArchivoMensual(rows) {
   ensureDataDir();
   fs.writeFileSync(serviciosArchivoMensualPath, JSON.stringify(rows), 'utf8');
+}
+
+function readVehiculosRegistro() {
+  ensureDataDir();
+  try {
+    const raw = fs.readFileSync(vehiculosRegistroPath, 'utf8');
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeVehiculosRegistro(rows) {
+  ensureDataDir();
+  fs.writeFileSync(vehiculosRegistroPath, JSON.stringify(rows), 'utf8');
+}
+
+function claveMatriculaVehiculoRegistro(mat) {
+  return (mat || '').toString().trim().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+}
+
+function mergeVehiculosRegistro(existing, incoming) {
+  const map = new Map();
+  (Array.isArray(existing) ? existing : []).forEach((r) => {
+    const k = claveMatriculaVehiculoRegistro(r && r.matricula);
+    if (!k) return;
+    map.set(k, { ...r });
+  });
+  (Array.isArray(incoming) ? incoming : []).forEach((r) => {
+    const k = claveMatriculaVehiculoRegistro(r && r.matricula);
+    if (!k) return;
+    const prev = map.get(k) || {};
+    map.set(k, { ...prev, ...r });
+  });
+  return Array.from(map.values());
 }
 
 /** Evita duplicar el mismo mes al sincronizar: gana la fila con más servicios (rep+tuneo), o mayor importe si empatan. */
@@ -341,6 +378,33 @@ app.get('/api/servicios-archivo-mensual', (req, res) => {
   }
 });
 
+// ----- Vehículos por matrícula (lookup rápido de modelo/convenio/placa) -----
+app.get('/api/vehiculos-registro', (req, res) => {
+  try {
+    res.json(readVehiculosRegistro());
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
+app.post('/api/vehiculos-registro', (req, res) => {
+  try {
+    const vehiculosRegistro = req.body.vehiculosRegistro;
+    if (!Array.isArray(vehiculosRegistro)) {
+      return res.status(400).json({ error: 'Se espera { vehiculosRegistro: [...] }' });
+    }
+    const existing = readVehiculosRegistro();
+    const merged = mergeVehiculosRegistro(existing, vehiculosRegistro);
+    writeVehiculosRegistro(merged);
+    writeDatosCompletosMerge({ vehiculosRegistro: merged });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e.message) });
+  }
+});
+
 app.post('/api/servicios-archivo-mensual', (req, res) => {
   try {
     const meses = req.body.meses;
@@ -426,6 +490,7 @@ function writeDatosCompletosMerge(merge) {
     if (merge.fichajes !== undefined) data.fichajes = merge.fichajes;
     if (merge.servicios !== undefined) data.servicios = merge.servicios;
     if (merge.serviciosArchivoMensual !== undefined) data.serviciosArchivoMensual = merge.serviciosArchivoMensual;
+    if (merge.vehiculosRegistro !== undefined) data.vehiculosRegistro = merge.vehiculosRegistro;
     data._exportadoAt = new Date().toISOString();
     ensureDataDir();
     fs.writeFileSync(datosCompletosPath, JSON.stringify(data, null, 2), 'utf8');
@@ -447,6 +512,7 @@ app.get('/api/datos-completos', (req, res) => {
     data.fichajes = readFichajes();
     data.servicios = readServicios();
     data.serviciosArchivoMensual = readServiciosArchivoMensual();
+    data.vehiculosRegistro = readVehiculosRegistro();
     data._exportadoAt = new Date().toISOString();
     res.json(data || {});
   } catch (e) {
