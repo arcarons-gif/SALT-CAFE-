@@ -492,11 +492,6 @@
     startPolling,
   };
 
-  document.addEventListener('DOMContentLoaded', function () {
-    window.backendApi.init().then(function (ok) {
-      if (ok && typeof actualizarVista === 'function') {
-        actualizarVista();
-      }
-    });
-  });
+  // init() se llama desde app.js tras ensureSeedUsers() para no pisar la BBDD local
+  // antes de la migración inicial ni provocar carreras con usuarios recién creados.
 })();

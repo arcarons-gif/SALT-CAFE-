@@ -34,7 +34,7 @@
           </div>
           <div class="field">
             <label>Contraseña</label>
-            <input type="password" id="loginPassword" autocomplete="current-password" class="login-input" placeholder="Obligatoria (vacía solo primer acceso ETHAN)">
+            <input type="password" id="loginPassword" autocomplete="current-password" class="login-input" placeholder="Solo obligatoria para admin; resto puede dejarla vacía">
           </div>
           <div class="field checkbox-field login-remember">
             <label><input type="checkbox" id="loginRecordar"> Recordar credenciales</label>
@@ -65,11 +65,11 @@
           </div>
           <div class="field">
             <label>Contraseña</label>
-            <input type="text" id="crearUsuarioPassword" required minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+            <input type="text" id="crearUsuarioPassword" placeholder="Opcional; vacío = entrar sin contraseña" autocomplete="new-password">
           </div>
           <div class="field">
             <label>Confirmar contraseña</label>
-            <input type="text" id="crearUsuarioPasswordConfirm" required minlength="4" placeholder="Repite la contraseña" autocomplete="new-password">
+            <input type="text" id="crearUsuarioPasswordConfirm" placeholder="Opcional" autocomplete="new-password">
             <span class="field-hint field-error" id="crearUsuarioPasswordConfirmError" style="display:none;"></span>
           </div>
           <p id="crearUsuarioError" class="login-error" style="display:none;"></p>

@@ -14,17 +14,15 @@ const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v2';
 
 /**
  * Solo estos logins se vuelven a crear solos si faltan (cuentas de sistema).
- * Gerald J, ETHAN, etc. están en SEED_USERS para la migración inicial o nuevas instalaciones,
- * pero un admin puede borrarlos y no deben reaparecer al recargar.
+ * ETHAN está en SEED_USERS para la migración inicial; un admin puede borrarlo.
  */
 const USERNAMES_SEED_SIEMPRE_RECREAR = ['admin', 'savannah', 'tyrone'];
 
-/** Únicos usuarios predefinidos. Cualquier otro usuario se elimina en la migración. */
+/** Únicos usuarios predefinidos. Instalaciones nuevas: admin, Savannah, Tyrone y ETHAN. */
 const SEED_USERS = [
   { username: 'admin', nombre: 'Administrador', password: '7264', rol: 'admin' },
   { username: 'Savannah', nombre: 'Savannah', password: '1196', rol: 'admin' },
   { username: 'Tyrone', nombre: 'Tyrone', password: '1234', rol: 'admin' },
-  { username: 'Gerald J', nombre: 'Gerald J. Ford', password: '1234', rol: 'mecanico', cambiarPasswordObligatorio: true },
   {
     username: 'ETHAN',
     nombre: 'ETHAN',
@@ -170,21 +168,35 @@ function invalidateUsersCache() {
 if (typeof window !== 'undefined') window.invalidateUsersCache = invalidateUsersCache;
 
 const USERS_REMOVED_IDS_KEY = 'benny_users_removed_ids';
+const USERS_REMOVED_USERNAMES_KEY = 'benny_users_removed_usernames';
+/** Una vez: elimina «Gerald J» del registro y evita que vuelva desde copias del servidor antiguas. */
+const PURGE_GERALD_J_MIGRATION = 'benny_purge_gerald_j_v1';
 
-function trackUserDeletedFromDirectory(userId) {
-  if (!userId) return;
+function trackUserDeletedFromDirectory(userId, username) {
+  if (userId) {
+    try {
+      var raw = localStorage.getItem(USERS_REMOVED_IDS_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(arr)) arr = [];
+      if (arr.indexOf(userId) === -1) arr.push(userId);
+      localStorage.setItem(USERS_REMOVED_IDS_KEY, JSON.stringify(arr));
+    } catch (_) {}
+  }
+  var un = (username || '').toString().trim().toLowerCase();
+  if (!un) return;
   try {
-    var raw = localStorage.getItem(USERS_REMOVED_IDS_KEY);
-    var arr = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(arr)) arr = [];
-    if (arr.indexOf(userId) === -1) arr.push(userId);
-    localStorage.setItem(USERS_REMOVED_IDS_KEY, JSON.stringify(arr));
+    var rawN = localStorage.getItem(USERS_REMOVED_USERNAMES_KEY);
+    var arrN = rawN ? JSON.parse(rawN) : [];
+    if (!Array.isArray(arrN)) arrN = [];
+    if (arrN.indexOf(un) === -1) arrN.push(un);
+    localStorage.setItem(USERS_REMOVED_USERNAMES_KEY, JSON.stringify(arrN));
   } catch (_) {}
 }
 
 function clearUsersRemovedIds() {
   try {
     localStorage.removeItem(USERS_REMOVED_IDS_KEY);
+    localStorage.removeItem(USERS_REMOVED_USERNAMES_KEY);
   } catch (_) {}
 }
 
@@ -217,6 +229,18 @@ function mergeUsersFromServer(serverList) {
   var removedSet = {};
   removed.forEach(function (id) {
     if (id) removedSet[id] = true;
+  });
+  var removedNames = [];
+  try {
+    var rn = localStorage.getItem(USERS_REMOVED_USERNAMES_KEY);
+    removedNames = rn ? JSON.parse(rn) : [];
+  } catch (_) {
+    removedNames = [];
+  }
+  if (!Array.isArray(removedNames)) removedNames = [];
+  var removedNamesSet = {};
+  removedNames.forEach(function (n) {
+    if (n) removedNamesSet[(n || '').toString().trim().toLowerCase()] = true;
   });
 
   function ts(u) {
@@ -258,7 +282,11 @@ function mergeUsersFromServer(serverList) {
       return byId[k];
     })
     .filter(function (u) {
-      return u && !removedSet[u.id];
+      if (!u) return false;
+      if (removedSet[u.id]) return false;
+      var nu = (u.username || '').toString().trim().toLowerCase();
+      if (nu && removedNamesSet[nu]) return false;
+      return true;
     });
 
   /**
@@ -279,6 +307,19 @@ function mergeUsersFromServer(serverList) {
     }
   } catch (_) {}
 
+  try {
+    var serverNames = {};
+    serverList.forEach(function (u) {
+      if (u && u.username) serverNames[(u.username || '').toString().trim().toLowerCase()] = true;
+    });
+    var nextRemovedNames = removedNames.filter(function (name) {
+      return name && serverNames[name];
+    });
+    if (nextRemovedNames.length !== removedNames.length) {
+      localStorage.setItem(USERS_REMOVED_USERNAMES_KEY, JSON.stringify(nextRemovedNames));
+    }
+  } catch (_) {}
+
   return merged;
 }
 
@@ -291,6 +332,10 @@ if (typeof window !== 'undefined') {
  * Migración inicial: carga todos los SEED_USERS una vez.
  * Después solo se recrean si faltan admin, Savannah o Tyrone (USERNAMES_SEED_SIEMPRE_RECREAR).
  */
+function loginRequiereContrasenaObligatoria(username) {
+  return (username || '').toString().trim().toLowerCase() === 'admin';
+}
+
 async function ensureSeedUsers() {
   if (!localStorage.getItem(USUARIOS_PREDEFINIDOS_MIGRATION)) {
     const users = [];
@@ -354,6 +399,20 @@ async function ensureSeedUsers() {
     saveUsers(users);
     localStorage.setItem(SYNC_SEED_PASSWORDS_MIGRATION, '1');
   }
+  if (!localStorage.getItem(PURGE_GERALD_J_MIGRATION)) {
+    var gu = getUsers();
+    gu.forEach(function (u) {
+      if ((u.username || '').toString().trim().toLowerCase() === 'gerald j') {
+        trackUserDeletedFromDirectory(u.id, u.username);
+      }
+    });
+    gu = gu.filter(function (u) {
+      return (u.username || '').toString().trim().toLowerCase() !== 'gerald j';
+    });
+    trackUserDeletedFromDirectory(null, 'Gerald J');
+    saveUsers(gu);
+    localStorage.setItem(PURGE_GERALD_J_MIGRATION, '1');
+  }
 }
 
 function saveUsers(users) {
@@ -413,6 +472,12 @@ async function login(username, password) {
     safeUser.cambiarPasswordObligatorio = true;
     return safeUser;
   }
+  if (!loginRequiereContrasenaObligatoria(user.username) && passTrim === '') {
+    const { passwordHash, salt, ...safeUser } = user;
+    setSession(user);
+    safeUser.cambiarPasswordObligatorio = !!user.cambiarPasswordObligatorio;
+    return safeUser;
+  }
   const valid = await verifyPassword(passTrim, user.passwordHash, user.salt || saltBootstrap);
   if (!valid) return null;
   const { passwordHash, salt, ...safeUser } = user;
@@ -443,7 +508,9 @@ async function createUser(userData, createdBy) {
     return { error: 'Ese nombre de usuario ya está registrado. Elige otro.' };
   }
   const users = getUsers();
-  const passwordInicial = userData.password || PASSWORD_PREDETERMINADA;
+  const passwordInicial = userData.password != null && String(userData.password).length > 0
+    ? String(userData.password)
+    : '';
   const salt = crypto.randomUUID() + Date.now();
   const passwordHash = await hashPassword(passwordInicial, salt);
   const esAutoregistro = createdBy === 'self';
@@ -546,7 +613,7 @@ function deleteUser(userId) {
     if (admins.length <= 1) return { error: 'No se puede eliminar al único administrador' };
   }
   users.splice(idx, 1);
-  trackUserDeletedFromDirectory(userId);
+  trackUserDeletedFromDirectory(userId, user.username);
   saveUsers(users);
   try {
     const sess = getSession();

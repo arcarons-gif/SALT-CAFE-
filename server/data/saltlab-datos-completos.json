@@ -135,28 +135,6 @@
       "fondoFichaIndex": null
     },
     {
-      "id": "u-seed-Gerald-J",
-      "username": "Gerald J",
-      "passwordHash": "26dcfd8d227c79122e79cb014ef9668063bd48e846f2e9a0e36f3259ee83a7c6",
-      "salt": "98c48d30-0b3b-4db7-abe4-314c7f3056b71776237388599",
-      "nombre": "Gerald J. Ford",
-      "rol": "mecanico",
-      "permisos": {},
-      "activo": true,
-      "cambiarPasswordObligatorio": true,
-      "primerAccesoSinPassword": false,
-      "creadoPor": "system",
-      "fechaCreacion": "2026-04-15T07:16:28.599Z",
-      "fechaAlta": "2026-04-15",
-      "responsable": null,
-      "puesto": "",
-      "salario": null,
-      "fotoPerfil": null,
-      "equipo": [],
-      "fotosFicha": [],
-      "fondoFichaIndex": null
-    },
-    {
       "id": "u-seed-ETHAN",
       "username": "ETHAN",
       "passwordHash": "7ab7ba2d0bc7b7317c252b16407a5556d12c95ebe8cee5a30500e7a70656062d",

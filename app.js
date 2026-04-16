@@ -1243,7 +1243,11 @@ function arranqueAuth() {
       var done = false;
       function seguir() { if (!done) { done = true; continuar(); } }
       var timeoutId = setTimeout(seguir, 15000);
-      window.backendApi.init().then(function () { clearTimeout(timeoutId); seguir(); }).catch(function () { clearTimeout(timeoutId); seguir(); });
+      window.backendApi.init().then(function (ok) {
+        clearTimeout(timeoutId);
+        if (ok && typeof actualizarVista === 'function') actualizarVista();
+        seguir();
+      }).catch(function () { clearTimeout(timeoutId); seguir(); });
     } else {
       continuar();
     }
@@ -1370,8 +1374,8 @@ function arranqueAuthContinuar() {
       var confirmErrEl = document.getElementById('crearUsuarioPasswordConfirmError');
       if (errEl) errEl.style.display = 'none';
       if (confirmErrEl) confirmErrEl.style.display = 'none';
-      if (password.length < 4) {
-        if (errEl) { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; }
+      if (password.length > 0 && password.length < 4) {
+        if (errEl) { errEl.textContent = 'Si usas contraseña, debe tener al menos 4 caracteres.'; errEl.style.display = 'block'; }
         return;
       }
       if (password !== passwordConfirm) {
