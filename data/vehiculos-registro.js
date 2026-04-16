@@ -59,7 +59,7 @@ function guardarVehiculoRegistro(data) {
     matricula: data.matricula.trim(),
     modelo: data.modelo,
     nombreIC: (data.nombreIC || '').trim() || data.nombreIC,
-    convenio: data.convenio || 'N/A',
+    convenio: (data.convenio != null && String(data.convenio).trim() !== '') ? String(data.convenio).trim() : '',
     placaServicio: (data.placaServicio || '').trim() || '',
   };
   if (idx >= 0) {

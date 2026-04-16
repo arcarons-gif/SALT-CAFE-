@@ -616,8 +616,9 @@ function actualizarDescuentoSuperior() {
   if (!wrap || !texto || !editable) return;
   const puedeEditar = hasPermission(getSession(), 'gestionarUsuarios');
   const desc = (el.descuentoPorcentaje && el.descuentoPorcentaje.value) || '0';
-  const neg = (el.negocios && el.negocios.value) || 'N/A';
-  texto.textContent = desc + '% · ' + (neg || 'N/A');
+  const negRaw = (el.negocios && el.negocios.value != null) ? String(el.negocios.value).trim() : '';
+  const negDisplay = negRaw ? negRaw : '—';
+  texto.textContent = desc + '% · ' + negDisplay;
   texto.style.display = puedeEditar ? 'none' : '';
   editable.style.display = puedeEditar ? 'flex' : 'none';
 }
@@ -6185,6 +6186,7 @@ function vincularRegistroClientes() {
       if (el.negocios && el.negocios.options) {
         for (var i = 0; i < el.negocios.options.length; i++) {
           var o = el.negocios.options[i];
+          if ((o.value || '').trim() === '') continue;
           convenioSelect.appendChild(new Option(o.textContent, o.value || ''));
         }
       }
@@ -11089,6 +11091,10 @@ function cargarConvenios() {
   function renderOpcionesConvenios(lista) {
     var prevVal = (el.negocios && el.negocios.value) ? el.negocios.value.trim() : '';
     el.negocios.innerHTML = '';
+    var optPh = document.createElement('option');
+    optPh.value = '';
+    optPh.textContent = '— Elegir convenio —';
+    el.negocios.appendChild(optPh);
     if (!lista || lista.length === 0) {
       var optNa = document.createElement('option');
       optNa.value = 'N/A';
@@ -11125,6 +11131,8 @@ function cargarConvenios() {
           }
         }
       }
+    } else {
+      el.negocios.selectedIndex = 0;
     }
     if (typeof aplicarDescuentoDesdeConvenioNegocios === 'function') aplicarDescuentoDesdeConvenioNegocios();
   }
@@ -11385,7 +11393,7 @@ function aplicarRegistroACalculadora(reg) {
   var placaVal = (reg.placaServicio || (reg.placaPolicial && reg.placaPolicial !== '-' ? reg.placaPolicial : '') || '').toString().trim();
   var esPolicia = placaVal !== '' && placaVal !== '-';
   if (el.negocios) {
-    var convenioAUsar = reg.convenio || 'N/A';
+    var convenioAUsar = (reg.convenio || '').toString().trim();
     if (esPolicia && typeof getConvenios === 'function') {
       var convenios = getConvenios();
       var sapd = convenios.find(function (c) { return (c.nombre || '').toUpperCase() === 'SAPD'; });
@@ -11393,20 +11401,27 @@ function aplicarRegistroACalculadora(reg) {
     }
     var convenioTrim = convenioAUsar.trim();
     var opts = el.negocios.options;
-    var convenioL = convenioTrim.toLowerCase();
-    for (var i = 0; i < opts.length; i++) {
-      var optVal = (opts[i].value || '').trim();
-      if (optVal === convenioTrim || optVal.toLowerCase() === convenioL) {
-        el.negocios.selectedIndex = i;
-        break;
+    if (!convenioTrim) {
+      el.negocios.selectedIndex = 0;
+      if (el.descuentoPorcentaje) el.descuentoPorcentaje.value = '0';
+    } else {
+      var matched = false;
+      var convenioL = convenioTrim.toLowerCase();
+      for (var i = 0; i < opts.length; i++) {
+        var optVal = (opts[i].value || '').trim();
+        if (optVal === convenioTrim || optVal.toLowerCase() === convenioL) {
+          el.negocios.selectedIndex = i;
+          matched = true;
+          break;
+        }
       }
+      var nombreParaDesc = convenioTrim;
+      if (matched && el.negocios.selectedIndex >= 0) {
+        nombreParaDesc = (el.negocios.options[el.negocios.selectedIndex].value || convenioTrim).trim();
+      }
+      var descReg = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nombreParaDesc) : NaN;
+      if (!isNaN(descReg) && el.descuentoPorcentaje) el.descuentoPorcentaje.value = String(descReg);
     }
-    var nombreParaDesc = convenioTrim;
-    if (el.negocios.selectedIndex >= 0) {
-      nombreParaDesc = (el.negocios.options[el.negocios.selectedIndex].value || convenioTrim).trim();
-    }
-    var descReg = typeof getDescuentoParaNombreConvenio === 'function' ? getDescuentoParaNombreConvenio(nombreParaDesc) : NaN;
-    if (!isNaN(descReg) && el.descuentoPorcentaje) el.descuentoPorcentaje.value = String(descReg);
     if (typeof actualizarDescuentoSuperior === 'function') actualizarDescuentoSuperior();
   }
   var placa = document.getElementById('placaServicio');
@@ -12013,9 +12028,12 @@ function actualizarVista() {
   if (el.matriculaCalcModelo) el.matriculaCalcModelo.textContent = modelo !== '-' ? ' · ' + modelo : '';
   var pasoCalcMatEl = document.getElementById('pasoCalcMatricula');
   if (pasoCalcMatEl) pasoCalcMatEl.textContent = modoPresupuestoSinMatricula ? 'Sin matrícula' : (matricula !== '-' ? matricula : '—');
-  const neg = (el.negocios && el.negocios.value) ? el.negocios.value : 'N/A';
+  const negRaw = (el.negocios && el.negocios.value != null) ? String(el.negocios.value).trim() : '';
   const desc = (p && p.descuento != null && !isNaN(Number(p.descuento))) ? Number(p.descuento) : 0;
-  const convenio = neg === 'N/A' ? 'N/A (' + desc + '%)' : neg + ' (' + desc + '%)';
+  var convenio;
+  if (!negRaw) convenio = '— (' + desc + '%)';
+  else if (negRaw === 'N/A') convenio = 'N/A (' + desc + '%)';
+  else convenio = negRaw + ' (' + desc + '%)';
 
   rep = tipoServicio === 'reparacion';
   const tuneo = tipoServicio === 'tuneo' || tipoServicio === 'tuneoReparacion';
@@ -12332,6 +12350,7 @@ function requiereConvenioParaMatricula(matricula, onListo) {
   if (el.negocios && el.negocios.options) {
     for (var i = 0; i < el.negocios.options.length; i++) {
       var o = el.negocios.options[i];
+      if ((o.value || '').trim() === '') continue;
       select.appendChild(new Option(o.textContent, o.value));
     }
   }
@@ -12355,7 +12374,11 @@ function cerrarModalConvenioPrimeraVez() {
 function aceptarModalConvenioPrimeraVez() {
   var mat = _convenioPrimeraVezMatricula;
   var select = document.getElementById('modalConvenioPrimeraVezSelect');
-  var val = (select && select.value) ? (select.value || '').trim() : 'N/A';
+  var val = (select && select.value) ? (select.value || '').trim() : '';
+  if (!val) {
+    alert('Elige un convenio en la lista.');
+    return;
+  }
   if (mat && typeof addOrUpdateClienteBBDD === 'function') addOrUpdateClienteBBDD({ matricula: mat, convenio: val });
   if (el.negocios) el.negocios.value = val;
   if (typeof aplicarDescuentoDesdeConvenioNegocios === 'function') aplicarDescuentoDesdeConvenioNegocios();

@@ -191,7 +191,7 @@ function clienteToRegistro(cliente) {
     matricula: cliente.matricula,
     modelo: cliente.codigoVehiculo || cliente.modelo,
     nombreIC: cliente.nombreVehiculo || cliente.nombreIC,
-    convenio: cliente.convenio || 'N/A',
+    convenio: (cliente.convenio != null && String(cliente.convenio).trim() !== '') ? String(cliente.convenio).trim() : '',
     placaServicio: cliente.placaPolicial || cliente.placaServicio || '',
   };
 }
