@@ -6778,12 +6778,8 @@ function vincularRegistroClientes() {
     var passwordVal = (document.getElementById('usuarioPassword') && document.getElementById('usuarioPassword').value) ? String(document.getElementById('usuarioPassword').value).trim() : '';
     var confirmVal = (document.getElementById('usuarioPasswordConfirm') && document.getElementById('usuarioPasswordConfirm').value) ? String(document.getElementById('usuarioPasswordConfirm').value).trim() : '';
     if (!id) {
-      if (!passwordVal) {
-        alert('La contraseña es obligatoria para nuevos usuarios.');
-        return;
-      }
-      if (passwordVal.length < 4) {
-        alert('La contraseña debe tener al menos 4 caracteres.');
+      if (passwordVal.length > 0 && passwordVal.length < 4) {
+        alert('Si usas contraseña, debe tener al menos 4 caracteres.');
         return;
       }
       if (passwordVal !== confirmVal) {
@@ -7749,16 +7745,16 @@ function abrirFormUsuario(userId) {
     document.getElementById('usuarioId').value = '';
     document.getElementById('usuarioUsername').readOnly = false;
     document.getElementById('usuarioFechaAlta').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('usuarioPassword').required = true;
+    document.getElementById('usuarioPassword').required = false;
     document.getElementById('usuarioPassword').type = 'text';
-    document.getElementById('usuarioPassword').placeholder = 'Mínimo 4 caracteres';
+    document.getElementById('usuarioPassword').placeholder = 'Opcional; vacío = entrar sin contraseña';
     var toggleBtnNew = fieldPassword ? fieldPassword.querySelector('.btn-password-toggle') : null;
     if (toggleBtnNew) toggleBtnNew.style.display = 'none';
     var fieldPasswordConfirm = document.getElementById('fieldPasswordConfirm');
     if (fieldPasswordConfirm) {
       fieldPasswordConfirm.style.display = 'block';
       var confirmInput = document.getElementById('usuarioPasswordConfirm');
-      if (confirmInput) { confirmInput.value = ''; confirmInput.required = true; }
+      if (confirmInput) { confirmInput.value = ''; confirmInput.required = false; confirmInput.placeholder = 'Opcional'; }
       var confirmErr = document.getElementById('usuarioPasswordConfirmError');
       if (confirmErr) { confirmErr.style.display = 'none'; confirmErr.textContent = ''; }
     }
