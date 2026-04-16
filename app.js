@@ -614,13 +614,14 @@ function actualizarDescuentoSuperior() {
   const texto = document.getElementById('descuentoSuperiorTexto');
   const editable = document.getElementById('descuentoSuperiorEditable');
   if (!wrap || !texto || !editable) return;
-  const puedeEditar = hasPermission(getSession(), 'gestionarUsuarios');
+  // Quien puede ver presupuesto debe poder elegir convenio y % (no solo administradores).
+  const puedeUsarControles = hasPermission(getSession(), 'verPresupuesto');
   const desc = (el.descuentoPorcentaje && el.descuentoPorcentaje.value) || '0';
   const negRaw = (el.negocios && el.negocios.value != null) ? String(el.negocios.value).trim() : '';
   const negDisplay = negRaw ? negRaw : '—';
   texto.textContent = desc + '% · ' + negDisplay;
-  texto.style.display = puedeEditar ? 'none' : '';
-  editable.style.display = puedeEditar ? 'flex' : 'none';
+  texto.style.display = puedeUsarControles ? 'none' : '';
+  editable.style.display = puedeUsarControles ? 'flex' : 'none';
 }
 
 function actualizarVisibilidadPlacaServicio() {
@@ -1261,9 +1262,16 @@ function arranqueAuth() {
 }
 
 function arranqueAuthContinuar() {
-  const session = getSession();
+  let session = getSession();
   aplicarVisibilidadHintLogin();
   if (session) {
+    if (session.id && typeof getUsers === 'function' && typeof setSession === 'function') {
+      var freshUser = getUsers().find(function (u) { return u && u.id === session.id; });
+      if (freshUser) {
+        setSession(freshUser);
+        session = getSession();
+      }
+    }
     var loginScreen = document.getElementById('loginScreen');
     var cambioScreen = document.getElementById('cambioPasswordScreen');
     var cambioForm = document.getElementById('cambioPasswordForm');

@@ -59,6 +59,16 @@ const PERMISOS = {
   gestionarClubLscm: 'Gestionar club de socios LSCM (altas, vehículos vinculados a BBDD clientes)',
 };
 
+/** Permisos por defecto para mecánicos/peones si no se envía objeto (p. ej. autoregistro). Incluye presupuesto y descuentos. */
+var DEFAULT_PERMISOS_MECANICO_CALCULADORA = {
+  verCalculadora: true,
+  verPresupuesto: true,
+  registrarTuneo: true,
+  registrarReparacion: true,
+  verRegistroServicios: true,
+  verOrganigrama: true,
+};
+
 var ADMIN_PERMISOS_FULL = {
   verCalculadora: true,
   verPresupuesto: true,
@@ -171,6 +181,8 @@ const USERS_REMOVED_IDS_KEY = 'benny_users_removed_ids';
 const USERS_REMOVED_USERNAMES_KEY = 'benny_users_removed_usernames';
 /** Una vez: elimina «Gerald J» del registro y evita que vuelva desde copias del servidor antiguas. */
 const PURGE_GERALD_J_MIGRATION = 'benny_purge_gerald_j_v1';
+/** Una vez: empleados no admin con permisos vacíos reciben permisos mínimos de calculadora (incl. verPresupuesto). */
+const MIGRATE_PERMISOS_MECANICO_VACIOS = 'benny_migrate_mecanico_permisos_calc_v1';
 
 function trackUserDeletedFromDirectory(userId, username) {
   if (userId) {
@@ -413,6 +425,21 @@ async function ensureSeedUsers() {
     saveUsers(gu);
     localStorage.setItem(PURGE_GERALD_J_MIGRATION, '1');
   }
+  if (!localStorage.getItem(MIGRATE_PERMISOS_MECANICO_VACIOS)) {
+    var rolesMigrar = { mecanico: 1, peon: 1, enpracticas: 1, responsablemecanicos: 1 };
+    var listaU = getUsers();
+    var hubo = false;
+    listaU.forEach(function (u) {
+      if (!u || (u.rol || '').toString().trim().toLowerCase() === 'admin') return;
+      if (!rolesMigrar[(u.rol || '').toString().trim().toLowerCase()]) return;
+      var p = u.permisos;
+      if (p && typeof p === 'object' && Object.keys(p).length > 0) return;
+      u.permisos = Object.assign({}, DEFAULT_PERMISOS_MECANICO_CALCULADORA);
+      hubo = true;
+    });
+    if (hubo) saveUsers(listaU);
+    localStorage.setItem(MIGRATE_PERMISOS_MECANICO_VACIOS, '1');
+  }
 }
 
 function saveUsers(users) {
@@ -515,7 +542,15 @@ async function createUser(userData, createdBy) {
   const passwordHash = await hashPassword(passwordInicial, salt);
   const esAutoregistro = createdBy === 'self';
   const rol = userData.rol || 'mecanico';
-  const permisos = (rol === 'admin') ? Object.assign({}, ADMIN_PERMISOS_FULL) : (userData.permisos || {});
+  var permisosIn = userData.permisos;
+  var permisos;
+  if (rol === 'admin') {
+    permisos = Object.assign({}, ADMIN_PERMISOS_FULL);
+  } else if (permisosIn && typeof permisosIn === 'object' && Object.keys(permisosIn).length > 0) {
+    permisos = permisosIn;
+  } else {
+    permisos = Object.assign({}, DEFAULT_PERMISOS_MECANICO_CALCULADORA);
+  }
   const newUser = {
     id: 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
     username: usernameTrim,
