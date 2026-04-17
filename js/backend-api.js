@@ -208,7 +208,7 @@
   }
 
   async function syncUsersToServer(users) {
-    if (!Array.isArray(users)) return;
+    if (!Array.isArray(users)) return false;
     try {
       var res = await fetch(getBaseUrl() + '/api/users', {
         method: 'POST',
@@ -218,6 +218,24 @@
       // No llamar clearUsersRemovedIds aquí: si el GET del polling aún devuelve la lista antigua,
       // se pierde el tombstone y el usuario borrado reaparece. La poda de ids ocurre en mergeUsersFromServer
       // cuando el servidor ya no incluye ese usuario.
+      if (res.ok) {
+        try {
+          var localUsers = JSON.parse(localStorage.getItem(AUTH_STORAGE) || '[]');
+          if (Array.isArray(localUsers)) {
+            var changed = false;
+            localUsers.forEach(function (u) {
+              if (u && u.pendienteSync) {
+                delete u.pendienteSync;
+                changed = true;
+              }
+            });
+            if (changed) {
+              localStorage.setItem(AUTH_STORAGE, JSON.stringify(localUsers));
+              if (typeof window.invalidateUsersCache === 'function') window.invalidateUsersCache();
+            }
+          }
+        } catch (_) {}
+      }
       if (!res.ok) {
         var base = getBaseUrl();
         var hint = res.status === 0 ? ' (red/CORS/bloqueo; revisa URL y que el servidor responda)' : '';
@@ -229,8 +247,10 @@
           hint
         );
       }
+      return !!res.ok;
     } catch (e) {
       console.warn('SALTLAB API: no se pudo sincronizar usuarios', e);
+      return false;
     }
   }
 

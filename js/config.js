@@ -8,8 +8,8 @@
  * por HTTPS; el backend también debe ser HTTPS (Render lo es) para evitar contenido mixto.
  */
 
-/** Backend cuando la app se abre en local (mismo PC). Usa localhost:3001 si el servidor corre en esta máquina; si está en otro PC de la red, pon su IP (ej. http://192.168.0.63:3001). */
-var API_URL_LOCAL = 'http://localhost:3001';
+/** Backend cuando la app se abre en local (mismo PC). Para que todos compartan la misma BBDD, apuntamos también al backend público. */
+var API_URL_LOCAL = 'https://salt-cafe.onrender.com';
 
 /**
  * Backend cuando la app se abre desde GitHub Pages (cualquier *.github.io).

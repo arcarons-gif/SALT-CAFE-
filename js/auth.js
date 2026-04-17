@@ -281,8 +281,11 @@ function mergeUsersFromServer(serverList) {
     var ex = byId[u.id];
     if (!ex) {
       var tLocal = ts(u);
+      var pendienteSync = !!u.pendienteSync;
       // Sin ninguna fecha en el servidor (datos muy antiguos): conservar altas locales como antes.
-      if (serverMaxTs === 0 || tLocal >= serverMaxTs) {
+      // También conservar altas/ediciones locales pendientes de confirmar en backend para que no
+      // desaparezcan por desfase de reloj entre cliente y servidor.
+      if (pendienteSync || serverMaxTs === 0 || tLocal >= serverMaxTs) {
         byId[u.id] = u;
       }
       return;
@@ -573,11 +576,34 @@ async function createUser(userData, createdBy) {
     fotosFicha: Array.isArray(userData.fotosFicha) ? userData.fotosFicha : [],
     fondoFichaIndex: userData.fondoFichaIndex != null ? Number(userData.fondoFichaIndex) : null,
     idClienteBBDD: (userData.idClienteBBDD && String(userData.idClienteBBDD).trim()) ? String(userData.idClienteBBDD).trim() : null,
+    pendienteSync: true,
   };
   if (!newUser.equipo) newUser.equipo = [];
   if (!newUser.fotosFicha) newUser.fotosFicha = [];
   users.push(newUser);
   saveUsers(users);
+  // Si hay backend configurado, exigir persistencia real en servidor.
+  // Si falla, revertimos la alta local para no dejar estado inconsistente.
+  try {
+    if (
+      typeof window !== 'undefined' &&
+      window.backendApi &&
+      typeof window.backendApi.getBaseUrl === 'function' &&
+      window.backendApi.getBaseUrl() &&
+      typeof window.backendApi.syncUsersToServer === 'function'
+    ) {
+      var synced = await window.backendApi.syncUsersToServer(users);
+      if (!synced) {
+        var rollback = getUsers().filter(function (u) { return u && u.id !== newUser.id; });
+        saveUsers(rollback);
+        return { error: 'No se pudo guardar el usuario en el servidor. Revisa la conexión e inténtalo de nuevo.' };
+      }
+    }
+  } catch (_) {
+    var rollback2 = getUsers().filter(function (u) { return u && u.id !== newUser.id; });
+    saveUsers(rollback2);
+    return { error: 'No se pudo guardar el usuario en el servidor. Revisa la conexión e inténtalo de nuevo.' };
+  }
   return { user: { ...newUser, passwordHash: undefined, salt: undefined } };
 }
 
