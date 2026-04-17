@@ -207,13 +207,14 @@
     }
   }
 
-  async function syncUsersToServer(users) {
+  async function syncUsersToServer(users, deletedIds) {
     if (!Array.isArray(users)) return false;
+    var dels = Array.isArray(deletedIds) ? deletedIds.filter(Boolean) : [];
     try {
       var res = await fetch(getBaseUrl() + '/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ users }),
+        body: JSON.stringify({ users, deletedIds: dels.length ? dels : undefined }),
       });
       // No llamar clearUsersRemovedIds aquí: si el GET del polling aún devuelve la lista antigua,
       // se pierde el tombstone y el usuario borrado reaparece. La poda de ids ocurre en mergeUsersFromServer
@@ -476,14 +477,7 @@
     return true;
   }
 
-  // Envolver saveUsers para enviar al servidor después de guardar en localStorage
-  var originalSaveUsers = window.saveUsers;
-  if (typeof originalSaveUsers === 'function') {
-    window.saveUsers = function (users) {
-      originalSaveUsers(users);
-      syncUsersToServer(users);
-    };
-  }
+  // saveUsers (auth.js) ya llama a syncUsersToServer; no duplicar POST aquí.
 
   // saveFichajes ya sincroniza con el servidor desde data/fichajes.js si backendApi está disponible
 

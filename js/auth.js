@@ -472,17 +472,25 @@ async function ensureSeedUsers() {
   }
 }
 
-function saveUsers(users) {
+/**
+ * @param {Array} users
+ * @param {{ deletedIds?: string[] }} [opts] – ids eliminados en este guardado (el servidor los quita del merge).
+ */
+async function saveUsers(users, opts) {
+  opts = opts || {};
   var list = Array.isArray(users) ? users : [];
   _cachedUsers = list;
   localStorage.setItem(AUTH_STORAGE, JSON.stringify(list));
   try {
     if (typeof window !== 'undefined' && window.backendApi && typeof window.backendApi.syncUsersToServer === 'function') {
       if (window.backendApi.getBaseUrl && window.backendApi.getBaseUrl()) {
-        window.backendApi.syncUsersToServer(list);
+        return await window.backendApi.syncUsersToServer(list, opts.deletedIds || []);
       }
     }
-  } catch (_) {}
+  } catch (_) {
+    return false;
+  }
+  return true;
 }
 
 function getSession() {
@@ -621,27 +629,17 @@ async function createUser(userData, createdBy) {
   if (!newUser.equipo) newUser.equipo = [];
   if (!newUser.fotosFicha) newUser.fotosFicha = [];
   users.push(newUser);
-  saveUsers(users);
-  // Si hay backend configurado, exigir persistencia real en servidor.
-  // Si falla, revertimos la alta local para no dejar estado inconsistente.
+  var synced = true;
   try {
-    if (
-      typeof window !== 'undefined' &&
-      window.backendApi &&
-      typeof window.backendApi.getBaseUrl === 'function' &&
-      window.backendApi.getBaseUrl() &&
-      typeof window.backendApi.syncUsersToServer === 'function'
-    ) {
-      var synced = await window.backendApi.syncUsersToServer(users);
-      if (!synced) {
-        var rollback = getUsers().filter(function (u) { return u && u.id !== newUser.id; });
-        saveUsers(rollback);
-        return { error: 'No se pudo guardar el usuario en el servidor. Revisa la conexión e inténtalo de nuevo.' };
-      }
-    }
+    synced = await saveUsers(users);
   } catch (_) {
-    var rollback2 = getUsers().filter(function (u) { return u && u.id !== newUser.id; });
-    saveUsers(rollback2);
+    synced = false;
+  }
+  if (!synced) {
+    var rollback = getUsers().filter(function (u) { return u && u.id !== newUser.id; });
+    try {
+      await saveUsers(rollback);
+    } catch (_) {}
     return { error: 'No se pudo guardar el usuario en el servidor. Revisa la conexión e inténtalo de nuevo.' };
   }
   return { user: { ...newUser, passwordHash: undefined, salt: undefined } };
@@ -715,7 +713,7 @@ function deleteUser(userId) {
   }
   users.splice(idx, 1);
   trackUserDeletedFromDirectory(userId, user.username);
-  saveUsers(users);
+  saveUsers(users, { deletedIds: [userId] });
   try {
     const sess = getSession();
     if (sess && sess.id === userId) clearSession();
