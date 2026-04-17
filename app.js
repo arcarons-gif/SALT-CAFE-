@@ -912,16 +912,17 @@ function mostrarResumenReparacion(s) {
     { label: 'Fecha', value: fecha },
     { label: 'Modelo', value: (s.modelo || '—').toString() },
     { label: 'Modificación', value: (s.modificacion || '—').toString() },
-    { label: 'Importe', value: s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—' },
     { label: 'Empleado', value: (s.empleado || s.userId || '—').toString() },
     { label: 'Convenio', value: (s.convenio || '—').toString() }
   ];
-  var descResumen = s.descuento != null && s.descuento > 0 ? Number(s.descuento) : 0;
-  if (descResumen === 0 && (s.convenio || '').toString().trim() && typeof getDescuentoParaNombreConvenio === 'function') {
-    var dr = getDescuentoParaNombreConvenio((s.convenio || '').trim());
-    if (dr > 0) descResumen = dr;
+  var subRes = s.subtotal != null ? Number(s.subtotal) : NaN;
+  var impRes = s.importe != null ? Number(s.importe) : NaN;
+  if (!isNaN(subRes) && subRes > 0 && (!isNaN(impRes) && impRes < subRes - 0.5)) {
+    rows.push({ label: 'Subtotal (sin descuento)', value: subRes.toLocaleString('es-ES') + ' €' });
   }
-  if (descResumen > 0) rows.push({ label: 'Descuento', value: descResumen + '%' });
+  rows.push({ label: 'Importe final', value: s.importe != null ? s.importe.toLocaleString('es-ES') + ' €' : '—' });
+  var descResumen = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : 0;
+  if (descResumen > 0) rows.push({ label: 'Descuento aplicado', value: descResumen + '%' });
   if (s.kitLimpieza) rows.push({ label: 'Kit de limpieza', value: 'Sí' });
   if (s.partesChasis != null || s.partesEsenciales != null || s.kitReparacion) {
     if (s.kitReparacion) rows.push({ label: 'Kit reparación', value: 'Sí' });
@@ -12327,10 +12328,28 @@ function getImporteYDescuentoRegistroServicio(p, matriculaOpt) {
   return { convenioNombre: convenioNombre, descuento: descRegistro, importe: importeRegistro, subtotal: sub };
 }
 
-/** % a mostrar en listas/resumen: prioriza el guardado; si falta, lo infiere del nombre de convenio. */
+/**
+ * Infiere el % de descuento cuando el importe final es menor que el subtotal (p. ej. registros antiguos o descuento mal guardado).
+ * No aplica si hay kit de reparación (lógica de totales distinta).
+ */
+function descuentoInferidoSubtotalImporte(s) {
+  if (!s || s.kitReparacion === true) return 0;
+  var sub = s.subtotal != null ? Number(s.subtotal) : NaN;
+  var imp = s.importe != null ? Number(s.importe) : NaN;
+  if (isNaN(sub) || isNaN(imp) || sub <= 0) return 0;
+  if (imp >= sub - 0.5) return 0;
+  var pct = (1 - imp / sub) * 100;
+  var r = Math.round(pct * 100) / 100;
+  if (r <= 0 || r > 100) return 0;
+  return r;
+}
+
+/** % a mostrar en listas/resumen: guardado; si no, inferencia subtotal/importe; si no, convenio. */
 function descuentoMostrarServicio(s) {
-  var d = s && s.descuento != null ? Number(s.descuento) : 0;
-  if (d > 0) return d;
+  var d = s && s.descuento != null && s.descuento !== '' ? Number(s.descuento) : 0;
+  if (!isNaN(d) && d > 0) return d;
+  var inf = descuentoInferidoSubtotalImporte(s);
+  if (inf > 0) return inf;
   var conv = (s && s.convenio) ? String(s.convenio).trim() : '';
   if (conv && typeof getDescuentoParaNombreConvenio === 'function') {
     var r = getDescuentoParaNombreConvenio(conv);
@@ -12473,16 +12492,16 @@ function enviarRegistroServicioADiscord(servicio) {
   if (isNaN(importeVal)) importeVal = 0;
   var subVal = servicio.subtotal != null ? Number(servicio.subtotal) : NaN;
   if (isNaN(subVal)) subVal = null;
-  var descPct = servicio.descuento != null && servicio.descuento !== '' ? Number(servicio.descuento) : NaN;
+  var descPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(servicio) : 0;
   if (isNaN(descPct)) descPct = 0;
   var convRaw = servicio.convenio != null ? String(servicio.convenio).trim() : '';
   try {
     if (!convRaw && typeof el !== 'undefined' && el && el.negocios && el.negocios.value) {
       convRaw = String(el.negocios.value).trim();
     }
-    if ((servicio.descuento == null || servicio.descuento === '' || isNaN(Number(servicio.descuento))) && typeof el !== 'undefined' && el && el.descuentoPorcentaje && el.descuentoPorcentaje.value !== '') {
+    if ((!descPct || descPct === 0) && typeof el !== 'undefined' && el && el.descuentoPorcentaje && el.descuentoPorcentaje.value !== '') {
       var dUi = parseFloat(el.descuentoPorcentaje.value);
-      if (!isNaN(dUi)) descPct = dUi;
+      if (!isNaN(dUi) && dUi > 0) descPct = dUi;
     }
   } catch (e) { /* ignore */ }
   var convLabel = convRaw ? convRaw : 'N/A';
@@ -12496,7 +12515,7 @@ function enviarRegistroServicioADiscord(servicio) {
   if (subStr) lineas.push('Subtotal (antes de descuento): ' + subStr);
   lineas.push('Descuento aplicado: ' + descPct + '%');
   lineas.push('Importe final (con descuento): ' + importeStr);
-  lineas.push('Convenio: ' + convLabel + ' (' + descPct + '%)');
+  lineas.push('Convenio: ' + convLabel + (descPct > 0 ? ' (' + descPct + '%)' : ''));
   lineas.push('Empleado que realizo el servicio: ' + (servicio.empleado || '-'));
   if (servicio.kitLimpieza) lineas.push('Kit de limpieza: Sí');
   var content = lineas.join('\n');
@@ -12819,10 +12838,16 @@ function actualizarModalRegistro() {
     const div = document.createElement('div');
     div.className = 'servicio-item';
     const descPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? s.descuento : 0);
-    div.innerHTML = `
-      <strong>${s.tipo}</strong> - ${s.matricula} (${s.modelo}) - $${(s.importe || 0).toLocaleString('es-ES')} · Descuento: ${descPct}%
-      <br><small>${s.empleado} · ${s.convenio} · ${new Date(s.fecha).toLocaleString('es-ES')}</small>
-    `;
+    var subNum = s.subtotal != null ? Number(s.subtotal) : NaN;
+    var impNum = s.importe != null ? Number(s.importe) : NaN;
+    var lineaPrecio = '<strong>' + escapeHtml(s.tipo) + '</strong> - ' + escapeHtml(s.matricula) + ' (' + escapeHtml(s.modelo) + ') — ';
+    if (!isNaN(subNum) && subNum > 0 && (!isNaN(impNum) && impNum < subNum - 0.5)) {
+      lineaPrecio += 'Subtotal $' + subNum.toLocaleString('es-ES') + ' · ' + descPct + '% · Final $' + (isNaN(impNum) ? 0 : impNum).toLocaleString('es-ES');
+    } else {
+      lineaPrecio += '$' + (s.importe || 0).toLocaleString('es-ES') + ' · Descuento: ' + descPct + '%';
+    }
+    div.innerHTML = lineaPrecio +
+      '<br><small>' + escapeHtml(s.empleado) + ' · ' + escapeHtml(s.convenio || '—') + ' · ' + new Date(s.fecha).toLocaleString('es-ES') + '</small>';
     el.listaServicios.appendChild(div);
   });
 }
@@ -12853,6 +12878,12 @@ function renderListaResultadosCalculadora() {
     const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
     const descuentoPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? Number(s.descuento) : 0);
     const empleadoNombre = nombreEmpleadoRegistro(s);
+    var subN = s.subtotal != null ? Number(s.subtotal) : NaN;
+    var impN = s.importe != null ? Number(s.importe) : NaN;
+    var filaSubtotal = '';
+    if (!isNaN(subN) && subN > 0 && (!isNaN(impN) && impN < subN - 0.5)) {
+      filaSubtotal = '<p><strong>Subtotal (sin descuento):</strong> ' + subN.toLocaleString('es-ES') + '$</p>';
+    }
     return `
       <div class="resultado-calculadora-card" data-result-index="${i}">
         <h4 class="resultado-calculadora-titulo">${escapeHtml(titulo)}</h4>
@@ -12860,7 +12891,8 @@ function renderListaResultadosCalculadora() {
         <p><strong>Modelo:</strong> ${escapeHtml(s.modelo)}</p>
         <p><strong>Modificación:</strong> ${escapeHtml(s.modificacion || s.tipo)}</p>
         ${s.kitLimpieza ? '<p><strong>Kit de limpieza:</strong> Sí</p>' : ''}
-        <p><strong>Importe:</strong> ${(s.importe || 0).toLocaleString('es-ES')}$</p>
+        ${filaSubtotal}
+        <p><strong>Importe final:</strong> ${(s.importe || 0).toLocaleString('es-ES')}$</p>
         <p><strong>Descuento aplicado:</strong> ${descuentoPct}%</p>
         <p><strong>Convenio:</strong> ${escapeHtml(s.convenio || '—')}</p>
         <p><strong>Registrado por:</strong> ${escapeHtml(empleadoNombre)}</p>
@@ -12880,18 +12912,24 @@ function renderListaResultadosCalculadora() {
       const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
       const descuentoPct = typeof descuentoMostrarServicio === 'function' ? descuentoMostrarServicio(s) : (s.descuento != null ? Number(s.descuento) : 0);
       const empleadoNombre = nombreEmpleadoRegistro(s);
-      const texto = [
+      var subCopy = s.subtotal != null ? Number(s.subtotal) : NaN;
+      var impCopy = s.importe != null ? Number(s.importe) : NaN;
+      var lineasTxt = [
         titulo,
         'Matrícula: ' + (s.matricula || '—'),
         'Modelo: ' + (s.modelo || '—'),
         'Modificación: ' + (s.modificacion || s.tipo || '—'),
         s.kitLimpieza ? 'Kit de limpieza: Sí' : '',
-        'Importe: ' + (s.importe != null ? s.importe.toLocaleString('es-ES') + '$' : '—'),
-        'Descuento aplicado: ' + descuentoPct + '%',
-        'Convenio: ' + (s.convenio || '—'),
-        'Registrado por: ' + empleadoNombre,
-        hora !== '—' ? hora : '',
-      ].filter(Boolean).join('\n');
+      ];
+      if (!isNaN(subCopy) && subCopy > 0 && (!isNaN(impCopy) && impCopy < subCopy - 0.5)) {
+        lineasTxt.push('Subtotal (sin descuento): ' + subCopy.toLocaleString('es-ES') + '$');
+      }
+      lineasTxt.push('Importe final: ' + (s.importe != null ? s.importe.toLocaleString('es-ES') + '$' : '—'));
+      lineasTxt.push('Descuento aplicado: ' + descuentoPct + '%');
+      lineasTxt.push('Convenio: ' + (s.convenio || '—'));
+      lineasTxt.push('Registrado por: ' + empleadoNombre);
+      lineasTxt.push(hora !== '—' ? hora : '');
+      const texto = lineasTxt.filter(Boolean).join('\n');
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(texto).then(() => {
           const t = this.textContent;
