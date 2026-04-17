@@ -11,6 +11,9 @@ const ADMIN_RESET_FLAG = 'benny_admin_reset_1234';
 const USUARIOS_PREDEFINIDOS_MIGRATION = 'benny_usuarios_predefinidos_v2';
 /** Una vez: sincroniza contraseñas de admin y Savannah con las del seed (admin 7264; Savannah 1196). */
 const SYNC_SEED_PASSWORDS_MIGRATION = 'benny_sync_seed_passwords_v2';
+const MAX_USUARIOS = 100;
+/** Una vez: quitar obligación de cambiar contraseña en primer acceso para todos salvo admin (login solo admin con password). */
+const MIGRATE_NO_CAMBIAR_PASSWORD_OBLIGATORIO_NO_ADMIN = 'benny_no_cambiar_password_obligatorio_no_admin_v1';
 
 /**
  * Solo estos logins se vuelven a crear solos si faltan (cuentas de sistema).
@@ -351,6 +354,16 @@ function loginRequiereContrasenaObligatoria(username) {
   return (username || '').toString().trim().toLowerCase() === 'admin';
 }
 
+/** Solo `admin` puede quedar con cambio de contraseña obligatorio tras login; el resto entra sin ese bloqueo. */
+function aplicarPoliticaCambioPasswordLogin(user, safeUser) {
+  if (!user || !safeUser) return;
+  if (!loginRequiereContrasenaObligatoria(user.username)) {
+    safeUser.cambiarPasswordObligatorio = false;
+  } else {
+    safeUser.cambiarPasswordObligatorio = !!user.cambiarPasswordObligatorio;
+  }
+}
+
 async function ensureSeedUsers() {
   if (!localStorage.getItem(USUARIOS_PREDEFINIDOS_MIGRATION)) {
     const users = [];
@@ -443,6 +456,20 @@ async function ensureSeedUsers() {
     if (hubo) saveUsers(listaU);
     localStorage.setItem(MIGRATE_PERMISOS_MECANICO_VACIOS, '1');
   }
+  if (!localStorage.getItem(MIGRATE_NO_CAMBIAR_PASSWORD_OBLIGATORIO_NO_ADMIN)) {
+    var listaPwd = getUsers();
+    var huboPwd = false;
+    listaPwd.forEach(function (u) {
+      if (!u) return;
+      if ((u.username || '').toString().trim().toLowerCase() === 'admin') return;
+      if (u.cambiarPasswordObligatorio === true) {
+        u.cambiarPasswordObligatorio = false;
+        huboPwd = true;
+      }
+    });
+    if (huboPwd) saveUsers(listaPwd);
+    localStorage.setItem(MIGRATE_NO_CAMBIAR_PASSWORD_OBLIGATORIO_NO_ADMIN, '1');
+  }
 }
 
 function saveUsers(users) {
@@ -462,7 +489,15 @@ function getSession() {
   try {
     const data = sessionStorage.getItem(SESSION_STORAGE);
     if (!data) return null;
-    return JSON.parse(data);
+    const session = JSON.parse(data);
+    // Sesiones guardadas antes del fix podían tener cambiarPasswordObligatorio=true para no-admin.
+    if (session && !loginRequiereContrasenaObligatoria(session.username) && session.cambiarPasswordObligatorio) {
+      session.cambiarPasswordObligatorio = false;
+      try {
+        sessionStorage.setItem(SESSION_STORAGE, JSON.stringify(session));
+      } catch (_) {}
+    }
+    return session;
   } catch {
     return null;
   }
@@ -498,21 +533,22 @@ async function login(username, password) {
   if (!user) return null;
   if (user.primerAccesoSinPassword === true && passTrim === '') {
     const { passwordHash, salt, ...safeUser } = user;
-    setSession(user);
-    safeUser.cambiarPasswordObligatorio = true;
+    aplicarPoliticaCambioPasswordLogin(user, safeUser);
+    // Persistir en sesión los mismos flags que devolvemos (no usar `user` en bruto: traía cambiarPasswordObligatorio del servidor).
+    setSession(Object.assign({}, user, safeUser));
     return safeUser;
   }
   if (!loginRequiereContrasenaObligatoria(user.username) && passTrim === '') {
     const { passwordHash, salt, ...safeUser } = user;
-    setSession(user);
-    safeUser.cambiarPasswordObligatorio = !!user.cambiarPasswordObligatorio;
+    aplicarPoliticaCambioPasswordLogin(user, safeUser);
+    setSession(Object.assign({}, user, safeUser));
     return safeUser;
   }
   const valid = await verifyPassword(passTrim, user.passwordHash, user.salt || saltBootstrap);
   if (!valid) return null;
   const { passwordHash, salt, ...safeUser } = user;
-  setSession(user);
-  safeUser.cambiarPasswordObligatorio = !!user.cambiarPasswordObligatorio;
+  aplicarPoliticaCambioPasswordLogin(user, safeUser);
+  setSession(Object.assign({}, user, safeUser));
   return safeUser;
 }
 
@@ -538,6 +574,9 @@ async function createUser(userData, createdBy) {
     return { error: 'Ese nombre de usuario ya está registrado. Elige otro.' };
   }
   const users = getUsers();
+  if (users.length >= MAX_USUARIOS) {
+    return { error: 'Se alcanzó el límite máximo de usuarios (100).' };
+  }
   const passwordInicial = userData.password != null && String(userData.password).length > 0
     ? String(userData.password)
     : '';
@@ -563,7 +602,8 @@ async function createUser(userData, createdBy) {
     rol: rol,
     permisos: permisos,
     activo: true,
-    cambiarPasswordObligatorio: esAutoregistro ? false : true,
+    cambiarPasswordObligatorio: false,
+    primerAccesoSinPassword: passwordInicial.length === 0,
     creadoPor: createdBy,
     fechaCreacion: new Date().toISOString(),
     fechaActualizacion: new Date().toISOString(),

@@ -17,6 +17,7 @@ const fichajesPath = path.join(dataDir, 'fichajes.json');
 const serviciosPath = path.join(dataDir, 'servicios.json');
 const serviciosArchivoMensualPath = path.join(dataDir, 'servicios-archivo-mensual.json');
 const vehiculosRegistroPath = path.join(dataDir, 'vehiculos-registro.json');
+const USERS_MAX = 100;
 
 function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -29,7 +30,30 @@ function readUsers() {
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr : [];
   } catch {
-    return [];
+    // Recuperación básica: si el archivo quedó con arrays JSON concatenados,
+    // intentamos unirlos para no perder usuarios por un parse fallido.
+    try {
+      const raw = fs.readFileSync(usersPath, 'utf8');
+      const chunks = String(raw).match(/\[[\s\S]*?\]/g);
+      if (!chunks || chunks.length === 0) return [];
+      const merged = [];
+      chunks.forEach((c) => {
+        try {
+          const arr = JSON.parse(c);
+          if (Array.isArray(arr)) merged.push(...arr);
+        } catch (_) {}
+      });
+      const byIdOrUser = new Map();
+      merged.forEach((u) => {
+        if (!u || typeof u !== 'object') return;
+        const key = (u.id && String(u.id).trim()) || ('user:' + (u.username || '').toString().trim().toLowerCase());
+        if (!key || key === 'user:') return;
+        byIdOrUser.set(key, u);
+      });
+      return Array.from(byIdOrUser.values());
+    } catch (_) {
+      return [];
+    }
   }
 }
 
@@ -186,7 +210,9 @@ function mergeServicios(existing, incoming) {
  */
 function normalizeUsersList(users) {
   if (!Array.isArray(users)) return [];
-  return users.filter(u => u && (u.id || u.username));
+  return users
+    .filter(u => u && (u.id || u.username))
+    .slice(0, USERS_MAX);
 }
 
 /** Fusiona fichajes entrantes con los existentes (por id). */
@@ -292,6 +318,9 @@ app.post('/api/users', (req, res) => {
     if (!Array.isArray(users)) {
       console.warn('[SALTLAB API] POST /api/users 400: body.users no es un array');
       return res.status(400).json({ error: 'Se espera { users: [...] }' });
+    }
+    if (users.length > USERS_MAX) {
+      return res.status(400).json({ error: 'Se superó el máximo de usuarios permitido (100).' });
     }
     const next = normalizeUsersList(users);
     writeUsers(next);
