@@ -8,6 +8,8 @@
  * - Piezas cosmetic: 1ª ud. = % valor (5,08% por defecto); 2ª+ = 50 $/ud (fijo). Pintura camaleónica: 5000 $ (piezas-tuning.js).
  * - Full tuning: % valor vehículo (40%).
  * - Kit de limpieza: coste compra ($), precio aplicado en reparación/tuneo ($), precio venta individual fuera de servicio ($).
+ * - Copa Pistón: coste, precio en reparación/tuneo, venta individual (tienda).
+ * - Kit de reparación (venta suelta / con servicio en taller): coste, precio en reparación/tuneo y precio venta individual en tienda (el kit policial sustitutivo sigue usando CONFIG.kitReparacionPrecio).
  */
 (function (global) {
   var STORAGE = 'benny_precios_piezas';
@@ -20,7 +22,9 @@
     cosmetic: { coste: 0, precioVentaPorcentaje: 5.08, precioUnidadAdicional: 50 },
     custom: { coste: 0, precioVentaPorcentaje: 5.15, precioUnidadAdicional: 100 },
     fullTuning: { coste: 0, precioVentaPorcentaje: 40 },
-    kitLimpieza: { coste: 25, precioEnServicio: 50, precioVentaIndividual: 75 }
+    kitLimpieza: { coste: 25, precioEnServicio: 50, precioVentaIndividual: 75 },
+    copaPiston: { coste: 100, precioEnServicio: 200, precioVentaIndividual: 200 },
+    kitReparacionVenta: { coste: 350, precioEnServicio: 650, precioVentaIndividual: 650 }
   };
 
   function cloneDefaults() {
@@ -32,7 +36,9 @@
       cosmetic: { ...DEFAULTS.cosmetic },
       custom: { ...DEFAULTS.custom },
       fullTuning: { ...DEFAULTS.fullTuning },
-      kitLimpieza: { ...DEFAULTS.kitLimpieza }
+      kitLimpieza: { ...DEFAULTS.kitLimpieza },
+      copaPiston: { ...DEFAULTS.copaPiston },
+      kitReparacionVenta: { ...DEFAULTS.kitReparacionVenta }
     };
   }
 
@@ -86,6 +92,21 @@
             typeof kl.precioVentaIndividual === 'number'
               ? kl.precioVentaIndividual
               : DEFAULTS.kitLimpieza.precioVentaIndividual;
+          return { coste: coste, precioEnServicio: enServ, precioVentaIndividual: indiv };
+        })(),
+        copaPiston: (function () {
+          var cp = obj.copaPiston || {};
+          var coste = typeof cp.coste === 'number' ? cp.coste : DEFAULTS.copaPiston.coste;
+          var enServ = typeof cp.precioEnServicio === 'number' ? cp.precioEnServicio : DEFAULTS.copaPiston.precioEnServicio;
+          var indiv = typeof cp.precioVentaIndividual === 'number' ? cp.precioVentaIndividual : DEFAULTS.copaPiston.precioVentaIndividual;
+          return { coste: coste, precioEnServicio: enServ, precioVentaIndividual: indiv };
+        })(),
+        kitReparacionVenta: (function () {
+          var kr = obj.kitReparacionVenta || {};
+          var coste = typeof kr.coste === 'number' ? kr.coste : DEFAULTS.kitReparacionVenta.coste;
+          var indiv = typeof kr.precioVentaIndividual === 'number' ? kr.precioVentaIndividual : DEFAULTS.kitReparacionVenta.precioVentaIndividual;
+          var enServ =
+            typeof kr.precioEnServicio === 'number' ? kr.precioEnServicio : indiv;
           return { coste: coste, precioEnServicio: enServ, precioVentaIndividual: indiv };
         })()
       };
@@ -224,6 +245,48 @@
     return DEFAULTS.kitLimpieza.precioVentaIndividual;
   }
 
+  function getCosteCopaPiston() {
+    var p = getPreciosPiezas();
+    return p.copaPiston && typeof p.copaPiston.coste === 'number' ? p.copaPiston.coste : DEFAULTS.copaPiston.coste;
+  }
+
+  function getPrecioVentaCopaPiston() {
+    var p = getPreciosPiezas();
+    var cp = p.copaPiston || {};
+    if (typeof cp.precioEnServicio === 'number') return cp.precioEnServicio;
+    return DEFAULTS.copaPiston.precioEnServicio;
+  }
+
+  function getPrecioVentaCopaPistonIndividual() {
+    var p = getPreciosPiezas();
+    var cp = p.copaPiston || {};
+    if (typeof cp.precioVentaIndividual === 'number') return cp.precioVentaIndividual;
+    return DEFAULTS.copaPiston.precioVentaIndividual;
+  }
+
+  function getCosteKitReparacionVenta() {
+    var p = getPreciosPiezas();
+    return p.kitReparacionVenta && typeof p.kitReparacionVenta.coste === 'number' ? p.kitReparacionVenta.coste : DEFAULTS.kitReparacionVenta.coste;
+  }
+
+  function getPrecioVentaKitReparacionIndividual() {
+    var p = getPreciosPiezas();
+    var kr = p.kitReparacionVenta || {};
+    if (typeof kr.precioVentaIndividual === 'number') return kr.precioVentaIndividual;
+    if (typeof global.CONFIG !== 'undefined' && typeof global.CONFIG.kitReparacionPrecio === 'number') return global.CONFIG.kitReparacionPrecio;
+    return DEFAULTS.kitReparacionVenta.precioVentaIndividual;
+  }
+
+  /** Precio al cliente si vende kit de reparación junto a una reparación o tuneo (no es el kit policial sustitutivo). */
+  function getPrecioVentaKitReparacionEnServicio() {
+    var p = getPreciosPiezas();
+    var kr = p.kitReparacionVenta || {};
+    if (typeof kr.precioEnServicio === 'number') return kr.precioEnServicio;
+    if (typeof kr.precioVentaIndividual === 'number') return kr.precioVentaIndividual;
+    if (typeof global.CONFIG !== 'undefined' && typeof global.CONFIG.kitReparacionPrecio === 'number') return global.CONFIG.kitReparacionPrecio;
+    return DEFAULTS.kitReparacionVenta.precioEnServicio;
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       getPreciosPiezas: getPreciosPiezas,
@@ -245,7 +308,13 @@
       getPrecioVentaFullTuning: getPrecioVentaFullTuning,
       getCosteKitLimpieza: getCosteKitLimpieza,
       getPrecioVentaKitLimpieza: getPrecioVentaKitLimpieza,
-      getPrecioVentaKitLimpiezaIndividual: getPrecioVentaKitLimpiezaIndividual
+      getPrecioVentaKitLimpiezaIndividual: getPrecioVentaKitLimpiezaIndividual,
+      getCosteCopaPiston: getCosteCopaPiston,
+      getPrecioVentaCopaPiston: getPrecioVentaCopaPiston,
+      getPrecioVentaCopaPistonIndividual: getPrecioVentaCopaPistonIndividual,
+      getCosteKitReparacionVenta: getCosteKitReparacionVenta,
+      getPrecioVentaKitReparacionIndividual: getPrecioVentaKitReparacionIndividual,
+      getPrecioVentaKitReparacionEnServicio: getPrecioVentaKitReparacionEnServicio
     };
   } else {
     global.getPreciosPiezas = getPreciosPiezas;
@@ -268,5 +337,11 @@
     global.getCosteKitLimpieza = getCosteKitLimpieza;
     global.getPrecioVentaKitLimpieza = getPrecioVentaKitLimpieza;
     global.getPrecioVentaKitLimpiezaIndividual = getPrecioVentaKitLimpiezaIndividual;
+    global.getCosteCopaPiston = getCosteCopaPiston;
+    global.getPrecioVentaCopaPiston = getPrecioVentaCopaPiston;
+    global.getPrecioVentaCopaPistonIndividual = getPrecioVentaCopaPistonIndividual;
+    global.getCosteKitReparacionVenta = getCosteKitReparacionVenta;
+    global.getPrecioVentaKitReparacionIndividual = getPrecioVentaKitReparacionIndividual;
+    global.getPrecioVentaKitReparacionEnServicio = getPrecioVentaKitReparacionEnServicio;
   }
 })(typeof window !== 'undefined' ? window : this);

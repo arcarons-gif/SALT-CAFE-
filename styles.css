@@ -5838,6 +5838,47 @@ button.login-recovery-link {
   min-height: auto;
 }
 
+.paso-venta-tienda-boton-wrap {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #444);
+  text-align: center;
+}
+.btn-paso-venta-tienda {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.paso-venta-tienda-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted, #888);
+  margin: 0.5rem auto 0;
+  max-width: 480px;
+}
+.paso-venta-tienda-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0.5rem 0 1.5rem;
+}
+.paso-venta-tienda-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+.venta-tienda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.input-venta-tienda-qty {
+  width: 100%;
+  max-width: 8rem;
+}
+.venta-tienda-total-line {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
 /* Modo calculadora: una sola columna para usar todo el ancho de pantalla */
 .pantalla-principal-layout.layout-calculadora-full {
   grid-template-columns: 1fr;
@@ -8114,6 +8155,56 @@ button.login-recovery-link {
 
 .right-panel .btn-reset {
   margin-top: 1rem;
+}
+
+.extras-servicio-section {
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.extras-servicio-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--accent, #d4af37);
+}
+.extras-servicio-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-muted, #888);
+  line-height: 1.35;
+}
+.extras-servicio-section .field.checkbox-field {
+  margin-bottom: 0.5rem;
+}
+.extras-servicio-section .field.checkbox-field:last-child {
+  margin-bottom: 0;
+}
+
+.extras-copa-field {
+  margin-bottom: 0.5rem;
+}
+.extras-copa-field > label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+.extras-copa-qty-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.input-copa-piston-qty {
+  width: 4.5rem;
+  max-width: 100%;
+  padding: 0.35rem 0.5rem;
+}
+.extras-copa-precio-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #888);
+  line-height: 1.35;
 }
 
 /* Modal */

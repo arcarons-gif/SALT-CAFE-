@@ -239,6 +239,13 @@
             <span class="btn-paso-apple-label">Tuneo + Reparación</span>
           </button>
         </div>
+        <div class="paso-venta-tienda-boton-wrap">
+          <button type="button" class="btn btn-paso-apple btn-paso-venta-tienda" id="btnTipoVentaTienda" title="Registrar venta de productos sin reparar ni tunear">
+            <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
+            <span class="btn-paso-apple-label">Venta en tienda</span>
+          </button>
+          <p class="paso-venta-tienda-desc">Kit de limpieza, Copa Pistón o kit de reparación sueltos (precios en Gestión → Piezas).</p>
+        </div>
         <div class="paso-presupuesto-solo-modelo-wrap">
           <button type="button" class="btn btn-paso-apple btn-presupuesto-solo-modelo" id="btnPresupuestoSoloModelo" title="Calcular precios solo con el modelo, sin matrícula ni registro">
             <span class="btn-paso-apple-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h4m0-11v11m0-11h6m-6 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11h6"/><path d="M19 7V5a2 2 0 0 0-2-2H7"/></svg></span>
@@ -274,6 +281,37 @@
                 <div id="mainDashboardStatsLinesInner" class="dashboard-stats-lines-inner"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venta solo productos (tienda) -->
+      <div id="pasoVentaTienda" class="paso paso-venta-tienda" style="display:none">
+        <div class="paso-venta-tienda-inner">
+          <h2 class="paso-titulo">Venta en tienda (sin taller)</h2>
+          <p class="paso-venta-tienda-hint">Indica la matrícula del cliente (o referencia), las unidades vendidas y registra el cobro. No aplica descuento por convenio.</p>
+          <div class="field">
+            <label for="ventaTiendaMatricula">Matrícula / referencia</label>
+            <input type="text" id="ventaTiendaMatricula" class="input-venta-tienda-mat" maxlength="20" placeholder="Ej. NDOI4420" autocomplete="off">
+          </div>
+          <div class="venta-tienda-grid">
+            <div class="field">
+              <label for="ventaTiendaQtyKitLimp">Kit de limpieza (ud.)</label>
+              <input type="number" id="ventaTiendaQtyKitLimp" min="0" step="1" value="0" class="input-venta-tienda-qty">
+            </div>
+            <div class="field">
+              <label for="ventaTiendaQtyCopa">Copa Pistón (ud.)</label>
+              <input type="number" id="ventaTiendaQtyCopa" min="0" step="1" value="0" class="input-venta-tienda-qty">
+            </div>
+            <div class="field">
+              <label for="ventaTiendaQtyKitRep">Kit de reparación (ud.)</label>
+              <input type="number" id="ventaTiendaQtyKitRep" min="0" step="1" value="0" class="input-venta-tienda-qty">
+            </div>
+          </div>
+          <p class="venta-tienda-total-line">Total: <strong id="ventaTiendaTotal">$0</strong></p>
+          <div class="paso-matricula-actions">
+            <button type="button" class="btn btn-back" id="btnVentaTiendaVolver">← Volver</button>
+            <button type="button" class="btn btn-register" id="btnRegistrarVentaTienda" data-permiso="registrarReparacion">Registrar venta</button>
           </div>
         </div>
       </div>
@@ -455,6 +493,8 @@
               </div>
               <div class="budget-line budget-line-subtotal" id="wrapPresupuestoSubtotal" style="display:none"><span>SUBTOTAL</span><span id="presupuestoSubtotal">$0</span></div>
               <div class="budget-line budget-line-kit" id="wrapPresupuestoKitLimpieza" style="display:none"><span>KIT DE LIMPIEZA</span><span id="presupuestoKitLimpieza">$0</span></div>
+              <div class="budget-line budget-line-kit" id="wrapPresupuestoCopaPiston" style="display:none"><span>COPA PISTÓN</span><span id="presupuestoCopaPiston">$0</span></div>
+              <div class="budget-line budget-line-kit" id="wrapPresupuestoKitRepServicio" style="display:none"><span>KIT REPARACIÓN (con servicio)</span><span id="presupuestoKitRepServicio">$0</span></div>
               <div class="budget-line budget-line-descuento"><span>DESCUENTO</span><span id="presupuestoDescuento">0% · N/A</span></div>
               <div class="budget-line total"><span>PRECIO TOTAL</span><span id="precioTotal">$0</span></div>
             </div>
@@ -462,6 +502,23 @@
           <section class="panel right-panel">
             <div class="section template-section template-actions-wrap">
               <button type="button" class="btn btn-copy-register" id="btnCopiarRegistro" title="Copiar el registro al portapapeles">📋 Copiar registro</button>
+            </div>
+            <div id="wrapExtrasServicio" class="section extras-servicio-section" style="display:none">
+              <h3 class="extras-servicio-titulo">Material extra (opcional)</h3>
+              <p class="extras-servicio-hint">Kit de limpieza, Copa Pistón y kit de reparación vendidos con el servicio. Precios en Gestión → Piezas.</p>
+              <div class="field checkbox-field" id="wrapKitLimpieza" style="display:none" title="Opcional en reparación o tuneo. Tarifas editables en Gestión → Piezas (coste, precio en servicio, venta individual).">
+                <label><input type="checkbox" id="usarKitLimpieza"> KIT DE LIMPIEZA (<span id="labelKitLimpPrecioServicio">50</span>$ en reparación/tuneo · <span id="labelKitLimpPrecioIndiv">75</span>$ venta tienda · coste <span id="labelKitLimpCoste">25</span>$)</label>
+              </div>
+              <div class="field extras-copa-field" id="wrapCopaPiston" style="display:none" title="Cantidad vendida con el servicio. Precios por unidad en Gestión → Piezas.">
+                <label for="copaPistonCantidad">COPA PISTÓN — unidades (0 = no añadir)</label>
+                <div class="extras-copa-qty-row">
+                  <input type="number" id="copaPistonCantidad" class="input-copa-piston-qty" min="0" max="99" step="1" value="0" inputmode="numeric" aria-label="Unidades Copa Pistón">
+                  <span class="extras-copa-precio-hint">× <span id="labelCopaPistonPrecioServicio">200</span>$ ud. en taller · coste <span id="labelCopaPistonCoste">100</span>$ / ud.</span>
+                </div>
+              </div>
+              <div class="field checkbox-field" id="wrapKitReparacionServicio" style="display:none" title="Vender un kit de reparación junto al servicio. No usar junto al kit policial sustitutivo.">
+                <label><input type="checkbox" id="usarKitReparacionServicio"> KIT DE REPARACIÓN con el servicio (<span id="labelKitRepServicioPrecio">650</span>$ · coste <span id="labelKitRepServicioCoste">350</span>$ · <span id="labelKitRepServicioPrecioTienda">650</span>$ venta tienda)</label>
+              </div>
             </div>
             <div id="wrapPlantillaTuneo" class="section template-section">
               <h3>PLANTILLA TUNEOS</h3>
@@ -487,11 +544,8 @@
               </div>
               <button type="button" class="btn btn-register" id="btnRegistrarReparacion" data-permiso="registrarReparacion">✔ REGISTRAR REPARACION</button>
             </div>
-            <div class="field checkbox-field" id="wrapUsarKit" style="display:none" title="Solo para clientes policía/EMS (650€)">
-              <label><input type="checkbox" id="usarKitReparacion"> USAR KIT REPARACIÓN (650€)</label>
-            </div>
-            <div class="field checkbox-field" id="wrapKitLimpieza" style="display:none" title="Opcional en reparación o tuneo. Tarifas editables en Gestión → Piezas (coste, precio en servicio, venta individual).">
-              <label><input type="checkbox" id="usarKitLimpieza"> KIT DE LIMPIEZA (50$ en reparación/tuneo · 75$ venta individual · coste 25$)</label>
+            <div class="field checkbox-field" id="wrapUsarKit" style="display:none" title="Solo para clientes policía/EMS: kit sustitutivo (650$). Incompatible con «kit con el servicio» de arriba.">
+              <label><input type="checkbox" id="usarKitReparacion"> USAR KIT REPARACIÓN POLICÍA/EMS (sustituye piezas · 650$)</label>
             </div>
             <button type="button" class="btn btn-reset" id="btnReset">O RESET</button>
           </section>
