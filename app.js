@@ -11747,16 +11747,44 @@ function vincularPasos() {
   if (btnHeaderVolver) btnHeaderVolver.addEventListener('click', irAPantallaPrincipal);
   const btnCopiar = document.getElementById('btnCopiarRegistro');
   if (btnCopiar) btnCopiar.addEventListener('click', copiarRegistroCalculadora);
+
+  if (el.matricula && !el.matricula.dataset.sugerenciasMatriculaBound) {
+    el.matricula.dataset.sugerenciasMatriculaBound = '1';
+    var debRefrescarMatriculaList = debounce(function () {
+      cargarMatriculasGuardadas(el.matricula.value);
+    }, 100);
+    el.matricula.addEventListener('input', debRefrescarMatriculaList);
+    el.matricula.addEventListener('focus', function () {
+      cargarMatriculasGuardadas(el.matricula.value);
+    });
+  }
 }
 
-function cargarMatriculasGuardadas() {
-  const desdeStorage = JSON.parse(localStorage.getItem('benny_matriculas') || '[]');
-  const desdeBBDD = typeof getClientesBBDD === 'function' ? getClientesBBDD().map(c => (c.matricula || '').trim()).filter(Boolean) : [];
-  const matriculas = [...new Set([...desdeBBDD, ...desdeStorage])];
+function cargarMatriculasGuardadas(prefijo) {
   const datalist = document.getElementById('matriculaList');
   if (!datalist) return;
+  var pref = prefijo != null ? String(prefijo).trim() : '';
+  var claveFn = typeof window.claveMatriculaBBDD === 'function' ? window.claveMatriculaBBDD : function (m) {
+    return (m || '').toString().trim().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+  };
+  var pClave = pref ? claveFn(pref) : '';
+  const desdeStorage = JSON.parse(localStorage.getItem('benny_matriculas') || '[]');
+  var matriculas = [];
+  if (pClave && typeof getMatriculasSugeridas === 'function') {
+    matriculas = getMatriculasSugeridas(pref, 50);
+    desdeStorage.forEach(function (m) {
+      if (!m || typeof m !== 'string') return;
+      var mk = claveFn(m);
+      if (mk.length >= pClave.length && mk.slice(0, pClave.length) === pClave && matriculas.indexOf(m) === -1) {
+        matriculas.push(m);
+      }
+    });
+  } else {
+    const desdeBBDD = typeof getClientesBBDD === 'function' ? getClientesBBDD().map(c => (c.matricula || '').trim()).filter(Boolean) : [];
+    matriculas = [...new Set([...desdeBBDD, ...desdeStorage])];
+  }
   datalist.innerHTML = '';
-  matriculas.forEach(m => {
+  matriculas.slice(0, 250).forEach(function (m) {
     const opt = document.createElement('option');
     opt.value = m;
     datalist.appendChild(opt);

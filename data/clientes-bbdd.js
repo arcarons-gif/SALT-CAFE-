@@ -374,9 +374,40 @@ function seedClientesBBDDIfEmpty() {
   } catch (e) { console.warn('seedClientesBBDDIfEmpty', e); }
 }
 
+/**
+ * Matrículas en BBDD cuya clave normalizada empieza por la del prefijo
+ * (p. ej. escribes "ABC" y aparece "ABC DEFG" si está guardado así).
+ * @param {string} prefijo - texto parcial tal como lo escribe el usuario
+ * @param {number} [limit] - máximo de sugerencias (por defecto 40)
+ */
+function getMatriculasSugeridas(prefijo, limit) {
+  var lim = typeof limit === 'number' && limit > 0 ? limit : 40;
+  var p = claveMatriculaBBDD(prefijo);
+  if (!p) return [];
+  var matches = [];
+  var seen = Object.create(null);
+  getClientesBBDD().forEach(function (c) {
+    var raw = (c.matricula || '').trim();
+    if (!raw) return;
+    var k = claveMatriculaBBDD(raw);
+    if (k.length < p.length || k.slice(0, p.length) !== p) return;
+    if (seen[k]) return;
+    seen[k] = true;
+    matches.push({ raw: raw, k: k });
+  });
+  matches.sort(function (a, b) {
+    if (a.k.length !== b.k.length) return a.k.length - b.k.length;
+    return a.raw.localeCompare(b.raw, 'es', { sensitivity: 'base' });
+  });
+  return matches.slice(0, lim).map(function (x) {
+    return x.raw;
+  });
+}
+
 if (typeof window !== 'undefined') {
   window.mergeListasClientesBBDD = mergeListasClientesBBDD;
   window.claveMatriculaBBDD = claveMatriculaBBDD;
+  window.getMatriculasSugeridas = getMatriculasSugeridas;
 }
 
 if (typeof getClientesBBDD === 'function' && typeof saveClientesBBDD === 'function') {
