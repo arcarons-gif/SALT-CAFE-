@@ -7099,11 +7099,17 @@ function renderFichajesDashboard(userId) {
   const horas = getHorasSemana(userId, new Date());
   const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
   const pct = Math.min(100, (horas / minimo) * 100);
+  const horasNocturnas = typeof getHorasNocturnasSemana === 'function' ? getHorasNocturnasSemana(userId, new Date()) : 0;
+  const pctNocturnas = Math.min(100, (horasNocturnas / 10) * 100);
   const bar = document.getElementById('barHorasSemana');
+  const barNocturnas = document.getElementById('barHorasNocturnasSemana');
   const textHoras = document.getElementById('textHorasSemana');
+  const textHorasNocturnas = document.getElementById('textHorasNocturnasSemana');
   const textMinimo = document.getElementById('textHorasMinimo');
   if (bar) bar.style.width = pct + '%';
+  if (barNocturnas) barNocturnas.style.width = pctNocturnas + '%';
   if (textHoras) textHoras.textContent = horas.toFixed(1) + ' h';
+  if (textHorasNocturnas) textHorasNocturnas.textContent = horasNocturnas.toFixed(1) + ' h';
   if (textMinimo) textMinimo.textContent = minimo + ' h';
 
   const msRestante = getMsHastaFinSemana(new Date());
@@ -7186,8 +7192,20 @@ function renderTablaRendimiento() {
   const rows = getRendimientoEmpleados();
   const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
   const primaNocturnaHoras = typeof HORAS_PRIMA_NOCTURNA_SEMANA !== 'undefined' ? HORAS_PRIMA_NOCTURNA_SEMANA : 5;
+  const limiteSemanaBarra = 5;
+  const limiteNocturnaBarra = 10;
   wrap.innerHTML = '<table><thead><tr><th>Trabajador</th><th>Mín. semana</th><th>Acumulado semana</th><th>Nocturnas 18:00–06:00</th><th>Prima nocturna</th><th>Servicios (hoy/sem/total)</th><th>Facturado total</th><th>Indicadores</th></tr></thead><tbody>' +
-    rows.map(r => '<tr><td>' + escapeHtml(r.nombre) + '</td><td>' + minimo + ' h</td><td>' + r.horas.toFixed(1) + ' h</td><td>' + (r.horasNocturnas || 0).toFixed(1) + ' h</td><td>' + ((r.horasNocturnas || 0) >= primaNocturnaHoras ? '<span class="ok">+5k (sí)</span>' : '<span class="alerta">No</span>') + '</td><td>' + r.hoy + ' / ' + r.semana + ' / ' + r.total + '</td><td>$' + (r.totalBilled || 0).toLocaleString('es-ES') + '</td><td>' + (r.alertas.length ? '<span class="alerta">' + r.alertas.join(' · ') + '</span>' : '<span class="ok">OK</span>') + '</td></tr>').join('') +
+    rows.map(r => {
+      var horas = Number(r.horas || 0);
+      var horasNocturnas = Number(r.horasNocturnas || 0);
+      var pctHoras = Math.min(100, (horas / limiteSemanaBarra) * 100);
+      var pctNocturnas = Math.min(100, (horasNocturnas / limiteNocturnaBarra) * 100);
+      return '<tr><td>' + escapeHtml(r.nombre) + '</td><td>' + minimo + ' h</td>' +
+        '<td><div class="stat-bar-wrap"><div class="stat-bar" style="width:' + pctHoras + '%"></div><span class="stat-value">' + horas.toFixed(1) + ' h</span></div></td>' +
+        '<td><div class="stat-bar-wrap"><div class="stat-bar stat-bar-nocturna" style="width:' + pctNocturnas + '%"></div><span class="stat-value">' + horasNocturnas.toFixed(1) + ' h</span></div></td>' +
+        '<td>' + (horasNocturnas >= primaNocturnaHoras ? '<span class="ok">+5k (sí)</span>' : '<span class="alerta">No</span>') + '</td>' +
+        '<td>' + r.hoy + ' / ' + r.semana + ' / ' + r.total + '</td><td>$' + (r.totalBilled || 0).toLocaleString('es-ES') + '</td><td>' + (r.alertas.length ? '<span class="alerta">' + r.alertas.join(' · ') + '</span>' : '<span class="ok">OK</span>') + '</td></tr>';
+    }).join('') +
     '</tbody></table>';
 }
 
@@ -7393,26 +7411,74 @@ function vincularFichajes() {
     });
   });
 
+  function renderStatsFichajesEmpleado(uid) {
+    if (!uid) return;
+    const statsWrap = document.getElementById('statsFichajesEmpleado');
+    if (!statsWrap) return;
+    const horas = getHorasSemana(uid, new Date());
+    const horasNocturnas = typeof getHorasNocturnasSemana === 'function' ? getHorasNocturnasSemana(uid, new Date()) : 0;
+    const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
+    const primaNocturnaHoras = typeof HORAS_PRIMA_NOCTURNA_SEMANA !== 'undefined' ? HORAS_PRIMA_NOCTURNA_SEMANA : 5;
+    const primaActiva = horasNocturnas >= primaNocturnaHoras;
+    const reps = getReparacionesByUser()[uid] || { hoy: 0, semana: 0, total: 0 };
+    statsWrap.innerHTML = '<div class="fichajes-stats">' +
+      '<div class="stat-card"><span class="stat-label">Mínimo a realizar esta semana</span><span class="stat-value">' + minimo + ' h</span></div>' +
+      '<div class="stat-card"><span class="stat-label">Acumulado total esta semana (barra completa: 5 h)</span><div class="stat-bar-wrap"><div class="stat-bar" style="width:' + Math.min(100, (horas / 5) * 100) + '%"></div><span class="stat-value">' + horas.toFixed(1) + ' h</span></div></div>' +
+      '<div class="stat-card"><span class="stat-label">Acumulado nocturno (18:00–06:00) (barra completa: 10 h)</span><div class="stat-bar-wrap"><div class="stat-bar stat-bar-nocturna" style="width:' + Math.min(100, (horasNocturnas / 10) * 100) + '%"></div><span class="stat-value">' + horasNocturnas.toFixed(1) + ' h</span></div><span class="stat-label">Prima 5k: ' + (primaActiva ? 'Sí' : 'No') + '</span></div>' +
+      '<div class="stat-card"><span class="stat-label">Servicios (hoy / semana / total)</span><span class="stat-value">' + reps.hoy + ' / ' + reps.semana + ' / ' + reps.total + '</span></div></div>';
+  }
+
+  function cargarAjustesFichajesEmpleado(uid) {
+    const inputHoras = document.getElementById('ajusteSemanalHoras');
+    const inputNocturno = document.getElementById('ajusteSemanalNocturno');
+    if (!inputHoras || !inputNocturno) return;
+    if (!uid || typeof getAjusteAcumuladosSemana !== 'function') {
+      inputHoras.value = '0';
+      inputNocturno.value = '0';
+      return;
+    }
+    const ajuste = getAjusteAcumuladosSemana(uid, new Date());
+    inputHoras.value = Number(ajuste.horas || 0).toFixed(1);
+    inputNocturno.value = Number(ajuste.nocturnas || 0).toFixed(1);
+  }
+
   const selEmpleado = document.getElementById('selectFichajesEmpleado');
   if (selEmpleado) {
     selEmpleado.addEventListener('change', () => {
       const uid = selEmpleado.value;
       if (!uid) return;
       renderListaFichajesReciente(uid, 'listaFichajesEmpleado');
-      const statsWrap = document.getElementById('statsFichajesEmpleado');
-      if (statsWrap) {
-        const horas = getHorasSemana(uid, new Date());
-        const horasNocturnas = typeof getHorasNocturnasSemana === 'function' ? getHorasNocturnasSemana(uid, new Date()) : 0;
-        const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
-        const primaNocturnaHoras = typeof HORAS_PRIMA_NOCTURNA_SEMANA !== 'undefined' ? HORAS_PRIMA_NOCTURNA_SEMANA : 5;
-        const primaActiva = horasNocturnas >= primaNocturnaHoras;
-        const reps = getReparacionesByUser()[uid] || { hoy: 0, semana: 0, total: 0 };
-        statsWrap.innerHTML = '<div class="fichajes-stats">' +
-          '<div class="stat-card"><span class="stat-label">Mínimo a realizar esta semana</span><span class="stat-value">' + minimo + ' h</span></div>' +
-          '<div class="stat-card"><span class="stat-label">Acumulado total esta semana</span><span class="stat-value">' + horas.toFixed(1) + ' h</span></div>' +
-          '<div class="stat-card"><span class="stat-label">Acumulado nocturno (18:00–06:00)</span><span class="stat-value">' + horasNocturnas.toFixed(1) + ' h</span><span class="stat-label">Prima 5k: ' + (primaActiva ? 'Sí' : 'No') + '</span></div>' +
-          '<div class="stat-card"><span class="stat-label">Servicios (hoy / semana / total)</span><span class="stat-value">' + reps.hoy + ' / ' + reps.semana + ' / ' + reps.total + '</span></div></div>';
+      renderStatsFichajesEmpleado(uid);
+      cargarAjustesFichajesEmpleado(uid);
+    });
+  }
+
+  const btnGuardarAjustesSemanales = document.getElementById('btnGuardarAjustesSemanales');
+  if (btnGuardarAjustesSemanales && !btnGuardarAjustesSemanales.dataset.bound) {
+    btnGuardarAjustesSemanales.dataset.bound = '1';
+    btnGuardarAjustesSemanales.addEventListener('click', function () {
+      const sel = document.getElementById('selectFichajesEmpleado');
+      const uid = sel ? sel.value : '';
+      if (!uid) {
+        alert('Selecciona un trabajador.');
+        return;
       }
+      if (typeof setAjusteAcumuladosSemana !== 'function') {
+        alert('No se pudo guardar el ajuste manual.');
+        return;
+      }
+      const inputHoras = document.getElementById('ajusteSemanalHoras');
+      const inputNocturno = document.getElementById('ajusteSemanalNocturno');
+      const horas = inputHoras ? parseFloat(inputHoras.value) : 0;
+      const nocturnas = inputNocturno ? parseFloat(inputNocturno.value) : 0;
+      const ok = setAjusteAcumuladosSemana(uid, new Date(), isNaN(horas) ? 0 : horas, isNaN(nocturnas) ? 0 : nocturnas);
+      if (!ok) {
+        alert('No se pudo guardar el ajuste manual.');
+        return;
+      }
+      renderStatsFichajesEmpleado(uid);
+      renderTablaRendimiento();
+      alert('Ajustes semanales guardados para ' + uid + '.');
     });
   }
 

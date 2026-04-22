@@ -7590,6 +7590,25 @@ button.login-recovery-link {
   gap: 1rem;
 }
 
+.fichajes-ajustes-manuales {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--benny-border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+}
+
+.fichajes-ajustes-manuales h5 {
+  margin: 0 0 0.5rem 0;
+}
+
+.fichajes-ajustes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .stat-card {
   background: rgba(255,255,255,0.05);
   border-radius: 8px;
@@ -7622,6 +7641,10 @@ button.login-recovery-link {
   border-radius: 6px;
   transition: width 0.3s ease;
   min-width: 0;
+}
+
+.stat-bar.stat-bar-nocturna {
+  background: linear-gradient(90deg, #6a5acd, #7dd3fc);
 }
 
 .stat-bar-wrap .stat-value {

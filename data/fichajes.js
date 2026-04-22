@@ -3,6 +3,7 @@
  * Semana: lunes 00:00 a domingo 23:59. Mínimo 5h/semana.
  */
 const FICHAJES_STORAGE = 'benny_fichajes';
+const FICHAJES_AJUSTES_STORAGE = 'benny_fichajes_ajustes_semana';
 const HORAS_MINIMAS_SEMANA = 5;
 const FRANJA_NOCTURNA_INICIO_HORA = 18;
 const FRANJA_NOCTURNA_FIN_HORA = 6;
@@ -140,6 +141,57 @@ function getSemanaLimites(date) {
   return { inicio: lunes, fin: domingo };
 }
 
+function getSemanaClave(date) {
+  var lim = getSemanaLimites(date);
+  return lim.inicio.toISOString().slice(0, 10);
+}
+
+function getAjustesSemanaStorage() {
+  try {
+    var raw = localStorage.getItem(FICHAJES_AJUSTES_STORAGE);
+    var obj = raw ? JSON.parse(raw) : {};
+    return obj && typeof obj === 'object' ? obj : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveAjustesSemanaStorage(obj) {
+  try {
+    localStorage.setItem(FICHAJES_AJUSTES_STORAGE, JSON.stringify(obj || {}));
+  } catch (_) {}
+}
+
+/**
+ * Ajustes manuales semanales por usuario (acumulado normal/nocturno en horas).
+ * Se usan como delta sobre las horas calculadas por fichajes.
+ */
+function getAjusteAcumuladosSemana(userId, date) {
+  var uid = (userId || '').toString().trim();
+  if (!uid) return { horas: 0, nocturnas: 0 };
+  var semana = getSemanaClave(date || new Date());
+  var map = getAjustesSemanaStorage();
+  var row = map[uid] && map[uid][semana] ? map[uid][semana] : null;
+  var horas = row && typeof row.horas === 'number' ? row.horas : 0;
+  var nocturnas = row && typeof row.nocturnas === 'number' ? row.nocturnas : 0;
+  return { horas: horas, nocturnas: nocturnas };
+}
+
+function setAjusteAcumuladosSemana(userId, date, horas, nocturnas) {
+  var uid = (userId || '').toString().trim();
+  if (!uid) return false;
+  var semana = getSemanaClave(date || new Date());
+  var map = getAjustesSemanaStorage();
+  if (!map[uid] || typeof map[uid] !== 'object') map[uid] = {};
+  var h = Number(horas);
+  var n = Number(nocturnas);
+  if (isNaN(h)) h = 0;
+  if (isNaN(n)) n = 0;
+  map[uid][semana] = { horas: h, nocturnas: n, updatedAt: new Date().toISOString() };
+  saveAjustesSemanaStorage(map);
+  return true;
+}
+
 /** Horas trabajadas en la semana que contiene la fecha (solo fichajes cerrados) */
 function getHorasSemana(userId, date) {
   const { inicio, fin } = getSemanaLimites(date);
@@ -155,7 +207,9 @@ function getHorasSemana(userId, date) {
     const end = Math.min(s, fin.getTime());
     if (end > start) totalMs += end - start;
   });
-  return totalMs / (1000 * 60 * 60);
+  var totalHoras = totalMs / (1000 * 60 * 60);
+  var ajuste = getAjusteAcumuladosSemana(userId, date);
+  return Math.max(0, totalHoras + (ajuste.horas || 0));
 }
 
 /**
@@ -187,7 +241,9 @@ function getHorasNocturnasSemana(userId, date) {
       if (overlapEnd > overlapStart) totalMs += overlapEnd - overlapStart;
     }
   });
-  return totalMs / (1000 * 60 * 60);
+  var totalHoras = totalMs / (1000 * 60 * 60);
+  var ajuste = getAjusteAcumuladosSemana(userId, date);
+  return Math.max(0, totalHoras + (ajuste.nocturnas || 0));
 }
 
 /** Milisegundos hasta el próximo lunes 00:00 */

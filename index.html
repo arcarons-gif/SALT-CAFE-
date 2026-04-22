@@ -636,6 +636,11 @@
                   <div class="stat-bar" id="barHorasSemana" style="width:0%"></div>
                   <span class="stat-value" id="textHorasSemana">0 h</span>
                 </div>
+                <span class="stat-label stat-horas-acumulado-label">Acumulado nocturno 18:00–06:00 (barra completa: 10 h)</span>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar stat-bar-nocturna" id="barHorasNocturnasSemana" style="width:0%"></div>
+                  <span class="stat-value" id="textHorasNocturnasSemana">0 h</span>
+                </div>
               </div>
               <div class="stat-card stat-tiempo">
                 <span class="stat-label">Hasta cambio de semana</span>
@@ -667,6 +672,21 @@
             <div id="listaFichajesEmpleado" class="lista-fichajes-reciente"></div>
           </div>
           <div class="fichajes-stats" id="statsFichajesEmpleado"></div>
+          <div class="fichajes-ajustes-manuales">
+            <h5>Ajustes manuales del acumulado semanal (usuario seleccionado)</h5>
+            <p class="fichajes-hint">Permite sumar o restar horas a los acumulados mostrados esta semana.</p>
+            <div class="fichajes-ajustes-grid">
+              <div class="field">
+                <label for="ajusteSemanalHoras">Ajuste acumulado semanal (h)</label>
+                <input id="ajusteSemanalHoras" type="number" step="0.1" placeholder="0.0">
+              </div>
+              <div class="field">
+                <label for="ajusteSemanalNocturno">Ajuste acumulado nocturno (h)</label>
+                <input id="ajusteSemanalNocturno" type="number" step="0.1" placeholder="0.0">
+              </div>
+            </div>
+            <button type="button" class="btn" id="btnGuardarAjustesSemanales">Guardar ajustes</button>
+          </div>
         </div>
         <div id="panelRendimiento" class="fichajes-panel" style="display:none">
           <h4>Rendimiento del equipo — indicadores para decisiones</h4>
