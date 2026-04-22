@@ -8851,3 +8851,15 @@ body.personalizacion-cards-elevated .economia-card {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+.economia-kit-limp-line {
+  margin-top: 0.35rem;
+}
+.economia-kit-limp-line:first-child {
+  margin-top: 0;
+}
+.economia-kit-limpieza-precios .input-kit-limpieza-servicio,
+.economia-kit-limpieza-precios .input-kit-limpieza-individual {
+  width: 4.5rem;
+  margin-left: 0.25rem;
+}

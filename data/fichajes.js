@@ -4,6 +4,9 @@
  */
 const FICHAJES_STORAGE = 'benny_fichajes';
 const HORAS_MINIMAS_SEMANA = 5;
+const FRANJA_NOCTURNA_INICIO_HORA = 18;
+const FRANJA_NOCTURNA_FIN_HORA = 6;
+const HORAS_PRIMA_NOCTURNA_SEMANA = 5;
 /** Entradas sin salida que lleven más de esta cantidad de horas se eliminan */
 const HORAS_MAX_ENTRADA_ABIERTA = 5;
 
@@ -151,6 +154,38 @@ function getHorasSemana(userId, date) {
     const start = Math.max(e, inicio.getTime());
     const end = Math.min(s, fin.getTime());
     if (end > start) totalMs += end - start;
+  });
+  return totalMs / (1000 * 60 * 60);
+}
+
+/**
+ * Horas trabajadas en la franja nocturna semanal (18:00 -> 06:00 del día siguiente).
+ * Se calcula por solape real de cada fichaje cerrado con esa franja.
+ */
+function getHorasNocturnasSemana(userId, date) {
+  const { inicio, fin } = getSemanaLimites(date);
+  const weekStartMs = inicio.getTime();
+  const weekEndMs = fin.getTime();
+  const list = getFichajes().filter(
+    f => f.userId === userId && f.salida && f.entrada
+  );
+  let totalMs = 0;
+  list.forEach(f => {
+    const e = new Date(f.entrada).getTime();
+    const s = new Date(f.salida).getTime();
+    if (s <= e) return;
+    const start = Math.max(e, weekStartMs);
+    const end = Math.min(s, weekEndMs);
+    if (end <= start) return;
+    for (let dayMs = weekStartMs; dayMs <= weekEndMs; dayMs += 24 * 60 * 60 * 1000) {
+      const nightStart = new Date(dayMs);
+      nightStart.setHours(FRANJA_NOCTURNA_INICIO_HORA, 0, 0, 0);
+      const nightEnd = new Date(dayMs + 24 * 60 * 60 * 1000);
+      nightEnd.setHours(FRANJA_NOCTURNA_FIN_HORA, 0, 0, 0);
+      const overlapStart = Math.max(start, nightStart.getTime());
+      const overlapEnd = Math.min(end, nightEnd.getTime());
+      if (overlapEnd > overlapStart) totalMs += overlapEnd - overlapStart;
+    }
   });
   return totalMs / (1000 * 60 * 60);
 }

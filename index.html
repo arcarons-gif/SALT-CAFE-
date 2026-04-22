@@ -490,8 +490,8 @@
             <div class="field checkbox-field" id="wrapUsarKit" style="display:none" title="Solo para clientes policía/EMS (650€)">
               <label><input type="checkbox" id="usarKitReparacion"> USAR KIT REPARACIÓN (650€)</label>
             </div>
-            <div class="field checkbox-field" id="wrapKitLimpieza" style="display:none" title="Opcional en reparación o tuneo; precios editables en Gestión → Piezas">
-              <label><input type="checkbox" id="usarKitLimpieza"> KIT DE LIMPIEZA (por defecto 200$ venta · 50$ coste)</label>
+            <div class="field checkbox-field" id="wrapKitLimpieza" style="display:none" title="Opcional en reparación o tuneo. Tarifas editables en Gestión → Piezas (coste, precio en servicio, venta individual).">
+              <label><input type="checkbox" id="usarKitLimpieza"> KIT DE LIMPIEZA (50$ en reparación/tuneo · 75$ venta individual · coste 25$)</label>
             </div>
             <button type="button" class="btn btn-reset" id="btnReset">O RESET</button>
           </section>
@@ -1199,10 +1199,10 @@
           </div>
           <div id="economiaPiezas" class="economia-subpanel" style="display:none">
             <h3 class="economia-piezas-titulo">Precios piezas (reparación y tuneo)</h3>
-            <p class="economia-historial-desc">Chasis y esenciales: precio fijo por unidad en reparación. En tuneo, <strong>performance</strong>, <strong>custom</strong> y <strong>cosmetics</strong> (salvo camaleónica): primera unidad = % del valor del vehículo; desde la segunda, precio fijo por unidad ($, editable). Kits NOS: cantidad × precio medio del catálogo (coste×2 por referencia). Full tuning, swap de motor y pintura camaleónica se gestionan aparte en la calculadora. El <strong>kit de limpieza</strong> es opcional (reparación o tuneo): coste y venta fijos por unidad, editables aquí. Solo administradores.</p>
+            <p class="economia-historial-desc">Chasis y esenciales: precio fijo por unidad en reparación. En tuneo, <strong>performance</strong>, <strong>custom</strong> y <strong>cosmetics</strong> (salvo camaleónica): primera unidad = % del valor del vehículo; desde la segunda, precio fijo por unidad ($, editable). Kits NOS: cantidad × precio medio del catálogo (coste×2 por referencia). Full tuning, swap de motor y pintura camaleónica se gestionan aparte en la calculadora. El <strong>kit de limpieza</strong> es opcional (reparación o tuneo): coste de compra, importe aplicado en el servicio y precio de venta individual (suelto), editables aquí. Solo administradores.</p>
             <div class="economia-table-wrap">
               <table class="economia-table economia-table-piezas">
-                <thead><tr><th>Artículo</th><th>Coste (€)</th><th>Precio venta</th><th>Margen (€)</th><th>Margen %</th><th></th></tr></thead>
+                <thead><tr><th>Artículo</th><th>Coste (€)</th><th>Precio / tarifas</th><th>Margen (€)</th><th>Margen %</th><th></th></tr></thead>
                 <tbody id="listaPreciosPiezas"></tbody>
               </table>
             </div>

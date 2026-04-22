@@ -7,7 +7,7 @@
  * - Piezas custom: 1ª ud. = % valor (5,15% por defecto); 2ª+ = 100 $/ud (fijo).
  * - Piezas cosmetic: 1ª ud. = % valor (5,08% por defecto); 2ª+ = 50 $/ud (fijo). Pintura camaleónica: 5000 $ (piezas-tuning.js).
  * - Full tuning: % valor vehículo (40%).
- * - Kit de limpieza (opcional reparación/tuneo): coste y precio fijos por unidad (p. ej. 50$ / 200$).
+ * - Kit de limpieza: coste compra ($), precio aplicado en reparación/tuneo ($), precio venta individual fuera de servicio ($).
  */
 (function (global) {
   var STORAGE = 'benny_precios_piezas';
@@ -20,7 +20,7 @@
     cosmetic: { coste: 0, precioVentaPorcentaje: 5.08, precioUnidadAdicional: 50 },
     custom: { coste: 0, precioVentaPorcentaje: 5.15, precioUnidadAdicional: 100 },
     fullTuning: { coste: 0, precioVentaPorcentaje: 40 },
-    kitLimpieza: { coste: 50, precioVenta: 200 }
+    kitLimpieza: { coste: 25, precioEnServicio: 50, precioVentaIndividual: 75 }
   };
 
   function cloneDefaults() {
@@ -73,10 +73,21 @@
           coste: typeof obj.fullTuning?.coste === 'number' ? obj.fullTuning.coste : DEFAULTS.fullTuning.coste,
           precioVentaPorcentaje: typeof obj.fullTuning?.precioVentaPorcentaje === 'number' ? obj.fullTuning.precioVentaPorcentaje : DEFAULTS.fullTuning.precioVentaPorcentaje
         },
-        kitLimpieza: {
-          coste: typeof obj.kitLimpieza?.coste === 'number' ? obj.kitLimpieza.coste : DEFAULTS.kitLimpieza.coste,
-          precioVenta: typeof obj.kitLimpieza?.precioVenta === 'number' ? obj.kitLimpieza.precioVenta : DEFAULTS.kitLimpieza.precioVenta
-        }
+        kitLimpieza: (function () {
+          var kl = obj.kitLimpieza || {};
+          var coste = typeof kl.coste === 'number' ? kl.coste : DEFAULTS.kitLimpieza.coste;
+          var enServ =
+            typeof kl.precioEnServicio === 'number'
+              ? kl.precioEnServicio
+              : typeof kl.precioVenta === 'number'
+                ? kl.precioVenta
+                : DEFAULTS.kitLimpieza.precioEnServicio;
+          var indiv =
+            typeof kl.precioVentaIndividual === 'number'
+              ? kl.precioVentaIndividual
+              : DEFAULTS.kitLimpieza.precioVentaIndividual;
+          return { coste: coste, precioEnServicio: enServ, precioVentaIndividual: indiv };
+        })()
       };
     } catch (e) { return cloneDefaults(); }
   }
@@ -196,9 +207,21 @@
     return p.kitLimpieza && typeof p.kitLimpieza.coste === 'number' ? p.kitLimpieza.coste : DEFAULTS.kitLimpieza.coste;
   }
 
+  /** Importe que se factura al cliente si marca el kit en una reparación o tuneo. */
   function getPrecioVentaKitLimpieza() {
     var p = getPreciosPiezas();
-    return p.kitLimpieza && typeof p.kitLimpieza.precioVenta === 'number' ? p.kitLimpieza.precioVenta : DEFAULTS.kitLimpieza.precioVenta;
+    var kl = p.kitLimpieza || {};
+    if (typeof kl.precioEnServicio === 'number') return kl.precioEnServicio;
+    if (typeof kl.precioVenta === 'number') return kl.precioVenta;
+    return DEFAULTS.kitLimpieza.precioEnServicio;
+  }
+
+  /** Precio de venta al público si se vende el kit suelto (fuera de reparación/tuneo). */
+  function getPrecioVentaKitLimpiezaIndividual() {
+    var p = getPreciosPiezas();
+    var kl = p.kitLimpieza || {};
+    if (typeof kl.precioVentaIndividual === 'number') return kl.precioVentaIndividual;
+    return DEFAULTS.kitLimpieza.precioVentaIndividual;
   }
 
   if (typeof module !== 'undefined' && module.exports) {
@@ -221,7 +244,8 @@
       getPrecioVentaFullTuningPorcentaje: getPrecioVentaFullTuningPorcentaje,
       getPrecioVentaFullTuning: getPrecioVentaFullTuning,
       getCosteKitLimpieza: getCosteKitLimpieza,
-      getPrecioVentaKitLimpieza: getPrecioVentaKitLimpieza
+      getPrecioVentaKitLimpieza: getPrecioVentaKitLimpieza,
+      getPrecioVentaKitLimpiezaIndividual: getPrecioVentaKitLimpiezaIndividual
     };
   } else {
     global.getPreciosPiezas = getPreciosPiezas;
@@ -243,5 +267,6 @@
     global.getPrecioVentaFullTuning = getPrecioVentaFullTuning;
     global.getCosteKitLimpieza = getCosteKitLimpieza;
     global.getPrecioVentaKitLimpieza = getPrecioVentaKitLimpieza;
+    global.getPrecioVentaKitLimpiezaIndividual = getPrecioVentaKitLimpiezaIndividual;
   }
 })(typeof window !== 'undefined' ? window : this);
