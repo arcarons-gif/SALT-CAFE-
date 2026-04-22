@@ -5279,6 +5279,33 @@ button.login-recovery-link {
   max-width: 100%;
 }
 
+.main-fichajes-stats-wrap {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--benny-border, var(--border));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.main-fichajes-stats-titulo {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--benny-text, inherit);
+}
+.fichajes-stats-main {
+  gap: 0.65rem;
+}
+.fichajes-stats-main .stat-card {
+  padding: 0.55rem 0.75rem;
+}
+.fichajes-stats-main .stat-bar-wrap {
+  height: 20px;
+}
+.fichajes-stats-main .stat-bar-wrap .stat-value {
+  font-size: 0.72rem;
+}
+
 .main-dashboard-wrap .economia-dashboard-bar { margin-bottom: 1rem; }
 .main-dashboard-wrap .economia-dashboard-chart { margin-bottom: 0; }
 

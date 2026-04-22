@@ -266,6 +266,37 @@
             <ul id="ultimasReparacionesList" class="ultimas-reparaciones-list"></ul>
           </div>
           <div id="mainDashboardWrap" class="main-dashboard-wrap main-dashboard-left">
+            <section id="mainFichajesStatsWrap" class="main-fichajes-stats-wrap" aria-label="Resumen de fichajes de la semana">
+              <h3 class="main-fichajes-stats-titulo">Tu semana (fichajes)</h3>
+              <div class="fichajes-stats fichajes-stats-main">
+                <div class="stat-card stat-horas">
+                  <span class="stat-label">Mínimo a realizar esta semana</span>
+                  <span class="stat-value stat-horas-minimo" id="textHorasMinimoMain">5 h</span>
+                  <span class="stat-label stat-horas-acumulado-label">Acumulado total esta semana</span>
+                  <div class="stat-bar-wrap">
+                    <div class="stat-bar" id="barHorasSemanaMain" style="width:0%"></div>
+                    <span class="stat-value" id="textHorasSemanaMain">0 h</span>
+                  </div>
+                  <span class="stat-label stat-horas-acumulado-label">Acumulado nocturno 18:00–06:00 (barra completa: 10 h)</span>
+                  <div class="stat-bar-wrap">
+                    <div class="stat-bar stat-bar-nocturna" id="barHorasNocturnasSemanaMain" style="width:0%"></div>
+                    <span class="stat-value" id="textHorasNocturnasSemanaMain">0 h</span>
+                  </div>
+                </div>
+                <div class="stat-card stat-tiempo">
+                  <span class="stat-label">Hasta cambio de semana</span>
+                  <span class="stat-value" id="textHastaSemanaMain">—</span>
+                </div>
+                <div class="stat-card stat-reparaciones">
+                  <span class="stat-label">Reparaciones / Tuneos</span>
+                  <div class="stat-counters">
+                    <span>Hoy: <strong id="repHoyMain">0</strong></span>
+                    <span>Semana: <strong id="repSemanaMain">0</strong></span>
+                    <span>Total: <strong id="repTotalMain">0</strong></span>
+                  </div>
+                </div>
+              </div>
+            </section>
             <div id="mainDashboardBar" class="economia-dashboard-bar main-dashboard-bar">
               <div class="economia-kpi economia-kpi-clickable" id="mainKpiTotalMateriales" title="Clic para ver detalle por tipo de material"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span><span class="economia-kpi-label">TOTAL MATERIALES</span><span id="mainKpiMaterialesValor" class="economia-kpi-value">0</span></div>
               <div class="economia-kpi"><span class="economia-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span><span class="economia-kpi-label">COMPRAS PENDIENTES</span><span id="mainKpiCompras" class="economia-kpi-value">0</span></div>
@@ -708,6 +739,21 @@
                   <span>Total: <strong id="repTotal">0</strong></span>
                 </div>
               </div>
+            </div>
+            <div class="fichajes-ajustes-manuales fichajes-ajustes-propio">
+              <h5>Ajuste de tu acumulado semanal</h5>
+              <p class="fichajes-hint">Suma o resta horas a los totales mostrados arriba (esta semana). Al guardar, los administradores reciben un aviso en su bandeja.</p>
+              <div class="fichajes-ajustes-grid">
+                <div class="field">
+                  <label for="ajustePropioSemanalHoras">Ajuste acumulado semanal (h)</label>
+                  <input id="ajustePropioSemanalHoras" type="number" step="0.1" placeholder="0.0">
+                </div>
+                <div class="field">
+                  <label for="ajustePropioSemanalNocturno">Ajuste acumulado nocturno (h)</label>
+                  <input id="ajustePropioSemanalNocturno" type="number" step="0.1" placeholder="0.0">
+                </div>
+              </div>
+              <button type="button" class="btn" id="btnGuardarAjustesPropioSemanales">Guardar mi ajuste</button>
             </div>
             <div class="ranking-section" id="rankingSectionFichajes">
               <h4>Ranking por reparaciones (esta semana)</h4>

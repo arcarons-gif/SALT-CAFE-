@@ -255,6 +255,50 @@ function notificarUsoKitReparacionControl(servicio) {
   if (typeof aplicarPermisos === 'function' && typeof getSession === 'function') aplicarPermisos(getSession());
 }
 
+/**
+ * Aviso en bandeja de administradores cuando un empleado guarda ajuste de acumulado fichajes (semana actual).
+ */
+function notificarAdminsAjusteAcumuladoFichaje(usuarioUsername, nombreMostrar, horasAntes, noctAntes, horasDespues, noctDespues) {
+  var uid = (usuarioUsername || '').toString().trim();
+  if (!uid) return;
+  var users = typeof getUsers === 'function' ? getUsers() : [];
+  var destinos = [];
+  var seen = {};
+  users.forEach(function (u) {
+    if (!u || !u.username) return;
+    if (typeof hasPermission === 'function' && hasPermission(u, 'gestionarUsuarios')) {
+      var x = u.username;
+      if (!seen[x]) {
+        seen[x] = true;
+        destinos.push(x);
+      }
+    }
+  });
+  if (destinos.length === 0) return;
+  var emp = (nombreMostrar || uid).toString();
+  var detalle =
+    emp +
+    ' (@' +
+    uid +
+    ') · ajuste delta semanal: +' +
+    Number(horasDespues).toFixed(1) +
+    ' h · nocturno: +' +
+    Number(noctDespues).toFixed(1) +
+    ' h (antes: +' +
+    Number(horasAntes).toFixed(1) +
+    ' / +' +
+    Number(noctAntes).toFixed(1) +
+    ')';
+  destinos.forEach(function (adminUser) {
+    addAvisoBandejaEntrada(adminUser, {
+      tipo: 'fichaje_ajuste_acumulado',
+      mensaje: 'Ajuste de acumulado fichajes',
+      detalleFichajeAjuste: detalle,
+    });
+  });
+  if (typeof aplicarPermisos === 'function' && typeof getSession === 'function') aplicarPermisos(getSession());
+}
+
 let registroServicios = getRegistroServicios();
 const CREDENTIALS_STORAGE = 'benny_remember_credentials';
 const LOGIN_USUARIOS_STORAGE = 'benny_login_usuarios';
@@ -3256,6 +3300,10 @@ function renderMainDashboard() {
   }
   renderEconomiaChartInto('mainEconomiaChartContainer');
   renderMainDashboardStatsLines();
+  var sessMainDash = typeof getSession === 'function' ? getSession() : null;
+  if (sessMainDash && sessMainDash.username && typeof renderFichajesDashboard === 'function') {
+    renderFichajesDashboard(sessMainDash.username);
+  }
 }
 
 function renderEconomiaResumen() {
@@ -7277,39 +7325,91 @@ function getRendimientoEmpleados() {
 }
 
 function renderFichajesDashboard(userId) {
-  const horas = getHorasSemana(userId, new Date());
   const minimo = typeof HORAS_MINIMAS_SEMANA !== 'undefined' ? HORAS_MINIMAS_SEMANA : 5;
+  const horas = getHorasSemana(userId, new Date());
   const pct = Math.min(100, (horas / minimo) * 100);
   const horasNocturnas = typeof getHorasNocturnasSemana === 'function' ? getHorasNocturnasSemana(userId, new Date()) : 0;
   const pctNocturnas = Math.min(100, (horasNocturnas / 10) * 100);
-  const bar = document.getElementById('barHorasSemana');
-  const barNocturnas = document.getElementById('barHorasNocturnasSemana');
-  const textHoras = document.getElementById('textHorasSemana');
-  const textHorasNocturnas = document.getElementById('textHorasNocturnasSemana');
-  const textMinimo = document.getElementById('textHorasMinimo');
-  if (bar) bar.style.width = pct + '%';
-  if (barNocturnas) barNocturnas.style.width = pctNocturnas + '%';
-  if (textHoras) textHoras.textContent = horas.toFixed(1) + ' h';
-  if (textHorasNocturnas) textHorasNocturnas.textContent = horasNocturnas.toFixed(1) + ' h';
-  if (textMinimo) textMinimo.textContent = minimo + ' h';
-
   const msRestante = getMsHastaFinSemana(new Date());
-  const textHasta = document.getElementById('textHastaSemana');
-  if (textHasta) {
-    const d = Math.floor(msRestante / (24 * 60 * 60 * 1000));
-    const h = Math.floor((msRestante % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-    const m = Math.floor((msRestante % (60 * 60 * 1000)) / (60 * 1000));
-    textHasta.textContent = d + 'd ' + h + 'h ' + m + 'm';
-  }
-
+  const dCd = Math.floor(msRestante / (24 * 60 * 60 * 1000));
+  const hCd = Math.floor((msRestante % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const mCd = Math.floor((msRestante % (60 * 60 * 1000)) / (60 * 1000));
+  const countdownStr = dCd + 'd ' + hCd + 'h ' + mCd + 'm';
   const reps = getReparacionesByUser();
   const myRep = reps[userId] || { hoy: 0, semana: 0, total: 0 };
-  const repHoy = document.getElementById('repHoy');
-  const repSemana = document.getElementById('repSemana');
-  const repTotal = document.getElementById('repTotal');
-  if (repHoy) repHoy.textContent = myRep.hoy;
-  if (repSemana) repSemana.textContent = myRep.semana;
-  if (repTotal) repTotal.textContent = myRep.total;
+
+  function pintarBloqueFichajesDashboard(ids, metric) {
+    if (!ids || !metric) return;
+    const bar = document.getElementById(ids.barHoras);
+    const barNocturnas = document.getElementById(ids.barNocturnas);
+    const textHoras = document.getElementById(ids.textHoras);
+    const textHorasNocturnas = document.getElementById(ids.textHorasNocturnas);
+    const textMinimo = document.getElementById(ids.textMinimo);
+    if (bar) bar.style.width = metric.pct + '%';
+    if (barNocturnas) barNocturnas.style.width = metric.pctNocturnas + '%';
+    if (textHoras) textHoras.textContent = metric.horas.toFixed(1) + ' h';
+    if (textHorasNocturnas) textHorasNocturnas.textContent = metric.horasNocturnas.toFixed(1) + ' h';
+    if (textMinimo) textMinimo.textContent = metric.minimo + ' h';
+    const textHasta = document.getElementById(ids.textHasta);
+    if (textHasta) textHasta.textContent = metric.countdownStr;
+    const repHoy = document.getElementById(ids.repHoy);
+    const repSemana = document.getElementById(ids.repSemana);
+    const repTotal = document.getElementById(ids.repTotal);
+    if (repHoy) repHoy.textContent = metric.myRep.hoy;
+    if (repSemana) repSemana.textContent = metric.myRep.semana;
+    if (repTotal) repTotal.textContent = metric.myRep.total;
+  }
+
+  const metricPanel = {
+    horas: horas,
+    pct: pct,
+    horasNocturnas: horasNocturnas,
+    pctNocturnas: pctNocturnas,
+    minimo: minimo,
+    countdownStr: countdownStr,
+    myRep: myRep,
+  };
+  pintarBloqueFichajesDashboard({
+    barHoras: 'barHorasSemana',
+    barNocturnas: 'barHorasNocturnasSemana',
+    textHoras: 'textHorasSemana',
+    textHorasNocturnas: 'textHorasNocturnasSemana',
+    textMinimo: 'textHorasMinimo',
+    textHasta: 'textHastaSemana',
+    repHoy: 'repHoy',
+    repSemana: 'repSemana',
+    repTotal: 'repTotal',
+  }, metricPanel);
+
+  var sessionDash = typeof getSession === 'function' ? getSession() : null;
+  var selfUid = sessionDash && sessionDash.username ? sessionDash.username : '';
+  if (selfUid) {
+    var metricMain = metricPanel;
+    if (selfUid !== userId) {
+      var horasSelf = getHorasSemana(selfUid, new Date());
+      var horasNoctSelf = typeof getHorasNocturnasSemana === 'function' ? getHorasNocturnasSemana(selfUid, new Date()) : 0;
+      metricMain = {
+        horas: horasSelf,
+        pct: Math.min(100, (horasSelf / minimo) * 100),
+        horasNocturnas: horasNoctSelf,
+        pctNocturnas: Math.min(100, (horasNoctSelf / 10) * 100),
+        minimo: minimo,
+        countdownStr: countdownStr,
+        myRep: reps[selfUid] || { hoy: 0, semana: 0, total: 0 },
+      };
+    }
+    pintarBloqueFichajesDashboard({
+      barHoras: 'barHorasSemanaMain',
+      barNocturnas: 'barHorasNocturnasSemanaMain',
+      textHoras: 'textHorasSemanaMain',
+      textHorasNocturnas: 'textHorasNocturnasSemanaMain',
+      textMinimo: 'textHorasMinimoMain',
+      textHasta: 'textHastaSemanaMain',
+      repHoy: 'repHoyMain',
+      repSemana: 'repSemanaMain',
+      repTotal: 'repTotalMain',
+    }, metricMain);
+  }
 
   const users = getUsers();
   const rankingList = document.getElementById('rankingList');
@@ -7430,6 +7530,7 @@ function vincularFichajes() {
       if (userId) {
         renderFichajesDashboard(userId);
         renderListaFichajesReciente(userId);
+        cargarAjustesPropioFichaje(userId);
       }
       actualizarLedFichaje();
       var rankingSection = document.getElementById('rankingSectionFichajes');
@@ -7623,6 +7724,20 @@ function vincularFichajes() {
     inputNocturno.value = Number(ajuste.nocturnas || 0).toFixed(1);
   }
 
+  function cargarAjustesPropioFichaje(uid) {
+    const inputHoras = document.getElementById('ajustePropioSemanalHoras');
+    const inputNocturno = document.getElementById('ajustePropioSemanalNocturno');
+    if (!inputHoras || !inputNocturno) return;
+    if (!uid || typeof getAjusteAcumuladosSemana !== 'function') {
+      inputHoras.value = '0';
+      inputNocturno.value = '0';
+      return;
+    }
+    const ajuste = getAjusteAcumuladosSemana(uid, new Date());
+    inputHoras.value = Number(ajuste.horas || 0).toFixed(1);
+    inputNocturno.value = Number(ajuste.nocturnas || 0).toFixed(1);
+  }
+
   const selEmpleado = document.getElementById('selectFichajesEmpleado');
   if (selEmpleado) {
     selEmpleado.addEventListener('change', () => {
@@ -7660,6 +7775,49 @@ function vincularFichajes() {
       renderStatsFichajesEmpleado(uid);
       renderTablaRendimiento();
       alert('Ajustes semanales guardados para ' + uid + '.');
+    });
+  }
+
+  const btnGuardarAjustesPropio = document.getElementById('btnGuardarAjustesPropioSemanales');
+  if (btnGuardarAjustesPropio && !btnGuardarAjustesPropio.dataset.bound) {
+    btnGuardarAjustesPropio.dataset.bound = '1';
+    btnGuardarAjustesPropio.addEventListener('click', function () {
+      const session = getSession();
+      if (!session || !session.username) {
+        alert('Debes iniciar sesión.');
+        return;
+      }
+      const uid = session.username;
+      if (typeof setAjusteAcumuladosSemana !== 'function') {
+        alert('No se pudo guardar el ajuste manual.');
+        return;
+      }
+      const inputHoras = document.getElementById('ajustePropioSemanalHoras');
+      const inputNocturno = document.getElementById('ajustePropioSemanalNocturno');
+      const horasN = inputHoras ? parseFloat(inputHoras.value) : 0;
+      const noctN = inputNocturno ? parseFloat(inputNocturno.value) : 0;
+      const hFin = isNaN(horasN) ? 0 : horasN;
+      const nFin = isNaN(noctN) ? 0 : noctN;
+      var hAnt = 0;
+      var nAnt = 0;
+      if (typeof getAjusteAcumuladosSemana === 'function') {
+        var prev = getAjusteAcumuladosSemana(uid, new Date());
+        hAnt = Number(prev.horas || 0);
+        nAnt = Number(prev.nocturnas || 0);
+      }
+      const ok = setAjusteAcumuladosSemana(uid, new Date(), hFin, nFin);
+      if (!ok) {
+        alert('No se pudo guardar el ajuste manual.');
+        return;
+      }
+      renderFichajesDashboard(uid);
+      if (typeof renderTablaRendimiento === 'function') renderTablaRendimiento();
+      var cambio = hAnt !== hFin || nAnt !== nFin;
+      if (cambio && typeof notificarAdminsAjusteAcumuladoFichaje === 'function') {
+        var nombre = (session.nombre || uid).toString();
+        notificarAdminsAjusteAcumuladoFichaje(uid, nombre, hAnt, nAnt, hFin, nFin);
+      }
+      alert(cambio ? 'Ajuste guardado. Los administradores han recibido un aviso en la bandeja.' : 'Valores guardados (sin cambios respecto al ajuste anterior).');
     });
   }
 
@@ -13790,10 +13948,12 @@ function renderListaBandejaEntrada() {
         ? (a.matricula || '') + (a.modelo ? ' · ' + a.modelo : '') + (a.importe != null ? ' — ' + a.importe.toLocaleString('es-ES') + '€' : '')
         : a.tipo === 'kit_reparacion_control'
           ? (a.detalleKitRep || a.mensaje || '')
-          : (a.mensaje || '');
+          : a.tipo === 'fichaje_ajuste_acumulado'
+            ? (a.detalleFichajeAjuste || a.mensaje || '')
+            : (a.mensaje || '');
     const completado = !!a.completado;
     const clickable =
-      !completado && (a.tipo === 'reparacion_registrada' || a.tipo === 'kit_reparacion_control')
+      !completado && (a.tipo === 'reparacion_registrada' || a.tipo === 'kit_reparacion_control' || a.tipo === 'fichaje_ajuste_acumulado')
         ? ' bandeja-entrada-item-clickable'
         : '';
     const completadoBadge = completado ? ' <span class="bandeja-entrada-completado">Completado</span>' : '';
@@ -13821,6 +13981,10 @@ function renderListaBandejaEntrada() {
         var txt = aviso.detalleKitRep || aviso.mensaje || 'Uso de kit de reparación registrado.';
         if (typeof showToast === 'function') showToast(txt, 'warning');
         else alert(txt);
+      } else if (aviso.tipo === 'fichaje_ajuste_acumulado') {
+        var txtF = aviso.detalleFichajeAjuste || aviso.mensaje || 'Ajuste de acumulado fichajes.';
+        if (typeof showToast === 'function') showToast(txtF, 'info');
+        else alert(txtF);
       }
     });
   });
